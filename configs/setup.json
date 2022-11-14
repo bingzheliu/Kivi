@@ -1,0 +1,20 @@
+{
+	"cluster": {
+		"num_pod": 5,
+		"num_node": 3,
+		"pod_cpu_thre" : 12
+	},
+
+	"pod": [
+		
+	],
+
+	"node" : [
+		
+	],
+
+	"namespace" : [
+		
+	]
+
+}

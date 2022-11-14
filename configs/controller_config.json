@@ -1,0 +1,21 @@
+{
+	"scheduler" : {
+		"podSpreading": {
+			"SCHEDULER_THRE_NODE" : 1,
+			"SCHEDULER_THRE_ZONE" : 1
+		}
+	},
+
+	"hpa" : {
+		"CPU_THRE" : 4,
+		"TOLERANCE" : 1
+	},
+
+	"deployment" : {
+		"MIN_REPLICAS" : 2,
+		"MAX_REPLICAS" : 10
+	}
+
+}
+
+

@@ -13,3 +13,16 @@ inline test_duplication()
 	od;
 	}
 }
+
+
+// a = min(b,c)
+inline min(a, b, c)
+{
+	atomic {
+		a = b;
+		if
+		:: b > c -> a = c;
+		:: else->;
+		fi;
+	}
+}

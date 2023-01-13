@@ -1,16 +1,7 @@
 /*
 	1. We model the rollout event in sequence, meaning that when a rollout happen, no new rollout and scale event will take place at the same time.     
 	2. We don't model unheathy pod for now, otherwise, need to modify the rollout (the scale down old replica part)
-	3. Now the queue is not a rolling array. We make it only deal with number of DEPLOYMENT_QUEUE_SIZE events for now. 
 */
-
-#define DEPLOYMENT_QUEUE_SIZE 100
-
-
-// in controller_utils 
-short dcQueue[DEPLOYMENT_QUEUE_SIZE];
-short dcTail = 0;
-short dcIndex = 0;
 
 
 inline scorePods()
@@ -23,6 +14,8 @@ inline scorePods()
 	// There are many rules when it comes to deleting pods: https://github.com/kubernetes/kubernetes/blob/4106b10d9c3abe0e90153376ce7cb26b0fb2d1d5/pkg/controller/controller_utils.go#L753 
 	// TODO: we mainly look into ranks for now, depending on which feature we model, will add more later. 
 	
+
+	short i, podsOnNode[NODE_NUM+1];
 
 	i = 1;
 	do
@@ -47,22 +40,22 @@ inline scorePods()
 
 inline deleteAPod()
 {
-	int cur_max = 0;
+	max = 0;
 	i = 1;
 	pod_selected = 0;
 	
 	do
 	:: i < POD_NUM+1 ->
 		if 
-			:: pod[i].status == 1 && pod[i].toDelete != 1 && pod[i].deploymentId == curD ->
+			:: pod[i].status == 1 pod[i].&& pod[i].toDelete != 1 && deploymentId == curD ->
 				pod[i].score = podsOnNode[pod[i].loc];
 				if 
-				:: pod[i].score > cur_max ->
-					cur_max = pod[i].score;
+				:: pod[i].score > max ->
+					max = pod[i].score;
 					pod_selected = i;
 				:: else->;
 				fi;
-				printf("pod score %d: %d; max: %d", i, pod[i].score, cur_max);
+				printf("pod score %d: %d; max: %d", i, pod[i].score, max);
 			:: else->;
 		fi;
 		i++;
@@ -72,14 +65,13 @@ inline deleteAPod()
 
 inline deletePods(numPods)
 {
-	short podsOnNode[NODE_NUM+1];
 	scorePods();
 
-	short numPodDeleted = 0;
+	short numPodDeleted = 0, pod_selected = 0;
 
 	do
 	:: numPodDeleted < diff->
-		deleteAPod();
+		deletePod();
 		pod[pod_selected].toDelete = 1;
 		numPodDeleted ++;
 	:: else -> break;
@@ -144,7 +136,6 @@ inline scale(curReplicaSet)
 {
 	// $$$$ this variable can be parameterized. 
 	short SlowStartInitialBatchSize = 1;
-	short batchSize = 0, remaining = 0;
 
 	// TODO: add pause
 	if
@@ -161,9 +152,9 @@ inline scale(curReplicaSet)
 
 			pod_selected = 0;
 			i = 0;
-			//cur_max = 0;
+			max = 0;
 			diff = 0;
-			//numPodDeleted = 0;
+			numPodDeleted = 0;
 		}
 
 	:: else ->
@@ -173,7 +164,7 @@ inline scale(curReplicaSet)
 		atomic {
 			batchSize = SlowStartInitialBatchSize;
 			remaining = curReplicaSet.expReplicas - curReplicaSet.replicas;
-			printf("Too few replicas in replicaSet %s need to create %", curReplicaSet.id, remaining);
+			printf("Too few replicas in replicaSet %s need to create %", curReplicaSet.Id, remaining);
 		}
 		do
 		:: batchSize > 0 ->
@@ -186,7 +177,7 @@ inline scale(curReplicaSet)
 				d[curReplicaSet.deploymentId].replicas = d[curReplicaSet.deploymentId].replicas + batchSize;
 		
 				remaining = remaining - batchSize;
-				min(batchSize, remaining, 2*batchSize);
+				batchSize = min(remaining. 2*batchSize);
 			}
 		:: else -> break;
 		od;
@@ -196,8 +187,10 @@ inline scale(curReplicaSet)
 
 inline rollout()
 {
-	short newV = d[curD].curVersion;
-	short oldV = 1 - newV;
+	atomic {
+		short curV = d[curD].curVersion;
+		short oldV = 1 - curV;
+	}
 	if
 		:: d[curD].strategy == 0 ->
 			// Recreate, looks like it does not comply with the MaxUnavailable Replicas. 
@@ -227,20 +220,24 @@ inline rollout()
 /*****omitting*****/
 // rsc.burstReplicas
 
+// in controller_utils 
 
 
+deploymentType d[100];
+
+short dcQueue[100];
+short dcIndex = 0;
+short dcTail = 0;
 
 proctype deployment_controller()
 {
-	short i = 0, pod_selected;
-
 	do
-		:: (dcIndex < dcTail) ->
-			int curD = dcQueue[dcIndex];
+		:: (dcQueue[dcIndex] != -1) ->
+			curD = dcQueue[dcIndex]
 
 			if
 			:: (d[curD].expReplicas != d[curD].replicas) -> 
-				scale(d[curD].replicaSets[newV]);
+				scale();
 			:: else-> 
 				rollout();
 			fi;

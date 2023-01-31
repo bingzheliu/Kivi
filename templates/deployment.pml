@@ -2,6 +2,7 @@
 	1. We model the rollout event in sequence, meaning that when a rollout happen, no new rollout and scale event will take place at the same time.     
 	2. We don't model unheathy pod for now, otherwise, need to modify the rollout (the scale down old replica part)
 	3. Now the queue is not a rolling array. We make it only deal with number of DEPLOYMENT_QUEUE_SIZE events for now. 
+	4. We modeled two version of the deployment. So any history feature/rollback to older version are not supported now.
 */
 
 #define DEPLOYMENT_QUEUE_SIZE 100
@@ -49,7 +50,7 @@ inline deleteAPod()
 {
 	int cur_max = 0;
 	i = 1;
-	pod_selected = 0;
+	podSelected = 0;
 	
 	do
 	:: i < POD_NUM+1 ->
@@ -59,7 +60,7 @@ inline deleteAPod()
 				if 
 				:: pod[i].score > cur_max ->
 					cur_max = pod[i].score;
-					pod_selected = i;
+					podSelected = i;
 				:: else->;
 				fi;
 				printf("pod score %d: %d; max: %d", i, pod[i].score, cur_max);
@@ -80,7 +81,7 @@ inline deletePods(numPods)
 	do
 	:: numPodDeleted < diff->
 		deleteAPod();
-		pod[pod_selected].toDelete = 1;
+		pod[podSelected].toDelete = 1;
 		numPodDeleted ++;
 	:: else -> break;
 	od;
@@ -105,7 +106,7 @@ inline scale(curReplicaSet)
 
 					d[curD].replicas = dExpected[curD].replicas;
 
-					pod_selected = 0;
+					podSelected = 0;
 					i = 0;
 					max = 0;
 					diff = 0;
@@ -140,6 +141,32 @@ inline scale(curReplicaSet)
 }
 */
 
+
+inline enqueuePods(batchSize)
+{
+	i = 0;
+	do
+	:: i < batchSize ->
+		j = 0;
+		do
+		:: j < POD_NUM -> 
+			if
+			:: pods[j].status == 0 ->
+				pods[j].deploymentId = curD;
+				pods[j].loc = 0;
+				sQueue[sTail] = j;
+				sTail++;
+				break;
+			:: else->;
+			fi;
+			j++;
+		::else -> break;
+		od;
+		i++;
+	:: else -> break;
+	od;
+}
+
 inline scale(curReplicaSet)
 {
 	// $$$$ this variable can be parameterized. 
@@ -156,10 +183,11 @@ inline scale(curReplicaSet)
 			short diff =  curReplicaSet.replicas - curReplicaSet.expReplicas;
 			deletePods(diff);
 
-			curReplicaSet.replicas = curReplicaSet.replicas;
-			d[curReplicaSet.deploymentId].replicas = d[curReplicaSet.deploymentId].replicas - diff;
+			// TODO: deal with the scenairo that the deletion failed. 
+			curReplicaSet.expReplicas = curReplicaSet.replicas;
+			d[curD].replicas = d[curD].replicas - diff;
 
-			pod_selected = 0;
+			podSelected = 0;
 			i = 0;
 			//cur_max = 0;
 			diff = 0;
@@ -181,9 +209,9 @@ inline scale(curReplicaSet)
 			// This code actually did the Pod Post: https://github.com/kubernetes/kubernetes/blob/97d37c29552790384b0a8b8f6f05648f28e07c55/staging/src/k8s.io/client-go/kubernetes/typed/core/v1/pod.go#L120 
 
 			atomic {
-				curReplicaSet.replicas = curReplicaSet.replicas + batchSize;
-
-				d[curReplicaSet.deploymentId].replicas = d[curReplicaSet.deploymentId].replicas + batchSize;
+				// curReplicaSet.replicas = curReplicaSet.replicas + batchSize;
+				// d[curD].replicas = d[curD].replicas + batchSize;
+				enqueuePods(batchSize);
 		
 				remaining = remaining - batchSize;
 				min(batchSize, remaining, 2*batchSize);
@@ -228,11 +256,9 @@ inline rollout()
 // rsc.burstReplicas
 
 
-
-
 proctype deployment_controller()
 {
-	short i = 0, pod_selected;
+	short i = 0, podSelected;
 
 	do
 		:: (dcIndex < dcTail) ->
@@ -240,7 +266,7 @@ proctype deployment_controller()
 
 			if
 			:: (d[curD].expReplicas != d[curD].replicas) -> 
-				scale(d[curD].replicaSets[newV]);
+				scale(d[curD].replicaSets[curVersion]);
 			:: else-> 
 				rollout();
 			fi;

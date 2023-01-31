@@ -5,7 +5,6 @@
 
 #define SCHEDULER_THRE_NODE 1
 #define SCHEDULER_THRE_ZONE 1
-
 #define SCHEDULER_QUEUE_SIZE 100
 
 #include "scheduler_plugins.pml"
@@ -17,7 +16,7 @@ short sIndex = 0;
 
 /*-------------------------------
 Scheduling cycle
-preFilter -- filter -- preScore -- Score -- Normalize Score
+preFilter (go through all the nodes) -- filter (filter on per node basis) -- postScore -- preScore -- Score -- Normalize Score
 We don't distinguish between preFilter and filter. 
 We don't distinguish between preScore, score and normalizeScore. 
 Because we don't need to fit into the scheduling framework as they have, e.g. each score() function is for one node. Instead, it's enough to implement in two phases to capture the logic. 
@@ -28,11 +27,15 @@ inline filter()
 	// All these filter are AND logic
 	nodeName();
 	nodeAffinityFilter();
+	taintTolerationFilter();
+	nodeResourceFitFilter();
 }
 
 inline score()
 {	
 	nodeAffinityScore();
+	taintTolerationScore();
+	nodeResourceFitScore();
 }	
 
 
@@ -44,20 +47,22 @@ inline clearNodeScore()
 	do
 	:: i < NODE_NUM+1 ->
 		nodes[i].score = 0;
+		nodes[i].curScore = 0;
 		i++;
 	:: else -> break;
 	od
 }
 
 // get the node that have the highest score, if multiple are the same, choosing the smallest indexing node
-inline findFeasibleNode()
+inline selectHost()
 {
-	max = 0;
+	max = -1;
 	i = 1;
 	do
 	:: i < NODE_NUM+1 ->
 		if 
-		:: node[i].status > 0 && node[i].score > max ->
+		// the actual implementation choose the node randomly when several nodes have the same score. We may omit this detail, and choose the first one encountered. 
+		:: nodes[i].status > 0 && nodes[i].score > max ->
 				max = node[i].score;
 				selectedNode = i;
 		:: else->;
@@ -66,20 +71,27 @@ inline findFeasibleNode()
 	:: else -> break;
 	od;
 
+	if
+	:: max == -1 -> 
+		printf("No feasiable node!");
+		assert(False);
+	:: else->;
+	fi;
+
 	printf("Pod %d is scheduled on node %d, with score %d\n", curPod, selectedNode, max);
 }
 
 
 inline scheduleOne()
 {
-	//omit preFilter();
-
+	//merged preFilter();
 	filter();
-	//omit preScore();
-	score();
-	//omit normalizeScore();
 
-	findFeasibleNode();
+	//merged preScore();
+	score();
+	//merged normalizeScore();
+
+	selectHost();
 }
 
 // This is an invariants check. 
@@ -96,12 +108,17 @@ inline checkIfUnschedulable()
 
 inline bindNode()
 {
-	node[selectedNode].pod_num++;
-	node[selectedNode].cpu_left = node[selectedNode].cpu_left - pod[curPod].cpu;
-	pod[curPod].loc = node[selectedNode].id;
-	pod[curPod].status = 1;
+	nodes[selectedNode].numPod++;
+	//node[selectedNode].cpu_left = node[selectedNode].cpu_left - pod[curPod].cpu;
+	pods[curPod].loc = node[selectedNode].id;
+	pods[curPod].status = 1;
 	pod_total++;
-	zone_num_pod[node[node_selected].zone]++;
+
+	j = pods[curPod].deploymentId;
+	deployments[j].replicas ++;
+	deployments[j].replicaSets[deployments[j].curVersion]].replicas++;
+	j = 0;
+	// zone_num_pod[node[node_selected].zone]++;
 }
 
 proctype scheduler()

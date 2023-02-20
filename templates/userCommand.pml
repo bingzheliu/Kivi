@@ -4,31 +4,37 @@
 	2. User can't add new node if they are using the affinity spec. Same reason as 1. 
 */
 
-proctype createDeployment(maxDeploymentId)
+proctype createDeployment(short maxDeploymentId)
 {
 	atomic{
-		short curD = select(0,maxDeploymentId)
+		short curD;
+		select(curD : 0..maxDeploymentId);
 
-		dcQueue[dcTail].add(curD);
+		dcQueue[dcTail] = curD;
 		dcTail++;
 	}
 }
 
+/*
 // label selector updates is not recommend and hence not modeled
 proctype updateDeployment()
 {
 	
 }
+*/
 
 // At the current phase, we don't consider scale and update rollout happen at the same time. 
-proctype scaleDeployment(maxDeploymentId)
+proctype scaleDeployment(short maxDeploymentId)
 {
 	atomic {
-		short curD = select(0, maxDeploymentId);
+		short curD;
+		select(curD : 0..maxDeploymentId);
+		short ranScale;
+		select(ranScale : -3..3)
 
-		d[curD].expReplicas += select(-3, 3);
+		d[curD].specReplicas = d[curD].specReplicas + ranScale;
 
-		dcQueue[dcTail].add(curD);
+		dcQueue[dcTail] = curD;
 		dcTail++;
 	}
 }

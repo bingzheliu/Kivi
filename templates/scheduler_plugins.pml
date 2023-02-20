@@ -35,9 +35,9 @@ inline helperFilter()
 	:: i < NODE_NUM+1 ->
 		if
 		:: nodes[i].score == 1 ->
-			node[i].score = 0;
+			nodes[i].score = 0;
 		:: nodes[i].score == 0 ->
-			node[i].score == -1;
+			nodes[i].score == -1;
 		:: else->;
 		fi;
 		i++;
@@ -52,13 +52,13 @@ Now assume the order of these plugins do not matter, and should be idempotence
 *******************/
 // TODO: check where this has been called.
 // Using nodeName overrules using nodeSelector or affinity and anti-affinity rules.
-inline nodeName()
+inline nodeNameFilter()
 {
 	i = 1;
 	do
 	:: i < NODE_NUM+1 ->
 		if
-		:: nodes[i].name == pods[curPod].nodeName && nodes[i].score != -1 -> nodes[i].score = 1;
+		:: nodes[i].name == d[pods[curPod].deploymentId].nodeName && nodes[i].score != -1 -> nodes[i].score = 1;
 		:: else->;
 		fi;
 		i++;
@@ -79,15 +79,15 @@ inline nodeAffinityFilter()
 {
 	j = 0;
 	do
-	:: j < pods[curPod].numRules ->
+	:: j < d[curD].numRules ->
 		if
-		:: pods[curPod].affinityRules[j].isRequired == 1 ->
+		:: d[curD].affinityRules[j].isRequired == 1 ->
 			k = 0;
 			do
-			:: pods[curPod].affinityRules[j].matchedNode[k] != -1 ->
+			:: d[curD].affinityRules[j].matchedNode[k] != -1 ->
 				if 
-				:: nodes[pods[curPod].affinityRules[j].matchedNode[k]].score != -1 ->
-					nodes[pods[curPod].affinityRules[j].matchedNode[k]].score = 1;
+				:: nodes[d[curD].affinityRules[j].matchedNode[k]].score != -1 ->
+					nodes[d[curD].affinityRules[j].matchedNode[k]].score = 1;
 				:: else->;
 				fi;
 				k++;
@@ -106,8 +106,8 @@ inline taintTolerationFilter()
 {
 	j = 0;
 	do
-	:: j < pods[curPod].numNoScheduleNode ->
-	   nodes[pods[curPod].noScheduleNode[j]] = -1;
+	:: j < d[curD].numNoScheduleNode ->
+	   nodes[d[curD].noScheduleNode[j]].score = -1;
 	   j++;
 	:: else -> break;
 	od;
@@ -144,7 +144,7 @@ inline defaultNormalizeScoreAndWeight(reverse, weight)
 				nodes[i].curScore = MAX_NODE_SCORE - nodes[i].curScore;
 			:: else->;
 			fi;
-			nodes[i].score += (nodes[i].curScore * weight);
+			nodes[i].score = nodes[i].score + (nodes[i].curScore * weight);
 			nodes[i].curScore = 0;
 		:: else->;
 		fi;
@@ -157,15 +157,15 @@ inline nodeAffinityScore()
 {
 	j = 0;
 	do
-	:: j < pods[curPod].numRules ->
+	:: j < d[curD].numRules ->
 		if
-		:: pods[curPod].affinityRules[j].isRequired == 0 ->
+		:: d[curD].affinityRules[j].isRequired == 0 ->
 			k = 0;
 			do
-			:: pods[curPod].affinityRules[j].matchedNode[k] != -1 ->
+			:: d[curD].affinityRules[j].matchedNode[k] != -1 ->
 				if 
-				:: nodes[pods[curPod].affinityRules[j].matchedNode[k]].score != -1 ->
-					nodes[pods[curPod].affinityRules[j].matchedNode[k]].curScore += pods[curPod].affinityRules[j].weight;
+				:: nodes[d[curD].affinityRules[j].matchedNode[k]].score != -1 ->
+					nodes[d[curD].affinityRules[j].matchedNode[k]].curScore = nodes[d[curD].affinityRules[j].matchedNode[k]].curScore + d[curD].affinityRules[j].weight;
 				:: else->;
 				fi;
 				k++;
@@ -184,11 +184,11 @@ inline taintTolerationScore()
 {
 	j = 0;
 	do
-	:: j < numPreferNoScheduleNode ->
-		k = preferNoScheduleNode[j];
+	:: j < d[curD].numPreferNoScheduleNode ->
+		k = d[curD].preferNoScheduleNode[j];
 		if 
 		:: nodes[k].score != -1 ->
-			nodes[k].curScore += 1;
+			nodes[k].curScore++;
 		:: else->;
 	  	fi;
 	   j++;
@@ -226,25 +226,26 @@ inline nodeResourceFitScore()
 {
 	i = 0;
 	j = pods[curPod].deploymentId;
+	short cpuScore, memScore;
 	do 
 	::	i < NODE_NUM+1 ->
 		if
 		:: nodes[i].score != -1 ->
 			if 
-			:: STRATEGY_RESOURCE == 1 ->
-				short cpuScore, memScore;
-				cpuScore = ((nodes[i].cpuLeft - d[j].cpuRequested) * MAX_NODE_SCORE / nodes[i].cpuLeft) * 1;
-				memScore = ((nodes[i].memLeft - d[j].memRequested) * MAX_NODE_SCORE / nodes[i].memLeft) * 1;
-				nodes[i].score += ((cpuScore+memScore) * NODE_RESOURCE_FIT / 2 )
-			:: STRATEGY_RESOURCE == 2 ->
-				short cpuScore, memScore;
-				cpuScore = ((d[j].cpuRequested) * MAX_NODE_SCORE / nodes[i].cpuLeft) * 1;
-				memScore = ((d[j].memRequested) * MAX_NODE_SCORE / nodes[i].memLeft) * 1;
-				nodes[i].score += ((cpuScore+memScore) * NODE_RESOURCE_FIT / 2 )
-			:: else -> 
-				printf("No/Wrong scheduling strategy defined!");
-				assert(false);
+				:: STRATEGY_RESOURCE == 1 ->
+					cpuScore = ((nodes[i].cpuLeft - d[j].cpuRequested) * MAX_NODE_SCORE / nodes[i].cpuLeft) * 1;
+					memScore = ((nodes[i].memLeft - d[j].memRequested) * MAX_NODE_SCORE / nodes[i].memLeft) * 1;
+					nodes[i].score = nodes[i].score + ((cpuScore+memScore) * NODE_RESOURCE_FIT / 2 )
+				:: STRATEGY_RESOURCE == 2 ->
+					cpuScore = ((d[j].cpuRequested) * MAX_NODE_SCORE / nodes[i].cpuLeft) * 1;
+					memScore = ((d[j].memRequested) * MAX_NODE_SCORE / nodes[i].memLeft) * 1;
+					nodes[i].score = nodes[i].score + ((cpuScore+memScore) * NODE_RESOURCE_FIT / 2 )
+				:: else -> 
+					printf("No/Wrong scheduling strategy defined!");
+					assert(false);
 			fi;
+		:: else->;
+		fi;
 		i++;
 	:: else -> break;
 	od;
@@ -252,7 +253,7 @@ inline nodeResourceFitScore()
 
 /* May not implement for now, as it is suggested not to use it in large cluster. 
 inline interPodAffinity()
- {
+{
 	
 }
 */

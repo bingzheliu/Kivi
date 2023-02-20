@@ -5,7 +5,6 @@ proctype event_cpu_change()
 	bit direction;
 	int i;
 
-
 L1:	do
 	:: true -> 
 		atomic {
@@ -23,20 +22,20 @@ L1:	do
 			printf("CPU change %d on pod %d\n", cpu_change, pod_selected);
 
 			if 
-			:: (pod[pod_selected].status == 1) ->
+			:: (pods[pod_selected].status == 1) ->
 				if
-				:: pod[pod_selected].cpu + cpu_change < 0 -> 
-					pod[pod_selected].cpu = 0;
-				:: pod[pod_selected].cpu + cpu_change > POD_CPU_THRE ->
-					pod[pod_selected].cpu = POD_CPU_THRE;
+				:: pods[pod_selected].cpu + cpu_change < 0 -> 
+					pods[pod_selected].cpu = 0;
+				:: pods[pod_selected].cpu + cpu_change > POD_CPU_THRE ->
+					pods[pod_selected].cpu = POD_CPU_THRE;
 				:: else ->
-					pod[pod_selected].cpu = pod[pod_selected].cpu+cpu_change;
+					pods[pod_selected].cpu = pods[pod_selected].cpu+cpu_change;
 				fi;
 			:: else-> goto L1;
 			fi;
 
-			pod_cpu_change_status = 1;
-
+			hpaQueue[hpaTail] = pods[pod_selected].deploymentId;
+			hpaTail ++;
 
 			i = 0;
 			cpu_change = 0;

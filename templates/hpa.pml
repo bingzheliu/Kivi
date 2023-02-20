@@ -1,75 +1,200 @@
 // hpa
+// 1. HPA object is created per deployment/resource. In the implementation, all the HPA objects are maintained by an HPA controller. HPA controller is implemented with a queue of events. But these events are actually periodically added to the HPA (by controller-manager). So instead of implemeting the period events, we just make it triggered by any resource changes, to simplify and make it scale better by avoiding unuseful execuation. TODO: I have not figured out how controller-manager enqueue the events for HPA. 
+// 2. HPA look into all the desired state in a stablizationWindows and choose the largest one for scale down. We currently don't model this. 
+// 3. HPA has different types of config for metrics, and we currently don't distingish between them, rather, we directly use the metric name. 
+//		config examples:
+//				PodsMetricSourceType: use metricSpec.Pods.Target.AverageValue.MilliValue(), non-utlization
+//						- We don't model the case there exists unready and missing pods for now
+// 				ResourceMetricSourceType: resource target. 
+// 4. We currently do not support "behavior" for HPA.
 
-#define HPA_THRE 4
-#define HPA_TOLERANCE 1
-#define POD_CPU_THRE 12
-#define MIN_REPLICAS 2
-#define MAX_REPLICAS [$MAX_REPLICAS]
 
-
-proctype hpa()
+// 1. We don't consider unreadyPods and missingPods for now
+// 2. For metrics, we just get the current raw metrics, rather than within a timewindows (i.e., GetRawMetric)
+// 3. TargetValue must be more than 1; if it's utlization, should be 100-based value. 
+// 4. The resource request should be stored as per container. As we don't model container, we got the request from the Pod spec instead.
+// 5. We only model PodMetricSourceType and ResourceMetricSourceType for now.
+inline computeReplicasForMetric(curMetricName, curMetricTarget, curMetricType)
 {
-	int i;
-	int pod_total_thre, pod_total_thre_tolence_upper, pod_total_thre_tolence_lower;
-	int cpu_usage_total;
+	metricNameProposal = curMetricName;
+	j = 0;
+	k = 0;
+	// use status replicas for calculating the actual usage.
+	short metricsTotal = 0, requestTotal = 0, totalReplicas = d[curD].replicas;
+	do
+		:: j < totalReplicas ->
+			k = d[curD].replicaSets[d[curD].curVersion].podIds[j];
+			// assuming all the pods are good. Can add the code to process unready pods here. 
+			if 
+				// values
+				:: curMetricType == 0 ->
+					if
+						// CPU usage
+						:: curMetricName == 0->
+							metricsTotal = metricsTotal + pods[k].cpu;
+						// Mem usage
+						:: curMetricName == 1->
+							metricsTotal = metricsTotal + pods[k].memory;
+						:: else->
+							printf("Invalid metric name");
+							assert(false);
+					fi;
+				// utlization
+				:: curMetricType == 1 ->
+					 if
+						// CPU usage
+						:: curMetricName == 0->
+							metricsTotal = metricsTotal + pods[k].cpu;
+							requestTotal = requestTotal + d[pods[k].deploymentId].cpuRequested;
+						// Mem usage
+						:: curMetricName == 1->
+							metricsTotal = metricsTotal + pods[k].memory;
+							requestTotal = requestTotal + d[pods[k].deploymentId].memRequested;
+						:: else->
+							printf("Invalid metric name");
+							assert(false);
+					fi;
+				:: else -> 
+					printf("Invalid metric type");
+			fi;
+			j++;
+		:: else->;
+	od;
+
+	short currentUsage = 0;
+	if
+		:: curMetricType == 0 ->
+			currentUsage = metricsTotal / totalReplicas;
+		:: curMetricType == 1 ->
+			currentUsage = metricsTotal * 100 / requestTotal;
+	fi;
+
+	//  math.Abs(1.0-usageRatio) <= c.tolerance
+	if
+		:: ((curMetricTarget - currentUsage) <= (HPA_TOLERANCE*curMetricTarget)) || ((currentUsage - curMetricTarget) <= (HPA_TOLERANCE*curMetricTarget)) ->
+			replicaCountProposal = d[curD].specReplicas;
+		:: else -> 
+			// estimate: this should be ceil, but we estimate as floor
+			if
+				:: curMetricType == 0 ->
+					replicaCountProposal = metricsTotal / curMetricTarget;
+				:: curMetricType == 1 ->
+					replicaCountProposal = currentUsage * totalReplicas / curMetricTarget
+			fi;
+			
+	fi;
+}
+
+inline computeReplicasForMetrics()
+{
+	i = 0;
+	short replicaCountProposal = 0, metricNameProposal = 0, timestampProposal = 0;
 
 	do
-	:: (pod_cpu_change_status == 1) ->
-		atomic{
-			// let's keep everything in int for now. in fact, the HPA_TOLERENCE can be float
-			pod_total_thre = pod_total*HPA_THRE;
-			pod_total_thre_tolence_upper = pod_total*(HPA_THRE+HPA_TOLERANCE);
-			pod_total_thre_tolence_lower = pod_total*(HPA_THRE-HPA_TOLERANCE);
+		:: i < d[curD].hpaSpec.numMetrics->
+			computeReplicasForMetric(d[curD].hpaSpec.metricNames[i], d[curD].hpaSpec.metricTargets[i], d[curD].hpaSpec.metricTypes[i]);
+			if
+				:: (replicas == 0) || (replicaCountProposal > replicas) ->
+					timestamp = timestampProposal;
+					replicas = replicaCountProposal;
+					metric = metricNameProposal;
+				:: else->;
+			fi;
+			i++;
+		:: else -> break;
+	od;
+	// We assume all the metrics are valid for now, and we don't do the post-processing
+}
 
-			i = 1;
-			cpu_usage_total = 0;
+inline convertDesiredReplicasWithRules()
+{
+	short scaleUpLimit = HPA_SCALE_UP_LIMIT_FACTOR*currentReplicas;
+	if
+		:: HPA_SCALE_UP_LIMIT_MIN > scaleUpLimit->
+			scaleUpLimit = HPA_SCALE_UP_LIMIT_MIN;
+		:: else->;
+	fi;
 
-			do
-			:: i < POD_NUM + 1 ->
-				cpu_usage_total = cpu_usage_total + (pod[i].cpu * pod[i].status);
-				i++;
-			:: else ->
-				break;
-			od;
+	short maximumAllowedReplicas = HPA_MAX_REPLICAS;
+	if
+		:: maximumAllowedReplicas > scaleUpLimit->
+			maximumAllowedReplicas = scaleUpLimit;
+		:: else->;
+	fi;
 
-			printf("cpu_usage_total %d\n", cpu_usage_total);
+	short minimumAllowedReplicas = HPA_MIN_REPLICAS;
+	if 
+		:: desiredReplicas < minimumAllowedReplicas ->
+			desiredReplicas = minimumAllowedReplicas;
+		:: desiredReplicas > maximumAllowedReplicas ->
+			desiredReplicas = maximumAllowedReplicas;
+		:: else->;
+	fi;
+}	
 
-			if 
-			:: cpu_usage_total > pod_total_thre ->
-				printf("cpu_usage_total: %d\n", cpu_usage_total);
+inline normalizeDesiredReplicas()
+{
+	// skipping the stabilizeRecommendation for now
+	convertDesiredReplicasWithRules();
+}
+
+// logic in func reconcileAutoscaler. 
+proctype hpa()
+{
+	short i = 0, j = 0, k = 0;
+	do
+		:: (hpaIndex < hpaTail) -> 
+			atomic{
+				// TODO: check, potentially can have issue because the curD can be shared acrose the controller
+				short curD = hpaQueue[hpaIndex];
+				short currentReplicas = d[curD].specReplicas;
+				short desiredReplicas = 0, rescaleMetric = 0;
+				// [NS] Timestamp is not actually implemented.
+				short replicas = 0, timestamp = 0, metric = 0;
+
+				if
+					::d[curD].hpaSpec.isEnabled == 0 ->
+						goto hpa1;
+					::else->;
+				fi;
+
+				if
+					:: currentReplicas == 0 ->
+						desiredReplicas = 0;
+					:: else -> 
+						if
+							::currentReplicas > HPA_MAX_REPLICAS ->
+								printf("Current number of replicas above Spec.MaxReplicas");
+								desiredReplicas = HPA_MAX_REPLICAS;
+							::currentReplicas < HPA_MIN_REPLICAS ->
+								printf("Current number of replicas below Spec.MinReplicas");
+								desiredReplicas = HPA_MIN_REPLICAS;
+							::else->
+								computeReplicasForMetrics()
+								if 
+									:: replicas > desiredReplicas -> 
+										desiredReplicas = replicas;
+										rescaleMetric = metric;
+									:: else ->;
+								fi;
+
+								// not modeling normalizeDesiredReplicasWithBehaviors for now.
+								normalizeDesiredReplicas();
+						fi;
+				fi;
+
 
 				if 
-				:: cpu_usage_total > pod_total_thre_tolence_upper ->
-						 pod_num_exp = cpu_usage_total/HPA_THRE;
-						 printf("HPA capture pod number change: %d %d\n", pod_num_exp, pod_total);
-				:: else -> pod_num_exp = pod_total;
+					:: desiredReplicas != currentReplicas ->
+						// in k8s, it will trigger client-go.scale. Here we do it directly by writing into the deployment.
+						d[curD].specReplicas = desiredReplicas;
+					:: else->;
 				fi;
 
-						 // TODO: 1) divide  2) think about pod_exp_change v.s. num_pod_to_schedule
-			:: cpu_usage_total < pod_total_thre ->
-				if
-				:: cpu_usage_total < pod_total_thre_tolence_lower ->
-						 pod_num_exp = (cpu_usage_total/HPA_THRE)+1;
-						 printf("HPA capture pod number change: %d %d\n", pod_num_exp, pod_total);
-				:: else -> pod_num_exp = pod_total;
-				fi;
-			:: else -> pod_num_exp = pod_total;
-			fi;
-
-			if
-			:: pod_num_exp < MIN_REPLICAS -> pod_num_exp = MIN_REPLICAS;
-			:: pod_num_exp > MAX_REPLICAS -> pod_num_exp = MAX_REPLICAS;
-			:: else -> ;
-			fi;
-
-			printf("[HPA] pod_exp, pod_total: %d, %d\n", pod_num_exp, pod_total);
-			pod_cpu_change_status = 0;
-
-			i = 0;
-			pod_total_thre = 0;
-			pod_total_thre_tolence_upper = 0;
-			pod_total_thre_tolence_lower = 0;
-			cpu_usage_total = 0;
-		}
+hpa1:			hpaIndex ++;
+			}
+		:: else ->
+			printf("The HPA queue is full");
+			break;
 	od;
 }

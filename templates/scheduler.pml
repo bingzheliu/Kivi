@@ -3,16 +3,7 @@
 // 2. We don't model it as priority queue for now. Instead, every pod has an euqal priority and will be treated as FIFO. 
 // 3. We now only support single profile of the scheduling, in particular, the default one. But can be easily extend to support customized profile in the future. 
 
-#define SCHEDULER_THRE_NODE 1
-#define SCHEDULER_THRE_ZONE 1
-#define SCHEDULER_QUEUE_SIZE 100
-
 #include "scheduler_plugins.pml"
-
-// in controller_utils 
-short sQueue[DEPLOYMENT_QUEUE_SIZE];
-short sTail = 0;
-short sIndex = 0;
 
 /*-------------------------------
 Scheduling cycle
@@ -22,16 +13,16 @@ We don't distinguish between preScore, score and normalizeScore.
 Because we don't need to fit into the scheduling framework as they have, e.g. each score() function is for one node. Instead, it's enough to implement in two phases to capture the logic. 
 ---------------------------------*/
 
-inline filter()
+inline filtering()
 {
 	// All these filter are AND logic
-	nodeName();
+	nodeNameFilter();
 	nodeAffinityFilter();
 	taintTolerationFilter();
-	nodeResourceFitFilter();
+	// nodeResourceFitFilter();
 }
 
-inline score()
+inline scoring()
 {	
 	nodeAffinityScore();
 	taintTolerationScore();
@@ -63,7 +54,7 @@ inline selectHost()
 		if 
 		// the actual implementation choose the node randomly when several nodes have the same score. We may omit this detail, and choose the first one encountered. 
 		:: nodes[i].status > 0 && nodes[i].score > max ->
-				max = node[i].score;
+				max = nodes[i].score;
 				selectedNode = i;
 		:: else->;
 		fi
@@ -74,7 +65,7 @@ inline selectHost()
 	if
 	:: max == -1 -> 
 		printf("No feasiable node!");
-		assert(False);
+		assert(false);
 	:: else->;
 	fi;
 
@@ -85,10 +76,10 @@ inline selectHost()
 inline scheduleOne()
 {
 	//merged preFilter();
-	filter();
+	filtering();
 
 	//merged preScore();
-	score();
+	scoring();
 	//merged normalizeScore();
 
 	selectHost();
@@ -100,7 +91,7 @@ inline scheduleOne()
 inline checkIfUnschedulable()
 {
 	if
-	:: selectedNode == 0 && pod[curPod].important == 1 ->
+	:: selectedNode == 0 && pods[curPod].important == 1 ->
 		assert(false);
 	:: else->;
 	fi;
@@ -110,13 +101,13 @@ inline bindNode()
 {
 	nodes[selectedNode].numPod++;
 	//node[selectedNode].cpu_left = node[selectedNode].cpu_left - pod[curPod].cpu;
-	pods[curPod].loc = node[selectedNode].id;
+	pods[curPod].loc = nodes[selectedNode].id;
 	pods[curPod].status = 1;
 	pod_total++;
 
 	j = pods[curPod].deploymentId;
-	deployments[j].replicas ++;
-	deployments[j].replicaSets[deployments[j].curVersion]].replicas++;
+	d[j].replicas ++;
+	d[j].replicaSets[d[j].curVersion].replicas++;
 	j = 0;
 	// zone_num_pod[node[node_selected].zone]++;
 }
@@ -124,12 +115,13 @@ inline bindNode()
 proctype scheduler()
 {
 	short i = 0, j = 0, k = 0, max = 0;
-	printer("Scheduler started.");
+	printf("Scheduler started.");
 
 	do
 	:: (sIndex < sTail) ->
 		short curPod = sQueue[sIndex];
 		short selectedNode = 0;
+		short curD = pods[curPod].deploymentId;
 
 		printf("Attempting to schedule Pod %d\n", curPod);
 

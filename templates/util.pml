@@ -1,3 +1,5 @@
+
+
 inline test_duplication()
 {
 	atomic {

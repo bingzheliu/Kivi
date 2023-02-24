@@ -1,4 +1,4 @@
-#include "../templates/config.pml"
+#include "../temp/config.pml"
 #include "../templates/dataType.pml"
 
 // in controller_utils 
@@ -15,11 +15,11 @@ short hpaTail = 0;
 short hpaIndex = 0;
 
 
-deploymentType d[100];
-podType pods[100];
-nodeType nodes[100];
+deploymentType d[MAX_DEPLOYMENT];
+podType pods[MAX_POD];
+nodeType nodes[MAX_NODE];
 
-short pod_total;
+short podTotal;
 
 #include "../templates/util.pml"
 

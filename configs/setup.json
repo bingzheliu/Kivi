@@ -5,11 +5,19 @@
 		"pod_cpu_thre" : 12
 	},
 
-	"pod": [
-		
+	"deployment": [
+		{
+			
+		}	
 	],
 
 	"node" : [
+		{
+
+		}
+	],
+
+	"pod" : [
 		
 	],
 

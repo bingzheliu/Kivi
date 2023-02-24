@@ -37,7 +37,7 @@ inline helperFilter()
 		:: nodes[i].score == 1 ->
 			nodes[i].score = 0;
 		:: nodes[i].score == 0 ->
-			nodes[i].score == -1;
+			nodes[i].score = -1;
 		:: else->;
 		fi;
 		i++;
@@ -58,7 +58,7 @@ inline nodeNameFilter()
 	do
 	:: i < NODE_NUM+1 ->
 		if
-		:: nodes[i].name == d[pods[curPod].deploymentId].nodeName && nodes[i].score != -1 -> nodes[i].score = 1;
+		:: ((d[pods[curPod].deploymentId].nodeName == 0) || (nodes[i].name == d[pods[curPod].deploymentId].nodeName)) && (nodes[i].score != -1) -> nodes[i].score = 1;
 		:: else->;
 		fi;
 		i++;
@@ -66,6 +66,9 @@ inline nodeNameFilter()
 	od;
 
 	helperFilter();
+
+	printf("Finished nodeNameFilter.\n")
+	printfNodeScore();
 }
 
 
@@ -77,14 +80,16 @@ inline nodeNameFilter()
 // 5. the addedAffinity and NodeAffinity are ANDed (and would be processed by pre-processors). 
 inline nodeAffinityFilter()
 {
+	bit flag = 1;
 	j = 0;
 	do
 	:: j < d[curD].numRules ->
 		if
 		:: d[curD].affinityRules[j].isRequired == 1 ->
 			k = 0;
+			flag = 0;
 			do
-			:: d[curD].affinityRules[j].matchedNode[k] != -1 ->
+			:: d[curD].affinityRules[j].matchedNode[k] != 0 ->
 				if 
 				:: nodes[d[curD].affinityRules[j].matchedNode[k]].score != -1 ->
 					nodes[d[curD].affinityRules[j].matchedNode[k]].score = 1;
@@ -99,7 +104,25 @@ inline nodeAffinityFilter()
 	:: else -> break;
 	od;
 
+	if 
+		:: flag == 1->
+			j = 1;
+			do
+			:: j < NODE_NUM+1 ->
+				if
+					:: nodes[j].score = -1 -> nodes[j].score = 1;
+					:: else->;
+				fi;
+				j++;
+			:: else -> break;
+			od;
+		:: else->;
+	fi;
+
 	helperFilter();
+
+	printf("Finished nodeAffinityFilter.\n")
+	printfNodeScore();
 }
 
 inline taintTolerationFilter()
@@ -111,6 +134,9 @@ inline taintTolerationFilter()
 	   j++;
 	:: else -> break;
 	od;
+
+	printf("Finished taintTolerationFilter.\n")
+	printfNodeScore();
 }
 
 
@@ -133,12 +159,33 @@ inline defaultNormalizeScoreAndWeight(reverse, weight)
 	:: else -> break;
 	od
 
+	if
+	:: max == 0 && reverse == 1 ->
+		i = 1;
+		do
+		:: i < NODE_NUM+1 ->
+			if 
+				:: nodes[i].score != -1 -> 
+					 nodes[i].curScore = MAX_NODE_SCORE;
+					 nodes[i].score = nodes[i].score + (nodes[i].curScore * weight);
+					 nodes[i].curScore = 0;
+				:: else->;
+			fi;
+			i++;
+		:: else -> break;
+		od;
+		goto s2;
+	:: max == 0 && reverse == 0 ->
+		goto s2;
+	:: else->;
+	fi;
+
 	i = 1;
 	do
 	:: i < NODE_NUM+1 ->
 		if
 		:: nodes[i].score != -1 -> 
-			nodes[i].curScore = (nodes[i].curScore * MAX_NODE_SCORE / nodes[i].curScore);
+			nodes[i].curScore = (nodes[i].curScore * MAX_NODE_SCORE / max);
 			if
 			:: reverse == 1 ->
 				nodes[i].curScore = MAX_NODE_SCORE - nodes[i].curScore;
@@ -150,7 +197,7 @@ inline defaultNormalizeScoreAndWeight(reverse, weight)
 		fi;
 		i++;
 	:: else -> break;
-	od
+s2:	od
 }
 
 inline nodeAffinityScore()
@@ -162,7 +209,7 @@ inline nodeAffinityScore()
 		:: d[curD].affinityRules[j].isRequired == 0 ->
 			k = 0;
 			do
-			:: d[curD].affinityRules[j].matchedNode[k] != -1 ->
+			:: d[curD].affinityRules[j].matchedNode[k] != 0 ->
 				if 
 				:: nodes[d[curD].affinityRules[j].matchedNode[k]].score != -1 ->
 					nodes[d[curD].affinityRules[j].matchedNode[k]].curScore = nodes[d[curD].affinityRules[j].matchedNode[k]].curScore + d[curD].affinityRules[j].weight;
@@ -178,6 +225,9 @@ inline nodeAffinityScore()
 	od;
 
 	defaultNormalizeScoreAndWeight(0, NODE_AFFINITY_WEIGHT);
+
+	printf("Finished nodeAffinityScore.\n")
+	printfNodeScore();
 }
 
 inline taintTolerationScore()
@@ -196,24 +246,30 @@ inline taintTolerationScore()
 	od;
 
 	defaultNormalizeScoreAndWeight(1, TAINT_WEIGHT);
+
+	printf("Finished taintTolerationScore.\n")
+	printfNodeScore();
 }
 
 
 // we only model allowedPod, CPU and mem for now. 
 inline nodeResourcesFitFilter()
 {	
-	i = 0;
+	i = 1;
 	j = pods[curPod].deploymentId;
 	do 
 	::	i < NODE_NUM+1 ->
 		if
-		::  (d[j].cpuRequested > nodes[i].cpuLeft) or (d[j].memRequested > nodes[i].memLeft) or (nodes[i].numPod + 1) > NODE_ALLOWED_POD_NUM -> 
+		::  (d[j].cpuRequested > nodes[i].cpuLeft) || (d[j].memRequested > nodes[i].memLeft) || (nodes[i].numPod + 1) > NODE_ALLOWED_POD_NUM -> 
 			nodes[i].score = -1;
 		:: else->;
 		fi;
 		i++;
 	:: else -> break;
 	od;
+
+	printf("Finished nodeResourcesFitFilter.\n")
+	printfNodeScore();
 }
 
 /*
@@ -224,7 +280,7 @@ inline nodeResourcesFitFilter()
 */
 inline nodeResourceFitScore()
 {
-	i = 0;
+	i = 1;
 	j = pods[curPod].deploymentId;
 	short cpuScore, memScore;
 	do 
@@ -241,7 +297,7 @@ inline nodeResourceFitScore()
 					memScore = ((d[j].memRequested) * MAX_NODE_SCORE / nodes[i].memLeft) * 1;
 					nodes[i].score = nodes[i].score + ((cpuScore+memScore) * NODE_RESOURCE_FIT / 2 )
 				:: else -> 
-					printf("No/Wrong scheduling strategy defined!");
+					printf("No/Wrong scheduling strategy defined!\n");
 					assert(false);
 			fi;
 		:: else->;
@@ -249,6 +305,9 @@ inline nodeResourceFitScore()
 		i++;
 	:: else -> break;
 	od;
+
+	printf("Finished nodeResourceFitScore.\n")
+	printfNodeScore();
 }
 
 /* May not implement for now, as it is suggested not to use it in large cluster. 

@@ -1,10 +1,10 @@
 
 /*----------- k8s cluster setup ------------*/
-#define MAX_POD [$MAX_POD]
-#define MAX_NODE [$MAX_NODE]
-#define MAX_DEPLOYMENT [$MAX_DEPLOYMENT]
-#define NODE_NUM [$NODE_NUM]
-#define POD_NUM [$POD_NUM]
+#define MAX_POD 23
+#define MAX_NODE 7
+#define MAX_DEPLOYMENT 5
+#define NODE_NUM 4
+#define POD_NUM 20
 #define POD_CPU_THRE 64
 #define NODE_ALLOWED_POD_NUM 80
 

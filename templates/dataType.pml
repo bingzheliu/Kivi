@@ -3,10 +3,10 @@ typedef nodeType {
 	short name;
 	short zone;
 
-	unsigned cpu : 6;
-	unsigned cpuLeft : 6;
-	unsigned mem : 6;
-	unsigned memLeft : 6;
+	short cpu;
+	short cpuLeft;
+	short memory;
+	short memLeft;
 
 	bit status;
 	short numPod;
@@ -42,7 +42,7 @@ typedef podType {
 	/*----internal----*/
 	short score;
 	//short num_deschedule;
-	short toDelete;
+	// short toDelete;
 
 	// used for invariants
 	bit important;
@@ -60,6 +60,7 @@ typedef replicaSetType {
 	short version;
 	
 	/*****internal****/
+	// when use each podId, need to check whether 1) podIds is 0, or 2) the related pod status is 0. The index can be larger than replicas.
 	short podIds[MAX_POD];
 
 }
@@ -78,15 +79,15 @@ typedef affinityRule{
 	bit isRequired;
 	// weight: [1:100]
 	short weight;
-	// We pre-processed the regex when generated the model. valid until hit value == -1.
-	short matchedNode[NODE_NUM];
+	short numMatchedNode;
+	short matchedNode[MAX_NODE];
 }
 
 
 typedef deploymentType {
 	short id;
 	// TODO: decide if we need status or if we need to delete it, status includes progressing, available.
-	short statusType; 
+	// short statusType; 
 	bit status;
 
 	replicaSetType replicaSets[2];
@@ -124,7 +125,7 @@ typedef deploymentType {
 		preferNoScheduleNode: stores a list of node name (can be duplicated, meaning there's multiple taint for that node) that is preferNoScheduleNode. Assuming # of preferred taint is less than 2 in average for node. 
 	*/
 	short numNoScheduleNode;
-	short noScheduleNode[NODE_NUM];
+	short noScheduleNode[MAX_NODE];
 	short numPreferNoScheduleNode;
 	short preferNoScheduleNode[NODE_NUM*2];
 	

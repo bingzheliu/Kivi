@@ -11,10 +11,6 @@
 		"TOLERANCE" : 1
 	},
 
-	"deployment" : {
-		"MIN_REPLICAS" : 2,
-		"MAX_REPLICAS" : 10
-	}
 
 }
 

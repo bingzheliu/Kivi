@@ -1,12 +1,14 @@
-// hpa
-// 1. HPA object is created per deployment/resource. In the implementation, all the HPA objects are maintained by an HPA controller. HPA controller is implemented with a queue of events. But these events are actually periodically added to the HPA (by controller-manager). So instead of implemeting the period events, we just make it triggered by any resource changes, to simplify and make it scale better by avoiding unuseful execuation. TODO: I have not figured out how controller-manager enqueue the events for HPA. 
-// 2. HPA look into all the desired state in a stablizationWindows and choose the largest one for scale down. We currently don't model this. 
-// 3. HPA has different types of config for metrics, and we currently don't distingish between them, rather, we directly use the metric name. 
-//		config examples:
-//				PodsMetricSourceType: use metricSpec.Pods.Target.AverageValue.MilliValue(), non-utlization
-//						- We don't model the case there exists unready and missing pods for now
-// 				ResourceMetricSourceType: resource target. 
-// 4. We currently do not support "behavior" for HPA.
+/*
+	 HPA controller. Author: Bingzhe Liu. 02/20/2023.
+	 1. HPA object is created per deployment/resource. In the implementation, all the HPA objects are maintained by an HPA controller. HPA controller is implemented with a queue of events. But these events are actually periodically added to the HPA (by controller-manager). So instead of implemeting the period events, we just make it triggered by any resource changes, to simplify and make it scale better by avoiding unuseful execuation. TODO: I have not figured out how controller-manager enqueue the events for HPA. 
+	 2. HPA look into all the desired state in a stablizationWindows and choose the largest one for scale down. We currently don't model this. 
+	 3. HPA has different types of config for metrics, and we currently don't distingish between them, rather, we directly use the metric name. 
+		config examples:
+					PodsMetricSourceType: use metricSpec.Pods.Target.AverageValue.MilliValue(), non-utlization
+						- We don't model the case there exists unready and missing pods for now
+ 					ResourceMetricSourceType: resource target. 
+	 4. We currently do not support "behavior" for HPA.
+*/
 
 
 // 1. We don't consider unreadyPods and missingPods for now
@@ -19,24 +21,33 @@ inline computeReplicasForMetric(curMetricName, curMetricTarget, curMetricType)
 	metricNameProposal = curMetricName;
 	j = 0;
 	k = 0;
+	p = 0;
 	// use status replicas for calculating the actual usage.
 	short metricsTotal = 0, requestTotal = 0, totalReplicas = d[curD].replicas;
 	do
-		:: j < totalReplicas ->
+		:: p < totalReplicas ->
 			k = d[curD].replicaSets[d[curD].curVersion].podIds[j];
+			printf("%d\n",j);
+			if 
+				:: k == 0 || pods[k].status == 0 -> 
+					goto hpa2;
+				:: else->
+					p++;
+			fi;
+
 			// assuming all the pods are good. Can add the code to process unready pods here. 
 			if 
 				// values
 				:: curMetricType == 0 ->
 					if
 						// CPU usage
-						:: curMetricName == 0->
+						:: curMetricName == 0 ->
 							metricsTotal = metricsTotal + pods[k].cpu;
 						// Mem usage
-						:: curMetricName == 1->
+						:: curMetricName == 1 ->
 							metricsTotal = metricsTotal + pods[k].memory;
 						:: else->
-							printf("Invalid metric name");
+							printf("Invalid metric name\n");
 							assert(false);
 					fi;
 				// utlization
@@ -51,15 +62,17 @@ inline computeReplicasForMetric(curMetricName, curMetricTarget, curMetricType)
 							metricsTotal = metricsTotal + pods[k].memory;
 							requestTotal = requestTotal + d[pods[k].deploymentId].memRequested;
 						:: else->
-							printf("Invalid metric name");
+							printf("Invalid metric name\n");
 							assert(false);
 					fi;
 				:: else -> 
-					printf("Invalid metric type");
+					printf("Invalid metric type\n");
 			fi;
-			j++;
-		:: else->;
+hpa2:		j++;
+		:: else->break;
 	od;
+
+	printf("Computing metric, metricsTotal is %d, requestTotal is %d\n", metricsTotal, requestTotal)
 
 	short currentUsage = 0;
 	if
@@ -68,10 +81,11 @@ inline computeReplicasForMetric(curMetricName, curMetricTarget, curMetricType)
 		:: curMetricType == 1 ->
 			currentUsage = metricsTotal * 100 / requestTotal;
 	fi;
+	printf("Computing metric, currentUsage is %d\n", currentUsage)
 
 	//  math.Abs(1.0-usageRatio) <= c.tolerance
 	if
-		:: ((curMetricTarget - currentUsage) <= (HPA_TOLERANCE*curMetricTarget)) || ((currentUsage - curMetricTarget) <= (HPA_TOLERANCE*curMetricTarget)) ->
+		:: ((curMetricTarget - currentUsage) <= (HPA_TOLERANCE*curMetricTarget/100)) && ((currentUsage - curMetricTarget) <= (HPA_TOLERANCE*curMetricTarget/100)) ->
 			replicaCountProposal = d[curD].specReplicas;
 		:: else -> 
 			// estimate: this should be ceil, but we estimate as floor
@@ -108,7 +122,7 @@ inline computeReplicasForMetrics()
 
 inline convertDesiredReplicasWithRules()
 {
-	short scaleUpLimit = HPA_SCALE_UP_LIMIT_FACTOR*currentReplicas;
+	short scaleUpLimit = HPA_SCALE_UP_LIMIT_FACTOR * currentReplicas;
 	if
 		:: HPA_SCALE_UP_LIMIT_MIN > scaleUpLimit->
 			scaleUpLimit = HPA_SCALE_UP_LIMIT_MIN;
@@ -141,7 +155,7 @@ inline normalizeDesiredReplicas()
 // logic in func reconcileAutoscaler. 
 proctype hpa()
 {
-	short i = 0, j = 0, k = 0;
+	short i = 0, j = 0, k = 0, p = 0;
 	do
 		:: (hpaIndex < hpaTail) -> 
 			atomic{
@@ -164,10 +178,10 @@ proctype hpa()
 					:: else -> 
 						if
 							::currentReplicas > HPA_MAX_REPLICAS ->
-								printf("Current number of replicas above Spec.MaxReplicas");
+								printf("Current number of replicas above Spec.MaxReplicas\n");
 								desiredReplicas = HPA_MAX_REPLICAS;
 							::currentReplicas < HPA_MIN_REPLICAS ->
-								printf("Current number of replicas below Spec.MinReplicas");
+								printf("Current number of replicas below Spec.MinReplicas\n");
 								desiredReplicas = HPA_MIN_REPLICAS;
 							::else->
 								computeReplicasForMetrics()
@@ -177,24 +191,23 @@ proctype hpa()
 										rescaleMetric = metric;
 									:: else ->;
 								fi;
-
+								printf("Got new desiredReplicas %d\n", desiredReplicas)
 								// not modeling normalizeDesiredReplicasWithBehaviors for now.
 								normalizeDesiredReplicas();
 						fi;
 				fi;
 
-
 				if 
 					:: desiredReplicas != currentReplicas ->
+						printf("Need to rescale, scale metric is %d, orgional is %d, now is %d.\n", rescaleMetric, currentReplicas, desiredReplicas);
 						// in k8s, it will trigger client-go.scale. Here we do it directly by writing into the deployment.
 						d[curD].specReplicas = desiredReplicas;
+						dcQueue[dcTail] = curD;
+						dcTail++;
 					:: else->;
 				fi;
 
 hpa1:			hpaIndex ++;
 			}
-		:: else ->
-			printf("The HPA queue is full");
-			break;
 	od;
 }

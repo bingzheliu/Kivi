@@ -1,3 +1,10 @@
+# my ignore
+libs/Spin
+eval/pan*
+eval/main.pml.trail
+eval/results
+configs/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

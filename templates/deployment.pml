@@ -29,7 +29,7 @@ inline scorePods()
 	do
 	:: i < POD_NUM+1 ->
 		if 
-			:: pods[i].status == 1 && pods[i].deploymentId == curD ->
+			:: pods[i].status == 1 && pods[i].workloadId == curD && pods[i].workloadType == 1 ->
 				podsOnNode[pods[i].loc]++;
 			:: else->;
 		fi;
@@ -59,7 +59,7 @@ inline deleteAPod()
 	do
 	:: i < POD_NUM+1 ->
 		if 
-			:: pods[i].status == 1 && pods[i].deploymentId == curD ->
+			:: pods[i].status == 1 && pods[i].workloadId == curD && pods[i].workloadType == 1 ->
 				pods[i].score = podsOnNode[pods[i].loc];
 				if 
 				:: pods[i].score > cur_max ->
@@ -67,16 +67,16 @@ inline deleteAPod()
 					podSelected = i;
 				:: else->;
 				fi;
-				printf("pod score %d: %d; max: %d\n", i, pods[i].score, cur_max);
+				printf("[****]pod score %d: %d; max: %d\n", i, pods[i].score, cur_max);
 			:: else->;
 		fi;
 		i++;
 	:: else -> break;
 	od;
 
-	printf("Deleting pod %d\n", podSelected);
+	printf("[****]Deleting pod %d\n", podSelected);
 	// TODO: deal with the scenairo that the deletion failed. 
-	deleteAPodUpdate(d[pods[podSelected].deploymentId].replicaSets[d[pods[podSelected].deploymentId].curVersion]);
+	deleteAPodUpdate(d[pods[podSelected].workloadId].replicaSets[d[pods[podSelected].workloadId].curVersion]);
 }
 
 inline deletePods(numPods)
@@ -104,9 +104,8 @@ inline enqueuePods(batchSize)
 		:: j < POD_NUM+1 -> 
 			if
 			:: pods[j].status == 0 ->
-				pods[j].deploymentId = curD;
 				copyDeploymentInfoToPod(pods[j], curD);
-				printf("Adding a new pod %d to deployment %d\n", j, curD)
+				printf("[****]Adding a new pod %d to deployment %d\n", j, curD)
 				sQueue[sTail] = j;
 				sTail++;
 				break;
@@ -132,7 +131,7 @@ inline scale(curReplicaSet)
 	:: curReplicaSet.specReplicas <  curReplicaSet.replicas ->
 		// Let assume the deleting pods is atomic
 		atomic {
-			printf("Starting the deployment controller to delete pods\n");
+			printf("[****]Starting the deployment controller to delete pods\n");
 
 			short diff =  curReplicaSet.replicas - curReplicaSet.specReplicas;
 			deletePods(diff);
@@ -142,14 +141,14 @@ inline scale(curReplicaSet)
 			diff = 0;
 		}
 
-	:: else ->
+	:: curReplicaSet.specReplicas >  curReplicaSet.replicas ->
 		// do slowStartBatch, https://github.com/kubernetes/kubernetes/blob/98742f9d77a57aec44cc05b1daf721973fb029be/pkg/controller/replicaset/replica_set.go#L742
 		// may be simplified by not having these batch updates
 
 		atomic {
 			batchSize = SlowStartInitialBatchSize;
 			remaining = curReplicaSet.specReplicas - curReplicaSet.replicas;
-			printf("Too few replicas in replicaSet %d need to create %d\n", curReplicaSet.id, remaining);
+			printf("[****]Too few replicas in replicaSet %d need to create %d\n", curReplicaSet.id, remaining);
 		}
 		do
 		:: batchSize > 0 ->
@@ -165,6 +164,7 @@ inline scale(curReplicaSet)
 			}
 		:: else -> break;
 		od;
+	:: else->;
 	fi;
 }
 
@@ -206,7 +206,7 @@ inline rollout()
 /*****omitting*****/
 // rsc.burstReplicas
 
-
+// TODO: check on deployment trigger reason. If in bootstrapping, how it works?
 proctype deployment_controller()
 {
 	short i = 0, j = 0, k = 0, max = 0, podSelected = 0;
@@ -219,9 +219,11 @@ proctype deployment_controller()
 			:: (d[curD].specReplicas != d[curD].replicas) -> 
 				d[curD].replicaSets[d[curD].curVersion].specReplicas = d[curD].specReplicas;
 				scale(d[curD].replicaSets[d[curD].curVersion]);
-			:: else-> 
-				rollout();
+			// TODO: refine this rollout condition
+			:: else-> ;
+				//rollout();
 			fi;
+
 
 			hpaQueue[hpaTail] = curD;
 			hpaTail ++;

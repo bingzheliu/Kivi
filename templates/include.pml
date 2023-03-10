@@ -14,10 +14,11 @@ short hpaQueue[HPA_QUEUE_SIZE];
 short hpaTail = 0;
 short hpaIndex = 0;
 
-
+// All these arrays start at index 1
 deploymentType d[MAX_DEPLOYMENT];
 podType pods[MAX_POD];
-nodeType nodes[MAX_NODE];
+nodeType nodes[NODE_NUM+1];
+podTemplateType podTemplates[POD_TEMPLATE_NUM];
 
 short podTotal;
 
@@ -26,6 +27,9 @@ short podTotal;
 #include "../templates/deployment.pml"
 #include "../templates/scheduler.pml"
 #include "../templates/hpa.pml"
+#include "../templates/nodeController.pml"
 
 #include "../templates/event.pml"
 #include "../templates/userCommand.pml"
+
+

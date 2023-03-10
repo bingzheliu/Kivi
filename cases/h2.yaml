@@ -1,0 +1,33 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: mydeployment
+spec:
+  replicas: 6
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: "40%"
+      maxSurge: "50%"
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+        - name: myapp
+          image: "someimage"
+apiVersion: extensions/v1beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mydeployment
+  namespace: default
+spec:
+  scaleRef:
+    kind: Deployment
+    name: mydeployment
+    subresource: scale
+  minReplicas: 3
+  maxReplicas: 12
+  cpuUtilization:
+    targetPercentage: 50

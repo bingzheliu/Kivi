@@ -1,25 +1,61 @@
 
+
+// TODO: this is a passive event, may need to be distinguished 
+proctype kernelPanic(short i)
+{
+	int times = 0;
+
+	do 
+		:: nodes[i].status == 1 && nodes[i].cpuLeft * 100 / nodes[i].cpu <= 2 -> 
+			atomic{
+				times ++;
+				printf("[****]node %d kernel panic, times %d\n", i, times)
+				nodes[i].status = 0;
+				
+				if 
+					:: times > 5 ->
+						assert(false)
+					:: else->;
+				fi;
+
+				
+			}	
+	od;
+}
+
 proctype eventCpuChange(short targetDeployment)
 {
-	short cpu_change = 0, pod_selected = 0;
+	short cpu_change = 0, pod_selected = 0, index_selected = 0;
 	bit direction = 0;
-	int i = 0;
+	int i = 0, j = 0, k = 0;
 
 	do
 	:: i < 5 -> 
 		atomic {
 			// can we only select the pod from the running list?
 
-			select(pod_selected : 0 .. d[targetDeployment].replicaSets[d[targetDeployment].curVersion].replicas-1);
-			select(cpu_change : 1..4);
-			select(direction : 1..1);
+			d[targetDeployment].replicaSets[d[targetDeployment].curVersion].replicas != 0;
 
-			pod_selected = d[targetDeployment].replicaSets[d[targetDeployment].curVersion].podIds[pod_selected]
-			if 
-				:: (pods[pod_selected].status == 0) || (pods[pod_selected].deploymentId != targetDeployment) ->
-					assert(false)
-				:: else->;
-			fi;
+			select(index_selected : 0 .. d[targetDeployment].replicaSets[d[targetDeployment].curVersion].replicas-1);
+			select(cpu_change : 1 .. 4);
+			select(direction : 1 .. 1);
+
+			// Because some podIds can be invalid, so need to do a post-processing
+			j = 0;
+			k = 0;
+			printf("[****]Index %d is selected\n", index_selected)
+			do
+				:: j <= index_selected->
+					pod_selected = d[targetDeployment].replicaSets[d[targetDeployment].curVersion].podIds[k]
+					if
+						:: (pods[pod_selected].status == 0) || (pod_selected == 0)->
+							k++;
+						:: else->
+							j++;
+							k++;
+					fi;
+				:: else->break;
+			od;
 
 			if
 			:: direction == 0 ->
@@ -38,15 +74,20 @@ proctype eventCpuChange(short targetDeployment)
 			fi;
 			nodes[pods[pod_selected].loc].cpuLeft = nodes[pods[pod_selected].loc].cpuLeft - pods[pod_selected].cpu;
 
-			printf("CPU change %d on pod %d, now %d; node %d, now %d\n", cpu_change, pod_selected, pods[pod_selected].cpu, pods[pod_selected].loc, nodes[pods[pod_selected].loc].cpuLeft);
+			printf("[****]CPU change %d on pod %d, now %d; node %d, now %d\n", cpu_change, pod_selected, pods[pod_selected].cpu, pods[pod_selected].loc, nodes[pods[pod_selected].loc].cpuLeft);
 
-			hpaQueue[hpaTail] = pods[pod_selected].deploymentId;
-			hpaTail ++;
+			// Only support HPA for deployment for now.
+			if 
+				:: pods[pod_selected].workloadType == 1 ->
+					hpaQueue[hpaTail] = pods[pod_selected].workloadId;
+					hpaTail ++;
+				:: else ->;
+			fi;
 
 			i ++;
-			cpu_change = 0;
-			pod_selected = 0;
-			direction = 0;
+event_cpu_1:	cpu_change = 0;
+				pod_selected = 0;
+				direction = 0;
 		}
 	od;
 }

@@ -1,158 +1,232 @@
-# Part of the code borrowed from Plankton and Ali. 
+import json
+from processing_default import *
+from case_generator import *
 
-# class FattreeTopo():
-#  	def __init__(self, k):
-# 		self.cores = (k/2)**2
-# 		self.aggs = (k/2) * k
-# 	    self.edges = (k/2) * k
-# 	    self.hosts = (k/2)**2 * k
-	   
-# 	def generate_topo():
+# TODO: generator can be smarter, by recognizing the types, and process them iterative. 
+def array_generate(dic, key, dic_str, index, s_init):
+	if key in dic:
+		k = 0
+		for n in dic[key]:
+			s_init += (dic_str + "[" + str(index) + "]." + key + "[" + str(k) + "] = " + str(n) + "\n" )
+			k += 1
+		s_init += (dic_str + "[" + str(index) + "]." + key + "[" + str(k) + "] = " + str(0) + "\n" )
 
-import networkx as nx
+	return s_init
 
-def generate_fattree(k):
-	if k % 2 != 0:
-		raise ValueError('"k" has to be even')
+def generate_pod_template_init(json_config, s_init):
+	i = 1
+	other_type = ["affinityRules", "noScheduleNode", "preferNoScheduleNode", "labelKeyValue", "topoSpreadConstraints"]
+	for pt in json_config["podTemplates"]:
+		for e in pt:
+			if e not in other_type:
+				s_init += ("podTemplates[" + str(i) + "]." + e + " = " + str(pt[e]) + "\n" )
 
-	G = nx.Graph()
+		for e in ["noScheduleNode", "preferNoScheduleNode", "labelKeyValue"]:
+			s_init = array_generate(pt, e, "podTemplates", i, s_init)
 
-	## Nodes/Switches
-	# G.add_nodes(range(0, (k / 2) ** 2 + k ** 2))
-	index = 0
-	core_switches = range(index, index + (k // 2) ** 2)
-	index += len(core_switches)
-	agg_switches = range(index, index + (k ** 2) // 2)
-	index += len(agg_switches)
-	edge_switches = range(index, index + (k ** 2) // 2)
-	index += len(edge_switches)
-	hosts = range(index, index + (k ** 2))
-	#index += len(hosts)
-	print(edge_switches)
-	print(hosts)
+		if pt["numRules"] > 0:
+			k = 0
+			for a in pt["affinityRules"]:
+				s_init += ("podTemplates[" + str(i) + "].affinityRules[" + str(k) + "].isRequired = " + str(a["isRequired"]) + "\n" )
+				s_init += ("podTemplates[" + str(i) + "].affinityRules[" + str(k) + "].weight = " + str(a["weight"]) + "\n" )
+				s_init += ("podTemplates[" + str(i) + "].affinityRules[" + str(k) + "].numMatchedNode = " + str(a["numMatchedNode"]) + "\n" )
+				j = 0
+				for mn in a["matchedNode"]:
+					s_init += ("d[" + str(i) + "].affinityRules[" + str(k) + "].matchedNode[" + str(j) +  "] = " + str(mn) + "\n" )
+					j += 1
+				s_init += ("d[" + str(i) + "].affinityRules[" + str(k) + "].matchedNode[" + str(j) +  "] = " + str(0) + "\n" )
+				k += 1
 
-	## Core-Aggregation Links
-	for i, core in enumerate(core_switches):
-		for j in range(0, k):
-			agg = agg_switches[j * (k // 2) + i // (k // 2)]
-			G.add_edge(core, agg)
-			G.add_edge(agg, core)
+		if pt["numTopoSpreadConstraints"] > 0:
+			j = 0
+			other_type_pt = ["labelKey", "labelValue"]
+			for tcon in pt["topoSpreadConstraints"]:
+				for e in tcon:
+					if e not in other_type_pt:
+						s_init += ("podTemplates[" + str(i) + "].topoSpreadConstraints[" + str(j) + "]." + e + " = " + str(tcon[e]) + "\n" )
 
-	## Aggregation-Edge Links
-	for i, agg in enumerate(agg_switches):
-		for j in range(0, k // 2):
-			edge = edge_switches[(i - i % (k // 2)) + j]
-			G.add_edge(agg, edge)
-			G.add_edge(edge, agg)
+					else: 
+						k = 0
+						for n in tcon[e]:
+							s_init += ("podTemplates[" + str(i) + "].topoSpreadConstraints[" + str(j) + "]." + e + "[" + str(k) + "] = " + str(n) + "\n" )
+							k += 1
+						s_init += ("podTemplates[" + str(i) + "].topoSpreadConstraints[" + str(j) + "]." + e + "[" + str(k) + "] = " + str(0) + "\n" )
 
-	## Host-Edge Links
-	for i, edge in enumerate(edge_switches):
-		for j in range(0, 2):
-			host = hosts[j + i * 2]
-			#print(host)
-			G.add_edge(host, edge)
-			G.add_edge(edge, host)
-
-	return G, core_switches, edge_switches, hosts
-
-
-def add_to_path(h, stack, paths):
-	if h not in paths:
-		paths[h] = []
-	paths[h].append(stack.copy())
-
-def dfs_path(G, stack, hosts, paths):
-	cur = stack[-1]
-	for m in G[cur]:
-		if m in hosts:
-			add_to_path(m, stack, paths)
-		elif m not in stack:
-			stack.append(m)
-			dfs_path(G, stack, hosts, paths)
-			stack.pop()
-			#visited[m].add(m)
-
-def generate_edge_id(edge_id, G):
-	index = 0
-
-	for e in G.edges():
-		e0 = str(e[0])
-		e1 = str(e[1])
-		if e0 +"_"+e1 not in edge_id:
-			edge_id[e0+"_"+e1] = index
-			edge_id[e1+"_"+e0] = index
-		index = index + 1
-
-	print("edges", len(G.edges()), index)
+				j += 1
 
 
-def generate_topology(k):
-	import matplotlib.pyplot as plt
-	G,_,edge_switches,hosts = generate_fattree(k)
-	nx.draw_networkx(G)
-	plt.savefig('fattree%d.pdf' % k)
-	import json
-	with open('fattree%d.json' % k,'w') as f:
-		json.dump({"links": [list(map(str,list(l))) for l in G.edges()]},f, indent=2)
-	print("nodes ", len(G.nodes()))
-	print("links ", len(G.edges()))
-	print("edges", list(map(str, edge_switches)))
-	print("host", list(map(str, hosts)))
-	print(hosts)
+		i += 1
 
-	start_node = hosts[0]
-	print("start node:", start_node)
-	stack = []
-	stack.append(start_node)
-	paths = {}
-	dfs_path(G, stack, hosts, paths)
-	#print(paths)
-
-	edge_id = {}
-	generate_edge_id(edge_id, G)
-
-	assert_rechiable_node = ""
-	for h in paths:
-		if h != start_node:
-			assert_rechiable_node += "(node[%s].status & (" % (str(int(h)-len(hosts)))
-			for path in paths[h]:
-				assert_path = "("
-				for i in range(0, len(path)-1):
-					assert_path += "edge[%s].status &" % edge_id[str(path[i])+"_"+str(path[i+1])]
-
-				assert_path = assert_path[:-2]
-
-				assert_rechiable_node += assert_path + ") |"
-
-			assert_rechiable_node = assert_rechiable_node[:-2]
-
-			assert_rechiable_node += ")) +"
-
-	assert_rechiable_node = assert_rechiable_node[:-2]
-
-	#print(assert_rechiable_node)
-	return assert_rechiable_node, G, hosts
+	return s_init, i-1
 
 
-def main():
-	#topo = FattreeTopo(k=4)
-	k = 4
-	assert_rechiable_node, G, hosts = generate_topology(k)
+def generate_deployment_init(json_config, s_init):
+	i = 1
+	other_type = ["replicaSets", "hpaSpec"]
+	for d in json_config["d"]:
+		for e in d:
+			if e not in other_type:
+				s_init += ("d[" + str(i) + "]." + e + " = " + str(d[e]) + "\n" )
 
-	link_failure = 4
+		# assuming the first one is the default version
+		for e in d["replicaSets"][0]:
+			if e == "podIds":
+				k = 0
+				# TODO: may need to fill 0 into the rest of the array if that affect the performance
+				for p in d["replicaSets"][0][e]:
+					s_init += ("d[" + str(i) + "].replicaSets[0].podIds[" + str(k) + "] = " + str(p) + "\n" )
+					k += 1
+				s_init += ("d[" + str(i) + "].replicaSets[0].podIds[" + str(k) + "] = " + str(0) + "\n" )
+			else:
+				s_init += ("d[" + str(i) + "].replicaSets[0]." + e + " = " + str(d["replicaSets"][0][e]) + "\n" )
+		s_init += ("d[" + str(i) + "].replicaSets[1].id" + " = " + str(d["replicaSets"][1]["id"]) + "\n" )
+		s_init += ("d[" + str(i) + "].replicaSets[1].deploymentId" + " = " + str(i) + "\n" )
+		s_init += ("d[" + str(i) + "].replicaSets[1].replicas = 0\n" )
+		s_init += ("d[" + str(i) + "].replicaSets[1].specReplicas = 0\n" )
+		s_init += ("d[" + str(i) + "].replicaSets[1].version = 0\n" )
+		s_init += ("d[" + str(i) + "].replicaSets[1].podIds[0] = 0\n" )
 
-	with open("templete.pml", "r") as f:
-		pml = f.read()
-		pml = pml.replace("[$NODE_NUM]", str(len(hosts))) \
-				 .replace("[$EDGE_NUM]", str(len(G.edges()))) \
-				 .replace("[$LINK_FAILURE]", str(link_failure)) \
-				 .replace("[$MIN_NODE]", str(2)) \
-				 .replace("[$ASSERT1]", assert_rechiable_node) \
-				 .replace("[$EDGE_CAN_FAIL_INIT]", "")
+		s_init += ("d[" + str(i) + "].hpaSpec.isEnabled = " + str(d["hpaSpec"]["isEnabled"]) + "\n" )
+		s_init += ("d[" + str(i) + "].hpaSpec.numMetrics = " + str(d["hpaSpec"]["numMetrics"]) + "\n" )
+		if d["hpaSpec"]["isEnabled"] == 1:
+			k = 0
+			for j in d["hpaSpec"]["metricNames"]:
+				s_init += ("d[" + str(i) + "].hpaSpec.metricNames[" + str(k) + "] = " + str(j) + "\n" )
+				k += 1
 
-		fw = open("update_rollout_controller_fattree"+str(k)+".pml", "w")
-		fw.write(pml)
+			k = 0
+			for j in d["hpaSpec"]["metricTargets"]:
+				s_init += ("d[" + str(i) + "].hpaSpec.metricTargets[" + str(k) + "] = " + str(j) + "\n" )
+				k += 1
 
+			k = 0
+			for j in d["hpaSpec"]["metricTypes"]:
+				s_init += ("d[" + str(i) + "].hpaSpec.metricTypes[" + str(k) + "] = " + str(j) + "\n" )
+				k += 1
+
+		i += 1
+
+	return s_init, i-1
+
+def generate_node_init(json_config, s_init):
+	i = 1
+	for node in json_config["nodes"]:
+		for e in node:
+			# TODO: instead of getting an array from json, get the actual label processed here instead. 
+			if e == "labelKeyValue":
+				for l in range(0, len(node[e])):
+					s_init += ("nodes[" + str(i) + "].labelKeyValue[" + str(l) + "] = " + str(node[e][l]) + "\n")
+			else:
+				s_init += ("nodes[" + str(i) + "]." + e + " = " + str(node[e]) + "\n")
+
+		i += 1
+
+
+	return s_init, i-1
+
+def generate_pod_init(json_config, s_init):
+	i = 1 
+	for pod in json_config["pods"]:
+		for e in pod:
+			s_init += ("pods[" + str(i) + "]." + e + " = " + str(pod[e]) + "\n")
+		i += 1
+
+	return s_init, i-1
+
+
+def generate_controllers_events(s_proc):
+	if "controllers" in json_config:
+		for c in json_config["controllers"]:
+			if c not in default_controllers:
+				s_proc += ("run " + c + "();\n")
+
+	if "events" in json_config:
+		for c in json_config["events"]:
+			c_para = ""
+			for para in default_parameter_order[c]:
+				#print(c, para, c_para)
+				c_para += (str(json_config["events"][c][para]) + ",")
+			c_para = c_para[0:-1]
+			#print(c_para)
+			s_proc += ("run " + c + "(" + c_para + ");\n")
+
+	return s_proc
+
+def generate_user_command(s_user_command):
+	if "userCommand" in json_config:
+		for c in json_config["userCommand"]:
+			s_user_command += ("run " + str(c) + "(" + str(json_config["userCommand"][c]) + ");\n")
+			
+	return s_user_command
+
+def generate_model(json_config, pml_config, pml_main):
+	check_for_completion_add_default(json_config)
+
+	s_init = ""
+	s_init, node_num = generate_node_init(json_config, s_init)
+	s_init, pod_num = generate_pod_init(json_config, s_init)
+	s_init, deployment_num = generate_deployment_init(json_config, s_init)
+	s_init, pt_num = generate_pod_template_init(json_config, s_init)
 	
+	#print(s_init, node_num, pod_num, deployment_num, pt_num)
+
+	s_proc = ""
+	s_proc = generate_controllers_events(s_proc)
+
+	s_user_command = ""
+	s_user_command = generate_user_command(s_user_command)
+
+	#print(s_proc, s_user_command)
+	
+	pml_main = pml_main.replace("[$INIT_SETUP]", s_init) \
+					   .replace("[$CONTROLLERS]", s_proc) \
+					   .replace("[$USER_COMMAND]", s_user_command)
+
+	pml_config = pml_config.replace("[$MAX_POD]", str(pod_num+3)) \
+						   .replace("[$NODE_NUM]", str(node_num)) \
+						   .replace("[$POD_NUM]", str(pod_num)) \
+						   .replace("[$MAX_NODE]", str(node_num+3)) \
+						   .replace("[$MAX_DEPLOYMENT]", str(deployment_num+3)) \
+						   .replace("[$DEP_NUM]", str(deployment_num)) \
+						   .replace("[$POD_TEMPLATE_NUM]", str(pt_num+2)) 
+
+	return pml_config, pml_main
+
+	# with open("templete.pml", "r") as f:
+	# 	pml = f.read()
+	# 	pml = pml.replace("[$NODE_NUM]", str(len(hosts))) \
+	# 			 .replace("[$EDGE_NUM]", str(len(G.edges()))) \
+	# 			 .replace("[$LINK_FAILURE]", str(link_failure)) \
+	# 			 .replace("[$MIN_NODE]", str(2)) \
+	# 			 .replace("[$ASSERT1]", assert_rechiable_node) \
+	# 			 .replace("[$EDGE_CAN_FAIL_INIT]", "")
+
+	# 	fw = open("update_rollout_controller_fattree"+str(k)+".pml", "w")
+	# 	fw.write(pml)
+
 if __name__ == '__main__':
-	main()
+	file_base = sys.argv[1]
+	case_id = sys.argv[2]
+	scale = sys.argv[3]
+
+	filename = file_base + "/configs/" + str(sys.argv[2]) + "_" + str(sys.argv[3]) + ".json"
+	case_generator(filename, case_id, scale)
+
+	with open(filename) as f:
+		json_config = json.load(f)
+
+	with open(file_base + "/templates/config.pml") as f:
+		pml_config =f.read()
+
+	with open(file_base + "/templates/main.pml") as f:
+		pml_main =f.read()
+
+	pml_config, pml_main = generate_model(json_config, pml_config, pml_main)
+
+	with open(file_base + "/temp/config.pml", "w") as f:
+		f.write(pml_config)
+
+	with open(file_base + "/temp/main.pml", "w") as f:
+		f.write(pml_main)
+
+

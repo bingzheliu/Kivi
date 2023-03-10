@@ -8,10 +8,23 @@ proctype createDeployment(short maxDeploymentId)
 {
 	atomic{
 		short curD;
-		select(curD : 0..maxDeploymentId);
+		select(curD : 0 .. maxDeploymentId);
 
 		dcQueue[dcTail] = curD;
 		dcTail++;
+	}
+}
+
+proctype createTargetDeployment(short deploymentId)
+{
+	atomic{
+		if 
+			:: d[deploymentId].status == 0 ->
+				d[deploymentId].status = 1;
+				dcQueue[dcTail] = deploymentId;
+				dcTail++;
+			:: else ->;
+		fi;
 	}
 }
 

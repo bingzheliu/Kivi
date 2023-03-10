@@ -8,5 +8,5 @@ init {
 	run hpa();
 
 	run createDeployment(3);
-	run event_cpu_change();
+	run eventCpuChange(2);
 }

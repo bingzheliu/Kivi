@@ -73,7 +73,7 @@ L1:	do
 			:: else->;
 			fi;
 
-			printf("CPU change %d on pod %d\n", cpu_change, pod_selected);
+			printf("[****]CPU change %d on pod %d\n", cpu_change, pod_selected);
 
 			if 
 			:: (pod[pod_selected].status == 1) ->
@@ -125,16 +125,16 @@ proctype hpa()
 				break;
 			od;
 
-			printf("cpu_usage_total %d\n", cpu_usage_total);
+			printf("[****]cpu_usage_total %d\n", cpu_usage_total);
 
 			if 
 			:: cpu_usage_total > pod_total_thre ->
-				printf("cpu_usage_total: %d\n", cpu_usage_total);
+				printf("[****]cpu_usage_total: %d\n", cpu_usage_total);
 
 				if 
 				:: cpu_usage_total > pod_total_thre_tolence_upper ->
 						 pod_num_exp = cpu_usage_total/HPA_THRE;
-						 printf("HPA capture pod number change: %d %d\n", pod_num_exp, pod_total);
+						 printf("[****]HPA capture pod number change: %d %d\n", pod_num_exp, pod_total);
 				:: else -> pod_num_exp = pod_total;
 				fi;
 
@@ -143,7 +143,7 @@ proctype hpa()
 				if
 				:: cpu_usage_total < pod_total_thre_tolence_lower ->
 						 pod_num_exp = (cpu_usage_total/HPA_THRE)+1;
-						 printf("HPA capture pod number change: %d %d\n", pod_num_exp, pod_total);
+						 printf("[****]HPA capture pod number change: %d %d\n", pod_num_exp, pod_total);
 				:: else -> pod_num_exp = pod_total;
 				fi;
 			:: else -> pod_num_exp = pod_total;
@@ -155,7 +155,7 @@ proctype hpa()
 			:: else -> ;
 			fi;
 
-			printf("[HPA] pod_exp, pod_total: %d, %d\n", pod_num_exp, pod_total);
+			printf("[****][HPA] pod_exp, pod_total: %d, %d\n", pod_num_exp, pod_total);
 			pod_cpu_change_status = 0;
 
 			i = 0;
@@ -176,7 +176,7 @@ proctype scheduler()
 
 	do
 	:: (pod_num_exp>pod_total) -> 
-		printf("Starting scheduler, %d, %d\n", pod_num_exp, pod_total)
+		printf("[****]Starting scheduler, %d, %d\n", pod_num_exp, pod_total)
 		atomic{
 			// assign a pod data structure to the new pod
 			i = 1;
@@ -275,7 +275,7 @@ L2:				if
 			od
 			// not deal with no node meeting with expectation
 
-			printf("Pod %d is scheduled on node %d, with score %d\n", pod_selected, node_selected, max);
+			printf("[****]Pod %d is scheduled on node %d, with score %d\n", pod_selected, node_selected, max);
 
 			node[node_selected].pod_num++;
 			node[node_selected].cpu_left = node[node_selected].cpu_left - pod[pod_selected].cpu;
@@ -321,7 +321,7 @@ proctype descheduler()
 	// not to implement more complicated pod filtering for now; 
 L4:	do
 	:: 	test_duplication() -> 
-		printf("There's duplicated pods more than %d on node.\n", MAX_DUPLICATE_REPLICA);
+		printf("[****]There's duplicated pods more than %d on node.\n", MAX_DUPLICATE_REPLICA);
 		atomic {
 			i = 1;
 			do
@@ -342,7 +342,7 @@ L4:	do
 
 			// not processed the case where there's no pod left, which should be elimited becase of the pre-condition test_duplication
 			// deleting the pod
-			printf("[descheduler] removing pod %d from node %d...\n", pod_selected, pod[pod_selected].loc)
+			printf("[****][descheduler] removing pod %d from node %d...\n", pod_selected, pod[pod_selected].loc)
 			node[pod[pod_selected].loc].pod_num--;
 			node[pod[pod_selected].loc].cpu_left = node[pod[pod_selected].loc].cpu_left + pod[pod_selected].cpu;
 			zone_num_pod[node[pod[pod_selected].loc].zone]--;
@@ -373,7 +373,7 @@ proctype deployment_controller()
 	// delete one pod at one time, can't do batch now
 	do
 	:: (pod_num_exp<pod_total) -> 
-		printf("Starting the deployment controller to delete pods, %d, %d\n", pod_num_exp, pod_total);
+		printf("[****]Starting the deployment controller to delete pods, %d, %d\n", pod_num_exp, pod_total);
 		atomic {
 			// according to https://github.com/kubernetes/kubernetes/blob/3ffdfbe286ebcea5d75617da6accaf67f815e0cf/pkg/controller/replicaset/replica_set.go#L848
 			// sort the pod according to the number of related pod
@@ -390,7 +390,7 @@ proctype deployment_controller()
 								pod_selected = i;
 						:: else->;
 						fi;
-						printf("pod score %d: %d; max: %d", i, pod[i].score, max);
+						printf("[****]pod score %d: %d; max: %d", i, pod[i].score, max);
 					:: else->;
 				fi;
 				i++
@@ -399,7 +399,7 @@ proctype deployment_controller()
 
 			// not processed the case where there's no pod left, which should be elimited becase of the pre-condition pod_num_exp<pod_total
 			// deleting the pod
-			printf("[deployment] removing pod %d from node %d...\n", pod_selected, pod[pod_selected].loc)
+			printf("[****][deployment] removing pod %d from node %d...\n", pod_selected, pod[pod_selected].loc)
 			node[pod[pod_selected].loc].pod_num--;
 			node[pod[pod_selected].loc].cpu_left = node[pod[pod_selected].loc].cpu_left + pod[pod_selected].cpu;
 			zone_num_pod[node[pod[pod_selected].loc].zone]--;
@@ -532,11 +532,11 @@ init {
 		// num_pod_to_schedule = 0;
 
 
-		printf("After init...\n");
+		printf("[****]After init...\n");
 		i = 1;
 		do 
 		:: i < ZONE_NUM + 1 ->
-			printf("zone %d: %d\n", i, zone_num_pod[i]);
+			printf("[****]zone %d: %d\n", i, zone_num_pod[i]);
 			i++;
 		:: else -> break;
 		od;
@@ -544,7 +544,7 @@ init {
 		i = 1;
 		do
 		:: i < NODE_NUM + 1 ->
-			printf("Node %d: %d, cpu left %d\n", i, node[i].pod_num, node[i].cpu_left);
+			printf("[****]Node %d: %d, cpu left %d\n", i, node[i].pod_num, node[i].cpu_left);
 			i++;
 		:: else -> break;
 		od;

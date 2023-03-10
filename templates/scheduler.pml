@@ -4,7 +4,7 @@
 	2. We don't model it as priority queue for now. Instead, every pod has an euqal priority and will be treated as FIFO. 
 	3. We now only support single profile of the scheduling, in particular, the default one. But can be easily extend to support customized profile in the future. 
 */
-#include "scheduler_plugins.pml"
+#include "schedulerPlugins.pml"
 
 /*-------------------------------
 		Scheduling cycle
@@ -17,17 +17,19 @@ Because we don't need to fit into the scheduling framework as they have, e.g. ea
 inline filtering()
 {
 	// All these filter are AND logic
-	nodeNameFilter();
-	nodeAffinityFilter();
-	taintTolerationFilter();
-	nodeResourcesFitFilter();
+	nodeNameFilter(podTemplates[pods[curPod].podTemplateId]);
+	nodeAffinityFilter(podTemplates[pods[curPod].podTemplateId]);
+	taintTolerationFilter(podTemplates[pods[curPod].podTemplateId]);
+	nodeResourcesFitFilter(podTemplates[pods[curPod].podTemplateId]);
+	// this plugin needs to execute after nodeAffinity and taint as it uses their results.
+	podTopologySpreadFiltering(podTemplates[pods[curPod].podTemplateId]);
 }
 
 inline scoring()
 {	
-	nodeAffinityScore();
-	taintTolerationScore();
-	nodeResourceFitScore();
+	nodeAffinityScore(podTemplates[pods[curPod].podTemplateId]);
+	taintTolerationScore(podTemplates[pods[curPod].podTemplateId]);
+	nodeResourceFitScore(podTemplates[pods[curPod].podTemplateId]);
 }	
 
 
@@ -45,6 +47,8 @@ inline clearNodeScore()
 			:: nodes[i].status == 0 ->
 				nodes[i].score = -1;
 				nodes[i].curScore = -1;
+				nodes[i].curAffinity = 0;
+				nodes[i].curTaint = 0;
 			:: else->;
 		fi;
 		i++;
@@ -72,12 +76,12 @@ inline selectHost()
 
 	if
 	:: max == -1 -> 
-		printf("No feasiable node!\n");
+		printf("[****]No feasiable node!\n");
 		assert(false);
 	:: else->;
 	fi;
 
-	printf("Pod %d is scheduled on node %d, with score %d\n", curPod, selectedNode, max);
+	printf("[****]Pod %d is scheduled on node %d, with score %d\n", curPod, selectedNode, max);
 }
 
 
@@ -115,12 +119,16 @@ inline bindNode()
 	pods[curPod].status = 1;
 	podTotal++;
 
-	j = pods[curPod].deploymentId;
-	d[j].replicas ++;
+	if 
+		:: pods[curPod].workloadType == 1 ->
+			j = pods[curPod].workloadId;
+			d[j].replicas ++;
 
-	k = d[j].replicaSets[d[j].curVersion].replicas;
-	updatePodIds(d[j].replicaSets[d[j].curVersion], curPod)
-	d[j].replicaSets[d[j].curVersion].replicas++;
+			k = d[j].replicaSets[d[j].curVersion].replicas;
+			updatePodIds(d[j].replicaSets[d[j].curVersion], curPod)
+			d[j].replicaSets[d[j].curVersion].replicas++;
+		:: else ->;
+	fi;
 
 	// zone_num_pod[node[node_selected].zone]++;
 }
@@ -128,24 +136,29 @@ inline bindNode()
 proctype scheduler()
 {
 	short i = 0, j = 0, k = 0, max = 0;
-	printf("Scheduler started.\n");
+	printf("[****]Scheduler started.\n");
 
 	do
 	:: (sIndex < sTail) ->
 		atomic{
 			short curPod = sQueue[sIndex];
 			short selectedNode = 0;
-			short curD = pods[curPod].deploymentId;
+			// TODO: support other types of workload resources
 
-			printf("Attempting to schedule Pod %d\n", curPod);
+			printf("[****]Attempting to schedule Pod %d\n", curPod);
 
 			clearNodeScore();
 			scheduleOne();
 			checkIfUnschedulable();
 			bindNode();
 
-			hpaQueue[hpaTail] = curD;
-			hpaTail ++;
+			// Only support HPA for deployment for now.
+			if 
+				:: pods[curPod].workloadType == 1 ->
+					hpaQueue[hpaTail] = pods[curPod].workloadId;
+					hpaTail ++;
+				:: else ->;
+			fi;
 
 			selectedNode = 0;
 			i = 0;

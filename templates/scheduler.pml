@@ -30,6 +30,7 @@ inline scoring()
 	nodeAffinityScore(podTemplates[pods[curPod].podTemplateId]);
 	taintTolerationScore(podTemplates[pods[curPod].podTemplateId]);
 	nodeResourceFitScore(podTemplates[pods[curPod].podTemplateId]);
+	podTopologySpreadScoring(podTemplates[pods[curPod].podTemplateId]);
 }	
 
 
@@ -76,12 +77,12 @@ inline selectHost()
 
 	if
 	:: max == -1 -> 
-		printf("[****]No feasiable node!\n");
+		printf("[*]No feasiable node!\n");
 		assert(false);
 	:: else->;
 	fi;
 
-	printf("[****]Pod %d is scheduled on node %d, with score %d\n", curPod, selectedNode, max);
+	printf("[**]Pod %d is scheduled on node %d, with score %d\n", curPod, selectedNode, max);
 }
 
 
@@ -136,7 +137,7 @@ inline bindNode()
 proctype scheduler()
 {
 	short i = 0, j = 0, k = 0, max = 0;
-	printf("[****]Scheduler started.\n");
+	printf("[**]Scheduler started.\n");
 
 	do
 	:: (sIndex < sTail) ->
@@ -145,7 +146,7 @@ proctype scheduler()
 			short selectedNode = 0;
 			// TODO: support other types of workload resources
 
-			printf("[****]Attempting to schedule Pod %d\n", curPod);
+			printf("[**]Attempting to schedule Pod %d\n", curPod);
 
 			clearNodeScore();
 			scheduleOne();

@@ -9,7 +9,7 @@ proctype kernelPanic(short i)
 		:: nodes[i].status == 1 && nodes[i].cpuLeft * 100 / nodes[i].cpu <= 2 -> 
 			atomic{
 				times ++;
-				printf("[****]node %d kernel panic, times %d\n", i, times)
+				printf("[**]node %d kernel panic, times %d\n", i, times)
 				nodes[i].status = 0;
 				
 				if 
@@ -43,7 +43,7 @@ proctype eventCpuChange(short targetDeployment)
 			// Because some podIds can be invalid, so need to do a post-processing
 			j = 0;
 			k = 0;
-			printf("[****]Index %d is selected\n", index_selected)
+			printf("[**]Index %d is selected\n", index_selected)
 			do
 				:: j <= index_selected->
 					pod_selected = d[targetDeployment].replicaSets[d[targetDeployment].curVersion].podIds[k]
@@ -74,7 +74,7 @@ proctype eventCpuChange(short targetDeployment)
 			fi;
 			nodes[pods[pod_selected].loc].cpuLeft = nodes[pods[pod_selected].loc].cpuLeft - pods[pod_selected].cpu;
 
-			printf("[****]CPU change %d on pod %d, now %d; node %d, now %d\n", cpu_change, pod_selected, pods[pod_selected].cpu, pods[pod_selected].loc, nodes[pods[pod_selected].loc].cpuLeft);
+			printf("[**]CPU change %d on pod %d, now %d; node %d, now %d\n", cpu_change, pod_selected, pods[pod_selected].cpu, pods[pod_selected].loc, nodes[pods[pod_selected].loc].cpuLeft);
 
 			// Only support HPA for deployment for now.
 			if 

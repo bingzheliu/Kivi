@@ -38,14 +38,14 @@ inline updatePodIds(replicaset, curPod)
 		:: m < MAX_POD*10 ->
 			if
 				:: (replicaset.podIds[m] == 0) || (pods[replicaset.podIds[m]].status == 0)
-					printf("[****]Adding curPod %d to index %d in replicaset %d", curPod, m, replicaset.id)
+					printf("[***]Adding curPod %d to index %d in replicaset %d", curPod, m, replicaset.id)
 					replicaset.podIds[m] = curPod;
 					break;
 				:: else ->;
 			fi;
 			m++;
 		:: else->
-			printf("[****]Max number of pod reached in pod list of replicaset");
+			printf("[*Warning]Max number of pod reached in pod list of replicaset");
 		od;
 	}
 }
@@ -77,6 +77,28 @@ inline printfNodeScore()
 	   i++;
 	:: else->break;
 	od;
+}
+
+// We do a round on the log result; the source code mentioned: Since <size> is at least 1 (all nodes that passed the Filters are in the
+// same topology), and k8s supports 5k nodes, the result is in the interval <1.09, 8.52>.
+inline logTable(a, b)
+{
+	atomic{
+		d_step{
+			if 
+				:: a == 1 -> b = 0;
+				:: a >= 2 && a < 5 -> b = 1;
+				:: a >= 5 && a < 13 -> b = 2;
+				:: a >= 13 && a < 34 -> b = 3;
+				:: a >= 34 && a < 91 -> b = 4;
+				:: a >= 91 && a < 245 -> b = 5;
+				:: a >= 245 && a < 666 -> b = 6;
+				:: a >= 666 && a < 1809 -> b = 7;
+				:: a >= 1809 && a < 4915 -> b = 8;
+				:: else -> b = 9;
+			fi;
+		}
+	}
 }
 
 

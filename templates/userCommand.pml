@@ -23,6 +23,7 @@ proctype createTargetDeployment(short deploymentId)
 				d[deploymentId].status = 1;
 				dcQueue[dcTail] = deploymentId;
 				dcTail++;
+				printf("[***] Created deployment %d", deploymentId)
 			:: else ->;
 		fi;
 	}

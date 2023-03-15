@@ -27,7 +27,7 @@ inline computeReplicasForMetric(curMetricName, curMetricTarget, curMetricType)
 	do
 		:: p < totalReplicas ->
 			k = d[curD].replicaSets[d[curD].curVersion].podIds[j];
-			printf("[****]%d\n",j);
+
 			if 
 				:: k == 0 || pods[k].status == 0 -> 
 					goto hpa2;
@@ -47,7 +47,7 @@ inline computeReplicasForMetric(curMetricName, curMetricTarget, curMetricType)
 						:: curMetricName == 1 ->
 							metricsTotal = metricsTotal + pods[k].memory;
 						:: else->
-							printf("[****]Invalid metric name\n");
+							printf("[*Warning]Invalid metric name\n");
 							assert(false);
 					fi;
 				// utlization
@@ -62,11 +62,11 @@ inline computeReplicasForMetric(curMetricName, curMetricTarget, curMetricType)
 							metricsTotal = metricsTotal + pods[k].memory;
 							requestTotal = requestTotal + podTemplates[pods[k].podTemplateId].memRequested;
 						:: else->
-							printf("[****]Invalid metric name\n");
+							printf("[*Warning]Invalid metric name\n");
 							assert(false);
 					fi;
 				:: else -> 
-					printf("[****]Invalid metric type\n");
+					printf("[*Warning]Invalid metric type\n");
 			fi;
 hpa2:		j++;
 		:: else->break;
@@ -83,14 +83,14 @@ hpa2:		j++;
 	fi;
 	printf("[****]Computing metric, currentUsage is %d\n", currentUsage)
 
-	//  math.Abs(1.0-usageRatio) <= c.tolerance
-	// TODO: change this back to <=
+	// math.Abs(1.0-usageRatio) <= c.tolerance
+	// Warning: if exits equal sign, for the cases of large sets of nodes, they may be always within the tolerance, no matter of the TOLERANCE
 	if
-		:: ((curMetricTarget - currentUsage) < (HPA_TOLERANCE*curMetricTarget/100)) && ((currentUsage - curMetricTarget) < (HPA_TOLERANCE*curMetricTarget/100)) ->
+		:: ((curMetricTarget - currentUsage) <= (HPA_TOLERANCE*curMetricTarget/100)) && ((currentUsage - curMetricTarget) <= (HPA_TOLERANCE*curMetricTarget/100)) ->
 			replicaCountProposal = d[curD].specReplicas;
 		:: else -> 
 			// estimate: this should be ceil, so we just add 1; meaning if it's exact equal to N, then it would become N+1
-			printf("[****]Exceed the HPA tolerence\n")
+			printf("[**]Exceed the HPA tolerence\n")
 			printf("[****]Current curMetricType %d, currentUsage %d, metricsTotal %d, totalReplicas %d, curMetricTarget %d\n", curMetricType, currentUsage, metricsTotal, totalReplicas, curMetricTarget)
 			if
 				:: curMetricType == 0 ->
@@ -194,10 +194,10 @@ proctype hpa()
 					:: else -> 
 						if
 							::currentReplicas > HPA_MAX_REPLICAS ->
-								printf("[****]Current number of replicas above Spec.MaxReplicas\n");
+								printf("[**]Current number of replicas above Spec.MaxReplicas\n");
 								desiredReplicas = HPA_MAX_REPLICAS;
 							::currentReplicas < HPA_MIN_REPLICAS ->
-								printf("[****]Current number of replicas below Spec.MinReplicas\n");
+								printf("[**]Current number of replicas below Spec.MinReplicas\n");
 								desiredReplicas = HPA_MIN_REPLICAS;
 							::else->
 								computeReplicasForMetrics()
@@ -207,7 +207,7 @@ proctype hpa()
 										rescaleMetric = metric;
 									:: else ->;
 								fi;
-								printf("[****]Got new desiredReplicas %d\n", desiredReplicas)
+								printf("[**]Got new desiredReplicas %d\n", desiredReplicas)
 								// not modeling normalizeDesiredReplicasWithBehaviors for now.
 								normalizeDesiredReplicas();
 						fi;
@@ -215,7 +215,7 @@ proctype hpa()
 
 				if 
 					:: desiredReplicas != currentReplicas ->
-						printf("[****]Need to rescale, scale metric is %d, orgional is %d, now is %d.\n", rescaleMetric, currentReplicas, desiredReplicas);
+						printf("[**]Need to rescale, scale metric is %d, orgional is %d, now is %d.\n", rescaleMetric, currentReplicas, desiredReplicas);
 						// in k8s, it will trigger client-go.scale. Here we do it directly by writing into the deployment.
 						d[curD].specReplicas = desiredReplicas;
 						dcQueue[dcTail] = curD;

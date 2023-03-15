@@ -11,8 +11,10 @@ def generate_S4(num_node):
 	case_config = {}
 	cur_id = 1
 
+	case_config["setup"] = {}
+
 	## Generate Nodes
-	case_config["nodes"] = []
+	case_config["setup"]["nodes"] = []
 	for i in range(0, num_node):
 		cur_node = {}
 		cur_node["id"] = cur_id
@@ -27,10 +29,10 @@ def generate_S4(num_node):
 		cur_node["numPod"] = 0
 
 		cur_node["status"] = 1
-		case_config["nodes"].append(cur_node)
+		case_config["setup"]["nodes"].append(cur_node)
 
 	## Generate Pods
-	case_config["pods"] = []
+	case_config["setup"]["pods"] = []
 	for i in range(0, 2*num_node+2):
 		cur_pod = {}
 		cur_pod["id"] = cur_id
@@ -44,10 +46,10 @@ def generate_S4(num_node):
 		cur_pod["status"] = 0
 	
 		cur_pod["important"] = 0
-		case_config["pods"].append(cur_pod)
+		case_config["setup"]["pods"].append(cur_pod)
 
 	## Generate Deployment
-	case_config["d"] = []
+	case_config["setup"]["d"] = []
 	d = {}
 	d["id"] = cur_id
 	cur_id += 1
@@ -88,17 +90,17 @@ def generate_S4(num_node):
 	# d["hpaSpec"]["metricTypes"] = []
 	# d["hpaSpec"]["metricTypes"].append(1)
 
-	case_config["d"].append(d)
+	case_config["setup"]["d"].append(d)
 
 	# Generate podTemplate
-	case_config["podTemplates"] = []
+	case_config["setup"]["podTemplates"] = []
 	pt = {}
 	pt["cpuRequested"] = 21
 	pt["memRequested"] = 21
 	pt["labelKeyValue"] = []
 
 	#pt["numTopoSpreadConstraints"] = 0
-	case_config["podTemplates"].append(pt)
+	case_config["setup"]["podTemplates"].append(pt)
 
 	case_config["controllers"] = {}
 	case_config["controllers"]["scheduler"] = {}
@@ -116,13 +118,15 @@ def generate_S4(num_node):
 def generate_S3(num_node):
 	case_config = {}
 	cur_id = 1
+	
+	case_config["setup"] = {}
 
 	# this case, num_node needs to be odd
 	num_node = int(num_node/2)
 	num_node = num_node*2 + 1
 
 	## Generate Nodes
-	case_config["nodes"] = []
+	case_config["setup"]["nodes"] = []
 	for i in range(0, num_node):
 		cur_node = {}
 		cur_node["id"] = cur_id
@@ -153,12 +157,12 @@ def generate_S3(num_node):
 		else:
 			cur_node["labelKeyValue"].append(1)
  
-		case_config["nodes"].append(cur_node)
+		case_config["setup"]["nodes"].append(cur_node)
 
 	## Generate Pods
 	deployment_to_pod = {}
 	deployment_to_pod[1] = []
-	case_config["pods"] = []
+	case_config["setup"]["pods"] = []
 	loc = 1
 	count = 0
 	for i in range(0, num_node*2):
@@ -190,10 +194,10 @@ def generate_S3(num_node):
 		cur_pod["cpu"] = 8
 		cur_pod["memory"] = 16
 		cur_pod["important"] = 0
-		case_config["pods"].append(cur_pod)
+		case_config["setup"]["pods"].append(cur_pod)
 
 	## Generate Deployment
-	case_config["d"] = []
+	case_config["setup"]["d"] = []
 	d = {}
 	d["id"] = cur_id
 	cur_id += 1
@@ -236,10 +240,10 @@ def generate_S3(num_node):
 	d["hpaSpec"]["metricTypes"] = []
 	d["hpaSpec"]["metricTypes"].append(1)
 
-	case_config["d"].append(d)
+	case_config["setup"]["d"].append(d)
 
 	# Generate podTemplate
-	case_config["podTemplates"] = []
+	case_config["setup"]["podTemplates"] = []
 	pt = {}
 	pt["cpuRequested"] = 8
 	pt["memRequested"] = 16
@@ -268,7 +272,7 @@ def generate_S3(num_node):
 	# based on zone name
 	ptcon["topologyKey"] = 2
 	pt["topoSpreadConstraints"].append(copy.deepcopy(ptcon))
-	case_config["podTemplates"].append(pt)
+	case_config["setup"]["podTemplates"].append(pt)
 
 	case_config["controllers"] = {}
 	case_config["controllers"]["scheduler"] = {}

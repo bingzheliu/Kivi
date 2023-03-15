@@ -1,9 +1,13 @@
 # my ignore
-libs/Spin
+libs/*
 eval/pan*
 eval/main.pml.trail
 eval/results
-configs/
+temp/*
+*/old_version
+results/*
+pan*
+test/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

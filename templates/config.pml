@@ -19,6 +19,7 @@
 // Both are enabled by default for the podSpreading plugins: https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/#topologyspreadconstraints-field
 #define enableNodeInclusionPolicyInPodTopologySpread 1
 #define enableMinDomainsInPodTopologySpread 1
+#define systemDefaulted 1
 
 // scheduler "internal" config, set for their default values. 
 #define SCHEDULER_QUEUE_SIZE 250

@@ -1,10 +1,10 @@
 
 /*----------- k8s cluster setup ------------*/
-#define MAX_POD 205
-#define MAX_NODE 104
+#define MAX_POD 9
+#define MAX_NODE 6
 #define MAX_DEPLOYMENT 4
-#define NODE_NUM 101
-#define POD_NUM 202
+#define NODE_NUM 3
+#define POD_NUM 6
 #define DEP_NUM 1
 #define POD_CPU_THRE 64
 #define NODE_ALLOWED_POD_NUM 80
@@ -19,13 +19,14 @@
 // Both are enabled by default for the podSpreading plugins: https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/#topologyspreadconstraints-field
 #define enableNodeInclusionPolicyInPodTopologySpread 1
 #define enableMinDomainsInPodTopologySpread 1
+#define systemDefaulted 1
 
 // scheduler "internal" config, set for their default values. 
 #define SCHEDULER_QUEUE_SIZE 250
 
 #define MAX_LABEL 10
-#define MAX_VALUE 104
-#define MAX_2D 104
+#define MAX_VALUE 6
+#define MAX_2D 6
 // https://github.com/kubernetes/kubernetes/blob/c549b59983e114a872b0df18d74c1d217f3f62bd/pkg/scheduler/framework/interface.go#L109
 #define MAX_NODE_SCORE 100
 

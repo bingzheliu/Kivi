@@ -28,7 +28,7 @@ default_values = {
 	"d": { "curVersion" : 0, "maxSurge" : 25, "maxUnavailable" : 25, "strategy" : 1, "hpaSpec" : {"isEnabled" : 0, "numMetrics" : 0}},
 	# https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/#internal-default-constraints
 	# TODO: check if need to set the minDomains. 
-	"podTemplates" : {"numRules" : 0, "nodeName" : 0,  "numNoScheduleNode" : 0, "numPreferNoScheduleNode" : 0, "numTopoSpreadConstraints" : 2, \
+	"podTemplates" : {"numRules" : 0, "nodeName" : 0,  "numNoScheduleNode" : 0, "numPreferNoScheduleNode" : 0, "topoSpreadSystemDefaulted": 1, "numTopoSpreadConstraints" : 2, \
 					  "topoSpreadConstraints" : [{"maxSkew" : 3, "topologyKey" : 0, "whenUnsatisfiable" : 1}, {"maxSkew" : 5, "topologyKey" : 2, "whenUnsatisfiable" : 1}]}
 }
 
@@ -42,7 +42,7 @@ default_parameter_order = {
 	"eventCpuChange" : ["targetDeployment"]
 }
 
-def pod_pread_default(json_config):
+def pod_template_default(json_config):
 	for pt in json_config["podTemplates"]:
 		if pt["numTopoSpreadConstraints"] > 0:
 			for ptcon in pt["topoSpreadConstraints"]:
@@ -55,7 +55,7 @@ def pod_pread_default(json_config):
 def check_for_completion_add_default(json_config):
 	for resource in elements_required:
 		for e in elements_required[resource]:
-			for r in json_config[resource]:
+			for r in json_config["setup"][resource]:
 				if e not in r:
 					if e in default_values[resource]:
 						r[e] = default_values[resource][e]
@@ -63,7 +63,7 @@ def check_for_completion_add_default(json_config):
 					else:
 						print(e + " has not been defined!")
 
-	pod_pread_default(json_config)
+	pod_template_default(json_config["setup"])
 
 
 

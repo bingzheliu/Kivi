@@ -67,14 +67,14 @@ inline deleteAPod()
 					podSelected = i;
 				:: else->;
 				fi;
-				printf("[****]pod score %d: %d; max: %d\n", i, pods[i].score, cur_max);
+				printf("[***]pod score %d: %d; max: %d\n", i, pods[i].score, cur_max);
 			:: else->;
 		fi;
 		i++;
 	:: else -> break;
 	od;
 
-	printf("[****]Deleting pod %d\n", podSelected);
+	printf("[**]Deleting pod %d\n", podSelected);
 	// TODO: deal with the scenairo that the deletion failed. 
 	deleteAPodUpdate(d[pods[podSelected].workloadId].replicaSets[d[pods[podSelected].workloadId].curVersion]);
 }
@@ -105,7 +105,7 @@ inline enqueuePods(batchSize)
 			if
 			:: pods[j].status == 0 ->
 				copyDeploymentInfoToPod(pods[j], curD);
-				printf("[****]Adding a new pod %d to deployment %d\n", j, curD)
+				printf("[**]Adding a new pod %d to deployment %d\n", j, curD)
 				sQueue[sTail] = j;
 				sTail++;
 				break;
@@ -131,7 +131,7 @@ inline scale(curReplicaSet)
 	:: curReplicaSet.specReplicas <  curReplicaSet.replicas ->
 		// Let assume the deleting pods is atomic
 		atomic {
-			printf("[****]Starting the deployment controller to delete pods\n");
+			printf("[**]Starting the deployment controller to delete pods\n");
 
 			short diff =  curReplicaSet.replicas - curReplicaSet.specReplicas;
 			deletePods(diff);
@@ -148,7 +148,7 @@ inline scale(curReplicaSet)
 		atomic {
 			batchSize = SlowStartInitialBatchSize;
 			remaining = curReplicaSet.specReplicas - curReplicaSet.replicas;
-			printf("[****]Too few replicas in replicaSet %d need to create %d\n", curReplicaSet.id, remaining);
+			printf("[**]Too few replicas in replicaSet %d need to create %d\n", curReplicaSet.id, remaining);
 		}
 		do
 		:: batchSize > 0 ->

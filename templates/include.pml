@@ -19,10 +19,13 @@ deploymentType d[MAX_DEPLOYMENT];
 podType pods[MAX_POD];
 nodeType nodes[NODE_NUM+1];
 podTemplateType podTemplates[POD_TEMPLATE_NUM];
+deploymentType deploymentTemplates[DEP_TEMPLATE_NUM];
 
 short podTotal;
 
 #include "../templates/util.pml"
+
+#include "../templates/intentsCheck.pml"
 
 #include "../templates/deployment.pml"
 #include "../templates/scheduler.pml"

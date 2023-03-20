@@ -135,7 +135,7 @@ inline taintTolerationFilter(podSpec)
 }
 
 // helper function for pod spreading policy
-inline findMatchedPod(j, podSpec)
+inline findMatchedPod(i, j, podSpec)
 {
 	k = 1;
 	
@@ -149,8 +149,9 @@ inline findMatchedPod(j, podSpec)
 
 		// go through all the labels in constraints, and see if the pod matches all of them
 		for (p : 0 .. podSpec.topoSpreadConstraints[j].numMatchedLabel - 1) {
+			//printf("[******] matching pod %d with key %d\n", k, podSpec.topoSpreadConstraints[j].labelKey[p])
 			if 
-				::(podTemplates[t].labelKeyValue[podSpec.topoSpreadConstraints[j].labelKey[p]] != podSpec.topoSpreadConstraints[j].labelValue[p]) -> goto fmpend
+				::(podTemplates[t].labelKeyValue[podSpec.topoSpreadConstraints[j].labelKey[p]] != podSpec.topoSpreadConstraints[j].labelValue[p]) -> goto fmpend;
 				:: else->; 
 			fi;
 		}
@@ -182,7 +183,7 @@ inline podTopologySpreadPreFilter(podSpec)
 					fi;
 
 					if
-						:: nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey] == 0 ->
+						:: nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey] == -1 ->
 							goto stopo1;
 						:: else->;
 					fi;
@@ -206,7 +207,7 @@ stopo2:				j++;
 					fi;
 
 					short count = 0;
-					findMatchedPod(j, podSpec);
+					findMatchedPod(i, j, podSpec);
 					printf("[****]Matched pod for {node %d, topologyKey %d} is %d\n", i, podSpec.topoSpreadConstraints[j].topologyKey, count)
 
 					// We don't need the tpCountsByNodes as we can't do the calculation of nodes in parallel
@@ -446,6 +447,7 @@ inline nodeAffinityScore(podSpec)
 	printfNodeScore();
 }
 
+// TODO: check if without taint defined, do they still have score?
 inline taintTolerationScore(podSpec)
 {
 	j = 0;
@@ -503,13 +505,16 @@ inline nodeResourceFitScore(podSpec)
 		:: nodes[i].score != -1 ->
 			if 
 				:: STRATEGY_RESOURCE == 1 ->
+					// printf("[******] %d %d %d %d\n", nodes[i].cpuLeft, podSpec.cpuRequested, nodes[i].memLeft, podSpec.memRequested);
 					cpuScore = ((nodes[i].cpuLeft - podSpec.cpuRequested) * MAX_NODE_SCORE / nodes[i].cpuLeft) * 1;
 					memScore = ((nodes[i].memLeft - podSpec.memRequested) * MAX_NODE_SCORE / nodes[i].memLeft) * 1;
-					nodes[i].score = nodes[i].score + ((cpuScore+memScore) * NODE_RESOURCE_FIT / 2 )
+					// printf("[******] %d %d\n", cpuScore, memScore);
+					nodes[i].score = nodes[i].score + ((cpuScore * 1 + memScore * 1) * NODE_RESOURCE_FIT / 2 )
+					// printf("[******] %d, %d\n", i, nodes[i].score);
 				:: STRATEGY_RESOURCE == 2 ->
 					cpuScore = ((podSpec.cpuRequested) * MAX_NODE_SCORE / nodes[i].cpuLeft) * 1;
 					memScore = ((podSpec.memRequested) * MAX_NODE_SCORE / nodes[i].memLeft) * 1;
-					nodes[i].score = nodes[i].score + ((cpuScore+memScore) * NODE_RESOURCE_FIT / 2 )
+					nodes[i].score = nodes[i].score + ((cpuScore * 1 + memScore * 1) * NODE_RESOURCE_FIT / 2 )
 				:: else -> 
 					printf("[*Warning]No/Wrong scheduling strategy defined!\n");
 					assert(false);
@@ -526,7 +531,9 @@ inline nodeResourceFitScore(podSpec)
 
 inline podTopologySpreadPreScore(podSpec)
 {
-	bit requireAllTopologies = (podSpec.numTopoSpreadConstraints > 0) || systemDefaulted == 1;
+	// original is requireAllTopologies := len(pod.Spec.TopologySpreadConstraints) > 0 || !pl.systemDefaulted, in scoring.go
+	// However, we have filled in the system default in pre-processing, so we check on a varibale passed by the pre-processor and see if user has defined any constraints. 
+	bit requireAllTopologies = userDefinedConstraints;
 
 	// The initPreScoreState function
 	//// building default config has been done by the model generator
@@ -534,14 +541,14 @@ inline podTopologySpreadPreScore(podSpec)
 	for (i : 1 .. NODE_NUM) {
 		// in this iteration, they iterate only on filtered node
 		if 
-			:: nodes[i].score == -1 -> goto ptsp1
+			:: nodes[i].score == -1 -> goto ptsp1;
 			:: else;
 		fi;
 
 		j = 0;
 		for (j : 0 .. podSpec.numTopoSpreadConstraints-1) {
 			if 
-				:: (requireAllTopologies == 1) && (podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 1) && (nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey] == 0) -> 
+				:: (requireAllTopologies == 1) && (podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 1) && (nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey] == -1) -> 
 					ignoredNode[i] = 1; 
 					goto ptsp1;
 				:: else->;
@@ -549,16 +556,21 @@ inline podTopologySpreadPreScore(podSpec)
 		}
 
 		// In source code, they process hostname seperately. We don't do it as it does not make difference on logic
+		// In summary, only the pods on top of filtered node + nodes match with all topoKey (exclude default constraints) will be counted. 
 		j = 0;
 		for (j : 0 .. podSpec.numTopoSpreadConstraints-1) {
 			short curValue = nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey];
 			// count how many distinct domains for each topoKey
 			if 
+				:: curValue == -1 -> goto ptsp2;
+				:: else->;
+			fi;
+			if 
 				:: (topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] == -1) && (podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 1) -> 
 					topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] = 0; 
 					topoSize[podSpec.topoSpreadConstraints[j].topologyKey]++;
 				:: else->;
-			fi;
+ptsp2:		fi;
 		}
 ptsp1:	skip;			
 	}
@@ -581,31 +593,39 @@ ptsp1:	skip;
 		j = 0;
 		for (j : 0 .. podSpec.numTopoSpreadConstraints-1) {
 			if
-				:: ((requireAllTopologies == 1) && (podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 1) && (nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey] == 0)) -> 
-					goto ptsp3 
+				:: ((requireAllTopologies == 1) && (podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 1) && (nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey] == -1)) -> 
+					goto ptsp3;
 				:: else->;
 			fi;
 		}
-
+		
 		j = 0;
 		for (j : 0 .. podSpec.numTopoSpreadConstraints-1) {
 			short curValue = nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey];
 			if 
-			 	:: (podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 1) || (enableNodeInclusionPolicyInPodTopologySpread == 1 && nodes[i].curAffinity != 1) || (topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] == -1) -> 
-				 goto ptsp2 
+			 	:: (podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 0) || (curValue == -1)->
+				 goto ptsp4;
 			 	:: else->;
+			fi;
+			if 
+				:: (enableNodeInclusionPolicyInPodTopologySpread == 1 && nodes[i].curAffinity != 1) || (topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] == -1) -> 
+				 goto ptsp4;
+				:: else->;
 			fi;
 
 			// We count all the pods, including terminating pods, as we don't model the terminating state for now. 
 			short count = 0;
-			findMatchedPod(j, podSpec);
+			findMatchedPod(i, j, podSpec);
+			printf("[****]Matched pod for {node %d, topologyKey %d} is %d\n", i, podSpec.topoSpreadConstraints[j].topologyKey, count)
 			topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] = topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] + count;
-ptsp2: 		skip;
+ptsp4: 		skip;
 		}
 ptsp3:	skip;
 	}
 }
 
+// Note: minDomains is not used in soft constraints acoording to the docs: 
+// You can only specify minDomains in conjunction with whenUnsatisfiable: DoNotSchedule.
 inline podTopologySpreadScore(podSpec)
 {
 	i = 1;
@@ -618,18 +638,25 @@ inline podTopologySpreadScore(podSpec)
 		j = 0;
 		for (j : 0 .. podSpec.numTopoSpreadConstraints-1) {
 			if 
-				:: podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 1 -> goto ptsp2;
+				:: podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 0 -> goto ptss2;
 				:: else->;
 			fi;
-			// TODO: they didn't check on cur affinity for this node, may cause problem... 
-			// TODO: they also did not check on the minDomain
+			// TODO: they didn't check on cur affinity for this node, may cause problem... May be because they have already filter those node out?
+
 			// scoreForCount(cnt int64, maxSkew int32, tpWeight float64): float64(cnt)*tpWeight + float64(maxSkew-1),
 			// which means that, if a topo has more domains, the more the matched pods, the more the scores
 			short curValue = nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey];
 			// [estimate] they did a round on the score, while we are all floored. 
+			printf("[******] topoKey %d, curValue %d\n", podSpec.topoSpreadConstraints[j].topologyKey, curValue)
+			if
+				:: curValue != -1 ->
 			nodes[i].curScore = nodes[i].curScore + topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] * topologyNormalizingWeight[j] + (podSpec.topoSpreadConstraints[j].maxSkew - 1)
+			printf("[******] Current Constraints on key %d. Node %d, curScore %d.\n", podSpec.topoSpreadConstraints[j].topologyKey, i, nodes[i].curScore)
+			printf("[******] TopopairToCount %d, weight %d, maxSkew %d \n", topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue], topologyNormalizingWeight[j], podSpec.topoSpreadConstraints[j].maxSkew)
+				:: else->;
+			fi;
+ptss2:		skip;
 		}
-
 ptss1:  skip;
 	} 
 }
@@ -659,9 +686,13 @@ ptsns1: skip;
 				goto ptsns2;
 			:: else->;
 		fi;
-		nodes[i].curScore = (maxScore == 0 -> MAX_NODE_SCORE : nodes[i].curScore)
-		nodes[i].score = nodes[i].score + NODE_PODTOPO_SPREAD_WEIGHT*(MAX_NODE_SCORE * (maxScore + minScore - nodes[i].curScore) / maxScore)
-
+		if 
+			:: maxScore == 0 ->
+				nodes[i].curScore = MAX_NODE_SCORE;
+				nodes[i].score = nodes[i].score + NODE_PODTOPO_SPREAD_WEIGHT*nodes[i].curScore
+			:: else->
+				nodes[i].score = nodes[i].score + NODE_PODTOPO_SPREAD_WEIGHT*(MAX_NODE_SCORE * (maxScore + minScore - nodes[i].curScore) / maxScore)
+		fi;
 ptsns2: nodes[i].curScore = 0;
 	}
 }
@@ -671,7 +702,7 @@ inline podTopologySpreadScoring(podSpec)
 	twoDArray topologyPairToPodCounts[MAX_LABEL];
 	short topoSize[MAX_LABEL];
 	short topologyNormalizingWeight[MAX_LABEL]
-	short ignoredNode[NODE_NUM];
+	short ignoredNode[NODE_NUM+1];
 
 	i = 0;
 	for (i : 0 .. MAX_LABEL-1) {

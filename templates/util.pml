@@ -38,14 +38,14 @@ inline updatePodIds(replicaset, curPod)
 		:: m < MAX_POD*10 ->
 			if
 				:: (replicaset.podIds[m] == 0) || (pods[replicaset.podIds[m]].status == 0)
-					printf("[***]Adding curPod %d to index %d in replicaset %d", curPod, m, replicaset.id)
+					printf("[***]Adding curPod %d to index %d in replicaset %d\n", curPod, m, replicaset.id)
 					replicaset.podIds[m] = curPod;
 					break;
 				:: else ->;
 			fi;
 			m++;
 		:: else->
-			printf("[*Warning]Max number of pod reached in pod list of replicaset");
+			printf("[*Warning]Max number of pod reached in pod list of replicaset\n");
 		od;
 	}
 }

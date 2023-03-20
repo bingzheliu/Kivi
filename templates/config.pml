@@ -9,6 +9,7 @@
 #define POD_CPU_THRE 64
 #define NODE_ALLOWED_POD_NUM 80
 #define POD_TEMPLATE_NUM [$POD_TEMPLATE_NUM]
+#define DEP_TEMPLATE_NUM [$DEP_TEMPLATE_NUM]
 
 
 /*----------- deployment Config ------------*/
@@ -19,7 +20,9 @@
 // Both are enabled by default for the podSpreading plugins: https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/#topologyspreadconstraints-field
 #define enableNodeInclusionPolicyInPodTopologySpread 1
 #define enableMinDomainsInPodTopologySpread 1
+// Because we have 2 default pod spreading policy, so this is true
 #define systemDefaulted 1
+#define userDefinedConstraints [$userDefinedConstraints]
 
 // scheduler "internal" config, set for their default values. 
 #define SCHEDULER_QUEUE_SIZE 250
@@ -34,16 +37,14 @@
 
 
 /*----------- hpa Config ------------*/
-#define HPA_MAX_REPLICAS 1000
-// #define HPA_MAX_REPLICAS 5
 
 // HPA "internal" config, set for their default values. 
 #define HPA_QUEUE_SIZE 250
 
-// default is 0.1
-#define HPA_TOLERANCE 0
-#define HPA_MIN_REPLICAS 1
+// default is 10 ( == 0.1 in percentage)
+#define HPA_TOLERANCE 10
 
+// These are default value defined in horizontal.go
 #define HPA_SCALE_UP_LIMIT_MIN 4
 #define HPA_SCALE_UP_LIMIT_FACTOR  2
 

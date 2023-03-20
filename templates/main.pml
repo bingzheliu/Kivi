@@ -5,7 +5,7 @@ init{
 
 	[$INIT_SETUP]
 	
-	run deployment_controller();
+	run deploymentController();
 	run scheduler();
 	run hpa();
 	

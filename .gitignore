@@ -4,10 +4,11 @@ eval/pan*
 eval/main.pml.trail
 eval/results
 temp/*
-*/old_version
+*old_version
 results/*
 pan*
 test/*
+*trail
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

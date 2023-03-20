@@ -207,7 +207,7 @@ inline rollout()
 // rsc.burstReplicas
 
 // TODO: check on deployment trigger reason. If in bootstrapping, how it works?
-proctype deployment_controller()
+proctype deploymentController()
 {
 	short i = 0, j = 0, k = 0, max = 0, podSelected = 0;
 

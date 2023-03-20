@@ -5,62 +5,79 @@ import sys
 # log_level 2: steps that result in the error
 # log_level 3: detailed output of all steps
 # log_level 4: the values of important variables
-def parse_spin_error_trail(file_base, filename, file_error_trail, log_level):
-	with open(file_base + "/results/" + filename, "w") as fw:
-		with open(file_base + "/results/raw_data/" + file_error_trail) as fr:
-			s = fr.readline()
+# log_level 6: details in plugins process
+def parse_spin_error_trail(output, failure_type, log_level):
+	result_log = ""
+	failure_details = ""
+	output_lines = output.splitlines()
 
-			while len(s) > 0:
-				if s.startswith("[*"):
-					count = 0
-					while s[count] != "]":
-						count += 1
+	for i in range(0, len(output_lines)):
+		s = output_lines[i]
+		if s.startswith("[*"):
+			count = 0
+			while s[count] != "]":
+				count += 1
 
-					if count - 1 <= int(log_level):
-						fw.write(s)
-				s = fr.readline()
+			if count - 1 <= int(log_level):
+				result_log += (s + "\n")
+
+		if s.startswith("pan:1:") or s.startswith("spin: trail ends"):
+			failure_details = output_lines[i-1] + "\n"
+			while not s.startswith("global vars"):
+				failure_details += (s+"\n")
+				i += 1
+				s = output_lines[i]
+			result_log += failure_details
+
+	return 	result_log, failure_details
+				
 
 def analyze_end_state(file_error_trail):
-	return "invalid end state"
+	return file_error_trail
 
 def analyze_assert(file_error_trail):
-	return "assertion violated"
+	return file_error_trail
 
-def parse_pan_output(file_base, file_exec_log, file_error_trail):
-	with open(file_base + "/results/raw_data/" + file_exec_log) as fr:
-		s = fr.readline()
-
-		total_mem = 0
-		elapsed_time = 0
-		failure_type = 0
-
+def parse_pan_output(output):
+	total_mem = 0
+	elapsed_time = 0
+	failure_type = 0
+	error_trail_name = None
+	failure_details = ""
+	for s in output.splitlines():
 		# TODO:check on how to test if the file is ended
-		while len(s) > 0:
-			if "invalid end state" in s:
-				failure_type = analyze_end_state(file_error_trail)
-				 
-			if "assertion violated" in s:
-				failure_type = analyze_assert(file_error_trail)
-				 
+		if "pan:1: invalid end state" in s:
+			failure_type = analyze_end_state(s)
+			 
+		if "pan:1: assertion violated" in s:
+			failure_type = analyze_assert(s)
+		
+		if "pan:1: end state in claim reached" in s:
+			failure_type = "Never Claim Violated"
 
-			if "total actual memory usage" in s:
-				total_mem = s.split("total")[0].strip()
+		if "pan: wrote" in s:
+			error_trail_name = s.split("pan: wrote")[1].strip()	 
 
-			if "elapsed time" in s:
-				elapsed_time = s.split("time")[1].split("seconds")[0].strip()
+		if "error:" in s:
+			failure_type = analyze_assert(s)
 
-			s = fr.readline()
+		if "total actual memory usage" in s:
+			total_mem = s.split("total")[0].strip()
 
-		print(failure_type, total_mem, elapsed_time)
+		if "elapsed time" in s:
+			elapsed_time = s.split("time")[1].split("seconds")[0].strip()
 
-if __name__ == '__main__':
-	file_base = sys.argv[1]
-	filename = sys.argv[2]
-	file_error_trail = sys.argv[3]
-	file_exec_log = sys.argv[4]
-	log_level = sys.argv[5]
 
-	parse_pan_output(file_base, file_exec_log, file_error_trail)
+	return failure_type, failure_details, error_trail_name, total_mem, elapsed_time
+
+# if __name__ == '__main__':
+# 	file_base = sys.argv[1]
+# 	filename = sys.argv[2]
+# 	file_error_trail = sys.argv[3]
+# 	file_exec_log = sys.argv[4]
+# 	log_level = sys.argv[5]
+
+# 	parse_pan_output(file_base, file_exec_log, file_error_trail)
 
 	#parse_spin_error_trail(file_base, filename, file_error_trail, log_level)
 

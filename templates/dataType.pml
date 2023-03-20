@@ -81,6 +81,9 @@ typedef hpaSpecType {
 	short metricTargets[MAX_NUM_METRICS];
 	// 0 means values, including PodMetric and the valued ResourceMetric; 1 means utlization, including ResourceMetric
 	short metricTypes[MAX_NUM_METRICS];
+
+	short minReplicas;
+	short maxReplicas;
 }
 
 // These matched node include the 1) affinity rules, 2) the nodeSelector and 3) the addedAffinity in additional scheduler profiles
@@ -168,7 +171,9 @@ typedef podTemplateType {
 }
 
 typedef deploymentType {
+	// We use id as an equivalence as name
 	short id;
+	short name;
 	// TODO: decide if we need status or if we need to delete it, status includes progressing, available.
 	// short statusType; 
 	bit status;
@@ -176,8 +181,6 @@ typedef deploymentType {
 	replicaSetType replicaSets[2];
 	bit curVersion; 
 
-	short minReplicas;
-	short maxReplicas;
 	short specReplicas;
 	short replicas;
 

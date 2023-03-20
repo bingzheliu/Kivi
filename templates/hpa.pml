@@ -1,6 +1,9 @@
 /*
 	 HPA controller. Author: Bingzhe Liu. 02/20/2023.
-	 1. HPA object is created per deployment/resource. In the implementation, all the HPA objects are maintained by an HPA controller. HPA controller is implemented with a queue of events. But these events are actually periodically added to the HPA (by controller-manager). So instead of implemeting the period events, we just make it triggered by any resource changes, to simplify and make it scale better by avoiding unuseful execuation. TODO: I have not figured out how controller-manager enqueue the events for HPA. 
+	 1. HPA object is created per deployment/resource. In the implementation, all the HPA objects are maintained by an HPA controller. 
+	 HPA controller is implemented with a queue of events. But these events are actually periodically added to the HPA (by controller-manager). 
+	 So instead of implemeting the period events, we just make it triggered by any resource changes, to simplify and make it scale better by avoiding unuseful execuation. 
+	 TODO: I have not figured out how controller-manager enqueue the events for HPA. 
 	 2. HPA look into all the desired state in a stablizationWindows and choose the largest one for scale down. We currently don't model this. 
 	 3. HPA has different types of config for metrics, and we currently don't distingish between them, rather, we directly use the metric name. 
 		config examples:
@@ -145,14 +148,14 @@ inline convertDesiredReplicasWithRules()
 		:: else->;
 	fi;
 
-	short maximumAllowedReplicas = HPA_MAX_REPLICAS;
+	short maximumAllowedReplicas = d[curD].hpaSpec.maxReplicas;
 	if
 		:: maximumAllowedReplicas > scaleUpLimit->
 			maximumAllowedReplicas = scaleUpLimit;
 		:: else->;
 	fi;
 
-	short minimumAllowedReplicas = HPA_MIN_REPLICAS;
+	short minimumAllowedReplicas = d[curD].hpaSpec.minReplicas;
 	if 
 		:: desiredReplicas < minimumAllowedReplicas ->
 			desiredReplicas = minimumAllowedReplicas;
@@ -193,12 +196,12 @@ proctype hpa()
 						desiredReplicas = 0;
 					:: else -> 
 						if
-							::currentReplicas > HPA_MAX_REPLICAS ->
+							::currentReplicas > d[curD].hpaSpec.maxReplicas ->
 								printf("[**]Current number of replicas above Spec.MaxReplicas\n");
-								desiredReplicas = HPA_MAX_REPLICAS;
-							::currentReplicas < HPA_MIN_REPLICAS ->
+								desiredReplicas = d[curD].hpaSpec.maxReplicas;
+							::currentReplicas < d[curD].hpaSpec.minReplicas ->
 								printf("[**]Current number of replicas below Spec.MinReplicas\n");
-								desiredReplicas = HPA_MIN_REPLICAS;
+								desiredReplicas = d[curD].hpaSpec.minReplicas;
 							::else->
 								computeReplicasForMetrics()
 								if 

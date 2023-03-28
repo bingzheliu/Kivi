@@ -185,6 +185,8 @@ proctype hpa()
 				// [NS] Timestamp is not actually implemented.
 				short replicas = 0, timestamp = 0, metric = 0;
 
+				printf("[****] HPA working on deployment %d\n", curD)
+
 				if
 					::d[curD].hpaSpec.isEnabled == 0 ->
 						goto hpa1;
@@ -196,6 +198,7 @@ proctype hpa()
 						desiredReplicas = 0;
 					:: else -> 
 						if
+							// TODO: double check if the below is >= or >, it could affect the logic
 							::currentReplicas > d[curD].hpaSpec.maxReplicas ->
 								printf("[**]Current number of replicas above Spec.MaxReplicas\n");
 								desiredReplicas = d[curD].hpaSpec.maxReplicas;
@@ -210,9 +213,10 @@ proctype hpa()
 										rescaleMetric = metric;
 									:: else ->;
 								fi;
-								printf("[**]Got new desiredReplicas %d\n", desiredReplicas)
+								printf("[**]Got new desiredReplicas %d, was %d\n", desiredReplicas, currentReplicas)
 								// not modeling normalizeDesiredReplicasWithBehaviors for now.
 								normalizeDesiredReplicas();
+								printf("[***]After normalizing, got new desiredReplicas %d, was %d\n", desiredReplicas, currentReplicas)
 						fi;
 				fi;
 
@@ -226,7 +230,10 @@ proctype hpa()
 					:: else->;
 				fi;
 
-hpa1:			hpaIndex ++;
+
+
+hpa1:			printf("[****] HPA finished on deployment %d\n", curD)
+				hpaIndex ++;
 			}
 	od;
 }

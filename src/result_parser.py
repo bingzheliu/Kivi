@@ -70,16 +70,16 @@ def parse_pan_output(output):
 
 	return failure_type, failure_details, error_trail_name, total_mem, elapsed_time
 
-# if __name__ == '__main__':
-# 	file_base = sys.argv[1]
-# 	filename = sys.argv[2]
-# 	file_error_trail = sys.argv[3]
-# 	file_exec_log = sys.argv[4]
-# 	log_level = sys.argv[5]
+if __name__ == '__main__':
+	file_base = sys.argv[1]
+	filename = sys.argv[2]
+	file_error_trail = sys.argv[3]
+	file_exec_log = sys.argv[4]
+	log_level = sys.argv[5]
 
-# 	parse_pan_output(file_base, file_exec_log, file_error_trail)
+	parse_pan_output(file_base, file_exec_log, file_error_trail)
 
-	#parse_spin_error_trail(file_base, filename, file_error_trail, log_level)
+	parse_spin_error_trail(file_base, filename, file_error_trail, log_level)
 
 
 

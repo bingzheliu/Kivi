@@ -1,6 +1,9 @@
 import copy
 import sys
 
+from util import *
+
+
 ##### Pod Topo Spreading Plugins
 # implement filterTopologySpreadConstraints and buildDefaultConstraints in common.go
 # deal with enableMatchLabelKeysInPodTopologySpread
@@ -13,15 +16,16 @@ import sys
 
 # A list of field in the typedef, need to be synced with dataType.pml. TODO: could auto-populate this.
 # TODO: adding the process on affinityrules, noschedulenodes, etc.
-elements_required = {"nodes" : ["id", "name", "cpu", "cpuLeft", "memory", "memLeft", "status", "numPod", "labels", "score", "curScore", "curAffinity", "curTaint"], \
+elements_required = {"nodes" : ["id", "name", "cpu", "cpuLeft", "memory", "memLeft", "status", "numPod", "labels", "score", "curScore", "curAffinity", "curTaint", "maintained"], \
 					 "pods" : ["id", "loc", "status", "cpu", "memory", "workloadType", "workloadId", "podTemplateId", "score", "important"], \
 					 "d" : ["id", "name", "status", "replicaSets", "curVersion", "specReplicas", "replicas",  "maxSurge", "maxUnavailable", "strategy", "podTemplateId", "hpaSpec"], \
-					"podTemplates" : ["labels", "cpuRequested", "memRequested", "numRules", "nodeName", "numNoScheduleNode", "numPreferNoScheduleNode", "numTopoSpreadConstraints", "topoSpreadConstraints"],\
+					"podTemplates" : ["labels", "cpuRequested", "memRequested", "numRules", "nodeName", "numNoScheduleNode", "numPreferNoScheduleNode", "numTopoSpreadConstraints", \
+									"topoSpreadConstraints", "maxCpuChange"],\
 					"deploymentTemplates" : ["id", "name", "maxSurge", "maxUnavailable", "specReplicas"]}
 
 
 default_values = { 
-	"nodes" : {"score" : 0, "curScore" : 0, "curAffinity" : 0, "curTaint" : 0, "labels" : None}, \
+	"nodes" : {"score" : 0, "curScore" : 0, "curAffinity" : 0, "curTaint" : 0, "labels" : None, "maintained" : 0}, \
 	"pods" : {"status" : 0, "important" : 0, "workloadType" : 0, "workloadId" : 0, "score" : 0, "cpu" : 0, "memory" : 0}, \
 	# maxReplicas must be defined by users
 	"d": { "curVersion" : 0, "specReplicas" : 1, "maxSurge" : 25, "maxUnavailable" : 25, "strategy" : 1, "hpaSpec" : {"isEnabled" : 0, "numMetrics" : 0, "minReplicas" : 1}}, \
@@ -29,7 +33,8 @@ default_values = {
 	# The definiation is in plugin.go, variable systemDefaultConstraints 
 	# The default selector for topoSpreadConstraints should be the same as the pod labels in metadata.
 	"podTemplates" : {"numRules" : 0, "nodeName" : 0,  "numNoScheduleNode" : 0, "numPreferNoScheduleNode" : 0, "topoSpreadSystemDefaulted": 1, "numTopoSpreadConstraints" : 2, \
-					  "topoSpreadConstraints" : [{"maxSkew" : 3, "topologyKey" : "hostname", "whenUnsatisfiable" : 1, "labels" : None}, {"maxSkew" : 5, "topologyKey" : "zone", "whenUnsatisfiable" : 1, "labels" : None}]}, \
+					  "topoSpreadConstraints" : [{"maxSkew" : 3, "topologyKey" : "hostname", "whenUnsatisfiable" : 1, "labels" : None}, \
+					  {"maxSkew" : 5, "topologyKey" : "zone", "whenUnsatisfiable" : 1, "labels" : None}], "maxCpuChange" : 0}, \
 	"deploymentTemplates" : {"maxSurge" : -1, "maxUnavailable" : -1, "specReplicas" : -1}
 }
 
@@ -40,7 +45,7 @@ default_configs = {"scheduler" : {"pod_spread": {"nodeInclusionPolicyInPodTopolo
 
 
 default_parameter_order = {
-	"eventCpuChange" : ["targetDeployment"]
+	"eventCpuChange" : ["targetDeployment"], "maintenance" : ["p"], "podCpuChangeWithPattern" : ["targetDeployment"]
 }
 
 # TODO: check on default labels
@@ -69,6 +74,7 @@ def labels_default(json_config):
 
 # According to https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/#spread-constraint-definition
 def pod_template_default(json_config):
+	#print(json_config)
 	for pt in json_config["podTemplates"]:
 		if pt["numTopoSpreadConstraints"] > 0:
 			for ptcon in pt["topoSpreadConstraints"]:
@@ -93,13 +99,13 @@ def check_for_completion_add_default(json_config):
 						if e == "topoSpreadConstraints":
 							userDefinedConstraints = 0
 						if e in default_values[resource]:
-							r[e] = default_values[resource][e]
+							r[e] = copy.deepcopy(default_values[resource][e])
 							#print("Filling in default value for " + e, r[e])
 						else:
 							sys.exit("[error] " + e + " in " + resource + " has not been defined!")
 		else:
 			# It's OK to not define some resource, e.g. deployment Template. 
-			print("[*]", resource, "is not defined! But may not affect the execution.")
+			logger.warning(resource, "is not defined! But may not affect the execution.")
 			json_config["setup"][resource] = []
 
 	labels_default(json_config)

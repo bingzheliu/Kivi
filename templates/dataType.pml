@@ -13,7 +13,8 @@ typedef nodeType {
 	short memory;
 	short memLeft;
 
-	bit status;
+	// 0: false, 1: ready, 2: unhealthy
+	short status;
 	short numPod;
 
 	// index is the key, and each index store its value, only 1 value for 1 key
@@ -28,6 +29,8 @@ typedef nodeType {
 	bit curAffinity;
 	// 1: current node can taint the current pod and can't be scheduled
 	bit curTaint;
+
+	bit maintained;
 }
 
 // TODO: We made an assumption here that pods are managed by the deployment. But it's not always this case. So may need to sepreate more for the pod v.s. deployment.
@@ -58,6 +61,9 @@ typedef podType {
 
 	// used for invariants
 	bit important;
+
+	// CPU pattern change index
+	short curCpuIndex;
 }
 
 typedef replicaSetType {
@@ -158,6 +164,9 @@ typedef podTemplateType {
 	short numTopoSpreadConstraints;
 	topoSpreadConType topoSpreadConstraints[MAX_TOPO_CON];
 
+	short maxCpuChange;
+	short curCpuRequest[MAX_CPU_PATTERN];
+
 	/* 
 	   Not implemented.
 	   0 means never. pod with this value will be placed in the scheduling queue ahead of lower-priority pods, but they cannot preempt other pods. A non-preempting pod waiting to be scheduled will stay in the scheduling queue. Non-preempting pods may still be preempted by other, high-priority pods.
@@ -199,6 +208,9 @@ typedef deploymentType {
 	/*-----For HPA-----*/
 	hpaSpecType hpaSpec;
 
+
+	// Internal 
+	short replicasInCreation;
 
 	/*-----omitting-----*/
 	// short progressDeadlineSeconds;

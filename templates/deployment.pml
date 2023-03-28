@@ -38,16 +38,10 @@ inline scorePods()
 	od;
 }
 
-inline deleteAPodUpdate(curReplicaSet)
+inline deleteAPodUpdate()
 {
-	pods[podSelected].status = 0;
-	curReplicaSet.replicas = curReplicaSet.replicas - 1;
-	d[curD].replicas = d[curD].replicas - 1;
-	podTotal = podTotal - 1;
-
-	nodes[pods[podSelected].loc].numPod = nodes[pods[podSelected].loc].numPod - 1;
-	nodes[pods[podSelected].loc].cpuLeft = nodes[pods[podSelected].loc].cpuLeft + pods[podSelected].cpu;
-	nodes[pods[podSelected].loc].memLeft = nodes[pods[podSelected].loc].memLeft + pods[podSelected].memory;
+	kblQueue[kblTail] = podSelected;
+	kblTail++;
 }
 
 inline deleteAPod()
@@ -76,7 +70,7 @@ inline deleteAPod()
 
 	printf("[**]Deleting pod %d\n", podSelected);
 	// TODO: deal with the scenairo that the deletion failed. 
-	deleteAPodUpdate(d[pods[podSelected].workloadId].replicaSets[d[pods[podSelected].workloadId].curVersion]);
+	deleteAPodUpdate();
 }
 
 inline deletePods(numPods)
@@ -141,13 +135,14 @@ inline scale(curReplicaSet)
 			diff = 0;
 		}
 
-	:: curReplicaSet.specReplicas >  curReplicaSet.replicas ->
+	// TODO: refine the d[curD].replicasInCreation. 
+	:: curReplicaSet.specReplicas >  curReplicaSet.replicas + d[curD].replicasInCreation ->
 		// do slowStartBatch, https://github.com/kubernetes/kubernetes/blob/98742f9d77a57aec44cc05b1daf721973fb029be/pkg/controller/replicaset/replica_set.go#L742
 		// may be simplified by not having these batch updates
 
 		atomic {
-			batchSize = SlowStartInitialBatchSize;
-			remaining = curReplicaSet.specReplicas - curReplicaSet.replicas;
+			remaining = curReplicaSet.specReplicas - curReplicaSet.replicas - d[curD].replicasInCreation;
+			batchSize = (remaining < SlowStartInitialBatchSize -> remaining : SlowStartInitialBatchSize)
 			printf("[**]Too few replicas in replicaSet %d need to create %d\n", curReplicaSet.id, remaining);
 		}
 		do
@@ -158,6 +153,7 @@ inline scale(curReplicaSet)
 			atomic {
 				// curReplicaSet.replicas = curReplicaSet.replicas + batchSize;
 				// d[curD].replicas = d[curD].replicas + batchSize;
+				d[curD].replicasInCreation = d[curD].replicasInCreation + batchSize;
 				enqueuePods(batchSize);
 				remaining = remaining - batchSize;
 				min(batchSize, remaining, 2*batchSize);
@@ -224,10 +220,11 @@ proctype deploymentController()
 				//rollout();
 			fi;
 
+			atomic{
+				hpaQueue[hpaTail] = curD;
+				hpaTail ++;
 
-			hpaQueue[hpaTail] = curD;
-			hpaTail ++;
-
-			dcIndex++;
+				dcIndex++;
+			}
 	od;
 }

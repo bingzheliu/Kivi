@@ -1,4 +1,3 @@
-#include "../temp/config.pml"
 #include "../templates/dataType.pml"
 
 // in controller_utils 
@@ -14,6 +13,14 @@ short hpaQueue[HPA_QUEUE_SIZE];
 short hpaTail = 0;
 short hpaIndex = 0;
 
+short ncQueue[DEFAULT_QUEUE_SIZE];
+short ncTail = 0;
+short ncIndex = 0;
+
+short kblQueue[DEFAULT_QUEUE_SIZE];
+short kblTail = 0;
+short kblIndex = 0;
+
 // All these arrays start at index 1
 deploymentType d[MAX_DEPLOYMENT];
 podType pods[MAX_POD];
@@ -23,14 +30,15 @@ deploymentType deploymentTemplates[DEP_TEMPLATE_NUM];
 
 short podTotal;
 
-#include "../templates/util.pml"
+short init_status = 0;
 
-#include "../templates/intentsCheck.pml"
+#include "../templates/util.pml"
 
 #include "../templates/deployment.pml"
 #include "../templates/scheduler.pml"
 #include "../templates/hpa.pml"
 #include "../templates/nodeController.pml"
+#include "../templates/kubelet.pml"
 
 #include "../templates/event.pml"
 #include "../templates/userCommand.pml"

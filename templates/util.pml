@@ -62,21 +62,21 @@ inline copyDeploymentInfoToPod(pod, curD)
 		pod.memory = podTemplates[d[curD].podTemplateId].memRequested;
 		pod.important = 0;
 		pod.podTemplateId = d[curD].podTemplateId;
+		pod.curCpuIndex = 0;
 	}
 }
 
 inline printfNodeScore()
 {
-	printf("[****]Printing score for the current plugin...\n");
+	atomic{
+		printf("[****]Printing score for the current plugin...\n");
 
-	i = 1;
+		short m = 1;
 
-	do
-	:: i < NODE_NUM + 1 ->
-	   printf("[****]Node %d, score: %d, curScore: %d\n", i, nodes[i].score, nodes[i].curScore)
-	   i++;
-	:: else->break;
-	od;
+		for (m : 1 .. NODE_NUM) {
+		   printf("[****]Node %d, score: %d, curScore: %d\n", m, nodes[m].score, nodes[m].curScore)
+		}
+	}
 }
 
 // We do a round on the log result; the source code mentioned: Since <size> is at least 1 (all nodes that passed the Filters are in the
@@ -97,6 +97,26 @@ inline logTable(a, b)
 				:: a >= 1809 && a < 4915 -> b = 8;
 				:: else -> b = 9;
 			fi;
+		}
+	}
+}
+
+inline updatePodCpuUsageOnNode(pod_selected, cpu_change)
+{
+	atomic{
+		d_step{
+			nodes[pods[pod_selected].loc].cpuLeft = nodes[pods[pod_selected].loc].cpuLeft + pods[pod_selected].cpu;
+			if
+				:: pods[pod_selected].cpu + cpu_change < 0 -> 
+					pods[pod_selected].cpu = 0;
+				:: pods[pod_selected].cpu + cpu_change > POD_CPU_THRE ->
+					pods[pod_selected].cpu = POD_CPU_THRE;
+				:: else ->
+					pods[pod_selected].cpu = pods[pod_selected].cpu+cpu_change;
+			fi;
+			nodes[pods[pod_selected].loc].cpuLeft = nodes[pods[pod_selected].loc].cpuLeft - pods[pod_selected].cpu;
+
+			printf("[**]CPU change %d on pod %d, now %d; node %d, now %d\n", cpu_change, pod_selected, pods[pod_selected].cpu, pods[pod_selected].loc, nodes[pods[pod_selected].loc].cpuLeft);
 		}
 	}
 }

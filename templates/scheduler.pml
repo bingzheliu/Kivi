@@ -45,7 +45,7 @@ inline clearNodeScore()
 		nodes[i].score = 0;
 		nodes[i].curScore = 0;
 		if
-			:: nodes[i].status == 0 ->
+			:: nodes[i].status != 1 ->
 				nodes[i].score = -1;
 				nodes[i].curScore = -1;
 				nodes[i].curAffinity = 0;
@@ -66,7 +66,7 @@ inline selectHost()
 	:: i < NODE_NUM+1 ->
 		if 
 		// the actual implementation choose the node randomly when several nodes have the same score. We may omit this detail, and choose the first one encountered. 
-		:: nodes[i].status > 0 && nodes[i].score > max ->
+		:: nodes[i].status == 1 && nodes[i].score > max ->
 				max = nodes[i].score;
 				selectedNode = i;
 		:: else->;
@@ -128,6 +128,8 @@ inline bindNode()
 			k = d[j].replicaSets[d[j].curVersion].replicas;
 			updatePodIds(d[j].replicaSets[d[j].curVersion], curPod)
 			d[j].replicaSets[d[j].curVersion].replicas++;
+			d[pods[i].workloadId].replicasInCreation --;
+			
 		:: else ->;
 	fi;
 

@@ -1,34 +1,36 @@
 
+// About node controller
+// 1. We don't impl the shut down grace period for now.
 
-// TODO: think about how to write this condition
+//
+// TODO: read the code to impl this controller. Now it's a simplified version based on documents. 
 // This now is a temp solution for development
-// TODO: may need another thread for automatically update deployment info. But the drawback is to add non-logic related interactions.
-proctype nodeController(short i) {
-	do 
-		:: nodes[i].status == 0 ->
-			atomic {
-				int j = 1;
-				for (j : 1 .. POD_NUM + 1) {
-					if 
-						:: pods[j].loc == i && pods[j].status == 1 ->
-							pods[j].status = 0;
-							d[pods[j].workloadId].replicas --;
-							d[pods[j].workloadId].replicaSets[d[pods[j].workloadId].curVersion].replicas --;
-						:: else ->;
-					fi;
-				}
+proctype nodeController() {
+	short i = 0, j = 0, k = 0, max = 0;
+	printf("[**]Node controller started.\n");
 
-				int k = 1;
-				for (k : 1 .. DEP_NUM + 1) {
-					dcQueue[dcTail] = k;
-					dcTail++;
-				}
+	do
+	:: (ncIndex < ncTail) ->
+		atomic{
+			i = ncQueue[ncIndex];
+			if 
+				:: (nodes[i].status != 1) && (nodes[i].numPod > 0) ->
+					// Not implement the graceful shutdown
+					// TODO: may need another thread for automatically update deployment info. But the drawback is to add non-logic related interactions.
+						j = 1;
+						for (j : 1 .. POD_NUM ) {
+							if 
+								:: pods[j].loc == i && pods[j].status == 1 ->
+										kblQueue[kblTail] = j;
+										kblTail++;
+								:: else ->;
+							fi;
+						}
+					
+				:: else->;
+			fi;
 
-				nodes[i].cpuLeft = nodes[i].cpu;
-				nodes[i].memLeft = nodes[i].memory;
-				nodes[i].numPod = nodes[i].memory;
-			
-			nodes[i].status = 1;
-			}
+			ncIndex ++;
+		}
 	od;
 }

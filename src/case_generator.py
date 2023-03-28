@@ -7,6 +7,250 @@ import json
 import copy
 import sys
 
+def generate_H1(num_node):
+	case_config = {}
+	cur_id = 1
+	case_config["setup"] = {}
+
+	## Generate Nodes
+	case_config["setup"]["nodes"] = []
+	for i in range(0, num_node):
+		cur_node = {}
+		cur_node["id"] = cur_id
+		cur_node["name"] = cur_id
+		cur_id += 1
+		
+		cur_node["cpu"] = 64
+		cur_node["memory"] = 64
+	
+		cur_node["cpuLeft"] = 64
+		cur_node["memLeft"] = 64
+		cur_node["numPod"] = 0
+
+		cur_node["status"] = 1
+		case_config["setup"]["nodes"].append(cur_node)
+
+	## Generate Pods
+	deployment_to_pod = {}
+	deployment_to_pod[1] = []
+	case_config["setup"]["pods"] = []
+
+	for i in range(0, num_node*2+5):
+		cur_pod = {}
+		cur_pod["id"] = cur_id
+		cur_id += 1
+
+		cur_pod["loc"] = 0
+		 
+		cur_pod["workloadType"] = 1
+		cur_pod["workloadId"] = 1
+		cur_pod["podTemplateId"] = 1
+
+		cur_pod["status"] = 0
+
+		cur_pod["cpu"] = 8
+		cur_pod["memory"] = 8
+		cur_pod["important"] = 0
+		case_config["setup"]["pods"].append(cur_pod)
+
+	## Generate Deployment
+	case_config["setup"]["d"] = []
+	d = {}
+	d["id"] = cur_id
+	d["name"] = cur_id
+	cur_id += 1
+	d["status"] = 0
+	d["curVersion"] = 0
+	d["replicaSets"] = []
+
+	rp = {}
+	rp["id"] = cur_id
+	cur_id += 1
+	rp["deploymentId"] = 1
+	rp["replicas"] = 0
+	rp["specReplicas"] = 1 if num_node/5 < 1 else int(num_node/5)
+	rp["version"] = 0
+	rp["podIds"] = []
+	d["replicaSets"].append(rp)
+
+	rp = {}
+	rp["id"] = cur_id
+	cur_id += 1
+	rp["deploymentId"] = 1
+	d["replicaSets"].append(rp)
+
+	
+	d["specReplicas"] = 1 if num_node/5 < 1 else int(num_node/5)
+	d["replicas"] = 0
+	d["podTemplateId"] = 1
+
+	d["hpaSpec"] = {}
+	d["hpaSpec"]["isEnabled"] = 1
+	d["hpaSpec"]["numMetrics"] = 1
+	d["hpaSpec"]["metricNames"] = []
+	d["hpaSpec"]["metricNames"].append(0)
+	d["hpaSpec"]["metricTargets"] = []
+	d["hpaSpec"]["metricTargets"].append(50)
+	d["hpaSpec"]["metricTypes"] = []
+	d["hpaSpec"]["metricTypes"].append(1)
+	d["hpaSpec"]["minReplicas"] =  1 if num_node/5 < 1 else int(num_node/5)
+	d["hpaSpec"]["maxReplicas"] = num_node*2+3
+
+	case_config["setup"]["d"].append(d)
+
+	# Generate podTemplate
+	case_config["setup"]["podTemplates"] = []
+	pt = {}
+	pt["labels"] = {"name" : "app"}
+	pt["cpuRequested"] = 8
+	pt["memRequested"] = 8
+	pt["maxCpuChange"] = 1
+	pt["curCpuRequest"] = []
+	pt["curCpuRequest"].append(3)
+
+	#pt["numTopoSpreadConstraints"] = 0
+	case_config["setup"]["podTemplates"].append(pt)
+
+	case_config["controllers"] = {}
+	case_config["controllers"]["scheduler"] = {}
+	case_config["controllers"]["hpa"] = {}
+	case_config["controllers"]["deployment"] = {}
+
+	case_config["userCommand"] = {}
+	case_config["userCommand"]["createTargetDeployment"] = 1
+
+	case_config["events"] = {}
+
+	return case_config
+
+
+def generate_S6(num_node):
+	case_config = {}
+	cur_id = 1
+	case_config["setup"] = {}
+
+	## Generate Nodes
+	case_config["setup"]["nodes"] = []
+	for i in range(0, num_node):
+		cur_node = {}
+		cur_node["id"] = cur_id
+		cur_node["name"] = cur_id
+		cur_id += 1
+		
+		cur_node["cpu"] = 64
+		cur_node["memory"] = 64
+	
+		cur_node["cpuLeft"] = 56
+		cur_node["memLeft"] = 56
+		cur_node["numPod"] = 1
+
+		cur_node["status"] = 1
+		case_config["setup"]["nodes"].append(cur_node)
+	
+	## Generate Pods
+	deployment_to_pod = {}
+	deployment_to_pod[1] = []
+	case_config["setup"]["pods"] = []
+
+	for i in range(0, num_node+5):
+		cur_pod = {}
+		cur_pod["id"] = cur_id
+		cur_id += 1
+
+		cur_pod["loc"] = i+1
+		 
+		cur_pod["workloadType"] = 1
+		cur_pod["workloadId"] = 1
+		cur_pod["podTemplateId"] = 1
+
+		if i < num_node:
+			cur_pod["status"] = 1
+			deployment_to_pod[1].append(i+1)
+		else:
+			cur_pod["status"] = 0
+
+		cur_pod["cpu"] = 8
+		cur_pod["memory"] = 8
+		cur_pod["important"] = 0
+		case_config["setup"]["pods"].append(cur_pod)
+
+	## Generate Deployment
+	d_id = 0
+	case_config["setup"]["d"] = []
+	d = {}
+	d["id"] = cur_id
+	d["name"] = cur_id
+	d_id = cur_id
+	cur_id += 1
+	d["status"] = 1
+	d["curVersion"] = 0
+	d["replicaSets"] = []
+
+	rp = {}
+	rp["id"] = cur_id
+	cur_id += 1
+	rp["deploymentId"] = 1
+	rp["replicas"] = num_node
+	rp["specReplicas"] = num_node
+	rp["version"] = 0
+	rp["podIds"] = []
+	for v in deployment_to_pod[1]:
+		rp["podIds"].append(v)
+	d["replicaSets"].append(rp)
+
+	rp = {}
+	rp["id"] = cur_id
+	cur_id += 1
+	rp["deploymentId"] = 1
+	d["replicaSets"].append(rp)
+
+	d["specReplicas"] = num_node
+	d["replicas"] = num_node
+
+	d["podTemplateId"] = 1
+
+	case_config["setup"]["d"].append(d)
+
+	case_config["setup"]["podTemplates"] = []
+	pt = {}
+	pt["cpuRequested"] = 8
+	pt["memRequested"] = 8
+	pt["labels"] = {"name" : "app"}
+
+	pt["numTopoSpreadConstraints"] = 1
+	pt["topoSpreadConstraints"] = []
+	ptcon = {}
+	ptcon["maxSkew"] = 1
+	ptcon["minDomains"] = 2
+	# based on node name
+	ptcon["topologyKey"] = "hostname"
+	ptcon["whenUnsatisfiable"] = 1
+	ptcon["numMatchedLabel"] = 1
+	ptcon["labels"] = {"name" : "app"}
+
+	pt["topoSpreadConstraints"].append(copy.deepcopy(ptcon))
+
+	#pt["numTopoSpreadConstraints"] = 0
+	case_config["setup"]["podTemplates"].append(pt)
+
+	## Generate Deployment template
+	case_config["controllers"] = {}
+	case_config["controllers"]["scheduler"] = {}
+	case_config["controllers"]["hpa"] = {}
+	case_config["controllers"]["deployment"] = {}
+
+	p = 1 if num_node/5 < 1 else int(num_node/5)
+	case_config["events"] = {}
+	case_config["events"]["maintenance"] = {}
+	case_config["events"]["maintenance"]["p"] = p
+
+	case_config["intents"] = []
+	# TODO: have a more general list of user intents
+	case_config["intents"].append("\nnever \n{\n do\n  :: init_status == 1 && d[1].replicas < d[1].specReplicas - " + str(p) +  " -> break\n  :: else\n od;\n}\n")
+
+	return case_config
+
+
 def generate_H2(num_node):
 	case_config = {}
 	cur_id = 1
@@ -549,13 +793,13 @@ def generate_case1(num_node):
 	return case1_config
 
 def case_generator(filename, case_id, scale):
-	case_fun = {"s4": generate_S4, "s3" : generate_S3, "case1": generate_case1, "h2": generate_H2}
+	case_fun = {"s4": generate_S4, "s3" : generate_S3, "case1": generate_case1, "h2": generate_H2, "s6" : generate_S6, "h1" : generate_H1}
 
 	if case_id in case_fun:
 		json_config = case_fun[case_id](int(scale))
 		with open(filename,'w') as f:
 			json.dump(json_config, f, indent=4)
 	else:
-		print("Unkown case ID, re-try with all lower cases.")
+		logger.critical("Unkown case ID, re-try with all lower cases.")
 
 

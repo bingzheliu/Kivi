@@ -32,7 +32,7 @@ def verifer_operator(result_base_path, pml_base_path, file_base, case_id, scale,
 
 	with open(result_base_path + "/" + str(scale), "w") as fw:
 		if pan_para != "":
-			stdout, stderr = run_script(['./pan', '-m36900', pan_para], False)
+			stdout, stderr = run_script(['./pan', pan_para], False)
 		else:
 			stdout, stderr = run_script(['./pan', '-m10000000'], False)
 		with open(result_base_path + "/raw_data/exec_" + str(case_id) + "_" + str(scale), "w") as fr:

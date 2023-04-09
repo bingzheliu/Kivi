@@ -5,6 +5,7 @@
 	2. We don't model unheathy pod for now, otherwise, need to modify the rollout (the scale down old replica part)
 	3. Now the queue is not a rolling array. We make it only deal with number of DEPLOYMENT_QUEUE_SIZE events for now. 
 	4. We modeled two version of the deployment. So any history feature/rollback to older version are not supported now.
+	5. Although deployment is not atomic in real world, we approximate it as atomic approach. Since the calculation of how many pods shouldn't take too long. 
 */
 
 
@@ -40,6 +41,7 @@ inline scorePods()
 
 inline deleteAPodUpdate()
 {
+	d[curD].replicasInDeletion ++;
 	pods[podSelected].status = 3;
 	kblQueue[kblTail] = podSelected;
 	kblTail++;
@@ -123,44 +125,41 @@ inline scale(curReplicaSet)
 	short SlowStartInitialBatchSize = 1;
 	short batchSize = 0, remaining = 0;
 
-	// TODO: add pause
+	// TODO: add dealing pause
 	if
-	:: curReplicaSet.specReplicas <  curReplicaSet.replicas ->
-		// Let assume the deleting pods is atomic
-		atomic {
-			short diff =  curReplicaSet.replicas - curReplicaSet.specReplicas;
+	:: curReplicaSet.specReplicas <  curReplicaSet.replicas - d[curD].replicasInDeletion ->
+		short diff =  curReplicaSet.replicas - curReplicaSet.specReplicas - d[curD].replicasInDeletion;
 
-			printf("[**][Deployment] Starting the deployment controller to delete %d pods\n", diff);
-			deletePods(diff);
+		printf("[**][Deployment] Starting the deployment controller to delete %d pods\n", diff);
+		deletePods(diff);
 
-			podSelected = 0;
-			i = 0;
-			diff = 0;
-		}
+		podSelected = 0;
+		i = 0;
+		diff = 0;
+
 
 	// TODO: refine the d[curD].replicasInCreation. 
 	:: curReplicaSet.specReplicas >  curReplicaSet.replicas + d[curD].replicasInCreation ->
 		// do slowStartBatch, https://github.com/kubernetes/kubernetes/blob/98742f9d77a57aec44cc05b1daf721973fb029be/pkg/controller/replicaset/replica_set.go#L742
 		// may be simplified by not having these batch updates
 
-		atomic {
-			remaining = curReplicaSet.specReplicas - curReplicaSet.replicas - d[curD].replicasInCreation;
-			batchSize = (remaining < SlowStartInitialBatchSize -> remaining : SlowStartInitialBatchSize)
-			printf("[**][Deployment] Too few replicas in replicaSet %d need to create %d\n", curReplicaSet.id, remaining);
-		}
+		// Since we are doing atomic, batch may not actually make difference. But keep it for now. 
+		remaining = curReplicaSet.specReplicas - curReplicaSet.replicas - d[curD].replicasInCreation;
+		batchSize = (remaining < SlowStartInitialBatchSize -> remaining : SlowStartInitialBatchSize)
+		printf("[**][Deployment] Too few replicas in replicaSet %d need to create %d\n", curReplicaSet.id, remaining);
+		
 		do
 		:: batchSize > 0 ->
 			// TODO: confirm if one batch needs to wait until the pods are scheduled or only created, currently I only see it is "posted" on API server, it shouldn't been scheduled.  --> looks like it may not wait
 			// This code actually did the Pod Post: https://github.com/kubernetes/kubernetes/blob/97d37c29552790384b0a8b8f6f05648f28e07c55/staging/src/k8s.io/client-go/kubernetes/typed/core/v1/pod.go#L120 
 
-			atomic {
-				// curReplicaSet.replicas = curReplicaSet.replicas + batchSize;
-				// d[curD].replicas = d[curD].replicas + batchSize;
-				d[curD].replicasInCreation = d[curD].replicasInCreation + batchSize;
-				enqueuePods(batchSize);
-				remaining = remaining - batchSize;
-				min(batchSize, remaining, 2*batchSize);
-			}
+			// curReplicaSet.replicas = curReplicaSet.replicas + batchSize;
+			// d[curD].replicas = d[curD].replicas + batchSize;
+			d[curD].replicasInCreation = d[curD].replicasInCreation + batchSize;
+			enqueuePods(batchSize);
+			remaining = remaining - batchSize;
+			min(batchSize, remaining, 2*batchSize);
+			
 		:: else -> break;
 		od;
 	:: else->;
@@ -206,30 +205,31 @@ inline rollout()
 // rsc.burstReplicas
 
 // TODO: check on deployment trigger reason. If in bootstrapping, how it works?
+// TODO: what if there's both pods in creation and deletion? 
 proctype deploymentController()
 {
 	short i = 0, j = 0, k = 0, max = 0, podSelected = 0;
 
 endDC:	do
 		:: (dcIndex < dcTail) ->
-				short curD = dcQueue[dcIndex];
-				printf("[**][Deployment] Start to work on deployment %d\n", curD)
-
-				if
-				:: (d[curD].specReplicas != d[curD].replicas) -> 
-					d[curD].replicaSets[d[curD].curVersion].specReplicas = d[curD].specReplicas;
-					scale(d[curD].replicaSets[d[curD].curVersion]);
-				// TODO: refine this rollout condition
-				:: else-> ;
-					printf("[**][Deployment] Deployment %d specReplicas is the same as replicas\n", curD)
-					//rollout();
-				fi;
-
 				atomic{
-					hpaQueue[hpaTail] = curD;
-					hpaTail ++;
+					short curD = dcQueue[dcIndex];
+					printf("[**][Deployment] Start to work on deployment %d\n", curD)
 
-					dcIndex++;
+					if
+					:: (d[curD].specReplicas != d[curD].replicas + d[curD].replicasInCreation - d[curD].replicasInDeletion) -> 
+						d[curD].replicaSets[d[curD].curVersion].specReplicas = d[curD].specReplicas;
+						scale(d[curD].replicaSets[d[curD].curVersion]);
+					// TODO: refine this rollout condition
+					:: else-> ;
+						printf("[**][Deployment] Deployment %d specReplicas is the same as replicas\n", curD)
+						//rollout();
+					fi;
+
+						hpaQueue[hpaTail] = curD;
+						hpaTail ++;
+
+						dcIndex++;
 				}
 		od;
 }

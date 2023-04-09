@@ -31,7 +31,7 @@ inline computeReplicasForMetric(curMetricName, curMetricTarget, curMetricType)
 		:: p < totalReplicas ->
 
 			k = d[curD].replicaSets[d[curD].curVersion].podIds[j];
-			printf("[***][HPA] curD %d, j %d, d[curD].curVersion %d, k %d, pods[k].status %d \n", curD, j, d[curD].curVersion, k, pods[k].status)
+			printf("[******][HPA] curD %d, j %d, d[curD].curVersion %d, k %d, pods[k].status %d \n", curD, j, d[curD].curVersion, k, pods[k].status)
 
 			// TODO: now that we added the unreadyPod status, we consider the pod being terminiated still part of the calcluation. Need to check on the code.
 			if 

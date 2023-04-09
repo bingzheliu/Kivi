@@ -19,6 +19,7 @@ endK:	do
 						pods[i].curCpuIndex = 0;
 						d[pods[i].workloadId].replicas --;
 						d[pods[i].workloadId].replicaSets[d[pods[i].workloadId].curVersion].replicas --;
+						d[pods[i].workloadId].replicasInDeletion --;
 						podTotal = podTotal - 1;
 
 						j = pods[i].loc

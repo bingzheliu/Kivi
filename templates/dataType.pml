@@ -211,6 +211,7 @@ typedef deploymentType {
 
 
 	// Internal 
+	short replicasInDeletion;
 	short replicasInCreation;
 
 	/*-----omitting-----*/

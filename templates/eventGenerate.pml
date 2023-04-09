@@ -39,6 +39,7 @@ inline podCpuChangeWithPatternExec(i)
 	}
 }
 
+// TODO: A potential problem is that we can't be sure about how long each CPU usage will last. 
 proctype podCpuChangeWithPattern()
 {
 			do 

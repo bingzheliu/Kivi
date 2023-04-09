@@ -40,7 +40,8 @@ typedef podType {
 	short loc;
 
 	// https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
-	// 0: pending; 1: running; 2: terminated (not sure if we need this)
+	// 0: idle; 1: running (the only healthy status); 
+	// 2: pending (not count for replicas); 3: being terminated (still count for replicas) 
 	short status;
 
 	// resource

@@ -67,7 +67,7 @@ inline nodeNameFilter(podSpec)
 
 	helperFilter();
 
-	printf("[***]Finished nodeNameFilter.\n")
+	printf("[***][SchedulerPlugins] Finished nodeNameFilter.\n")
 	printfNodeScore();
 }
 
@@ -115,7 +115,7 @@ inline nodeAffinityFilter(podSpec)
 
 	helperFilter();
 
-	printf("[***]Finished nodeAffinityFilter.\n")
+	printf("[***][SchedulerPlugins] Finished nodeAffinityFilter.\n")
 	printfNodeScore();
 }
 
@@ -130,7 +130,7 @@ inline taintTolerationFilter(podSpec)
 	:: else -> break;
 	od;
 
-	printf("[***]Finished taintTolerationFilter.\n")
+	printf("[***][SchedulerPlugins] Finished taintTolerationFilter.\n")
 	printfNodeScore();
 }
 
@@ -141,7 +141,8 @@ inline findMatchedPod(i, j, podSpec)
 	
 	for (k : 1 .. POD_NUM) {
 		if 
-			:: (pods[k].status == 0 || pods[k].loc != i) -> goto fmpend;
+			// TODO: check if this pod status can be 2 (pending)
+			:: (pods[k].status != 1 || pods[k].loc != i) -> goto fmpend;
 			:: else->;
 		fi;
 		short p = 0;
@@ -208,7 +209,7 @@ stopo2:				j++;
 
 					short count = 0;
 					findMatchedPod(i, j, podSpec);
-					printf("[****]Matched pod for {node %d, topologyKey %d} is %d\n", i, podSpec.topoSpreadConstraints[j].topologyKey, count)
+					printf("[****][SchedulerPlugins] Matched pod for {node %d, topologyKey %d} is %d\n", i, podSpec.topoSpreadConstraints[j].topologyKey, count)
 
 					// We don't need the tpCountsByNodes as we can't do the calculation of nodes in parallel
 					short key = podSpec.topoSpreadConstraints[j].topologyKey;
@@ -219,7 +220,7 @@ stopo2:				j++;
 						:: else ->
 							tpPairToMatchNum[key].a[nodes[i].labelKeyValue[key]] = tpPairToMatchNum[key].a[nodes[i].labelKeyValue[key]] + count;
 					fi;
-					printf("[****]Matched pod for {%d, %d} is %d\n", key, nodes[i].labelKeyValue[key], count)
+					printf("[****][SchedulerPlugins] Matched pod for {%d, %d} is %d\n", key, nodes[i].labelKeyValue[key], count)
 stopo5:				j++;
 				:: else -> break;
 			od;
@@ -317,11 +318,11 @@ inline podTopologySpreadFilter(podSpec)
 					:: else->;
 				fi;
 
-				printf("[****]PodTopoSpread: on node %d, total num %d, selfMatchNum %d, minMatchNum %d\n", i, tpPairToMatchNum[key].a[nodes[i].labelKeyValue[key]], selfMatchNum, minMatchNum)
+				printf("[****][SchedulerPlugins] PodTopoSpread: on node %d, total num %d, selfMatchNum %d, minMatchNum %d\n", i, tpPairToMatchNum[key].a[nodes[i].labelKeyValue[key]], selfMatchNum, minMatchNum)
 
 				if 
 					:: tpPairToMatchNum[key].a[nodes[i].labelKeyValue[key]] + selfMatchNum - minMatchNum >  podSpec.topoSpreadConstraints[j].maxSkew ->
-						printf("[***]Node %d not passing topoSpreadConstraints %d\n", i, j)
+						printf("[***][SchedulerPlugins] Node %d not passing topoSpreadConstraints %d\n", i, j)
 						nodes[i].score = -1;
 					:: else->;
 stopo6:			fi;
@@ -443,7 +444,7 @@ inline nodeAffinityScore(podSpec)
 
 	defaultNormalizeScoreAndWeight(0, NODE_AFFINITY_WEIGHT);
 
-	printf("[***]Finished nodeAffinityScore.\n")
+	printf("[***][SchedulerPlugins] Finished nodeAffinityScore.\n")
 	printfNodeScore();
 }
 
@@ -465,7 +466,7 @@ inline taintTolerationScore(podSpec)
 
 	defaultNormalizeScoreAndWeight(1, TAINT_WEIGHT);
 
-	printf("[***]Finished taintTolerationScore.\n")
+	printf("[***][SchedulerPlugins] Finished taintTolerationScore.\n")
 	printfNodeScore();
 }
 
@@ -485,7 +486,7 @@ inline nodeResourcesFitFilter(podSpec)
 	:: else -> break;
 	od;
 
-	printf("[***]Finished nodeResourcesFitFilter.\n")
+	printf("[***][SchedulerPlugins] Finished nodeResourcesFitFilter.\n")
 	printfNodeScore();
 }
 
@@ -516,7 +517,7 @@ inline nodeResourceFitScore(podSpec)
 					memScore = ((podSpec.memRequested) * MAX_NODE_SCORE / nodes[i].memLeft) * 1;
 					nodes[i].score = nodes[i].score + ((cpuScore * 1 + memScore * 1) * NODE_RESOURCE_FIT / 2 )
 				:: else -> 
-					printf("[*Warning]No/Wrong scheduling strategy defined!\n");
+					printf("[*Warning][SchedulerPlugins] No/Wrong scheduling strategy defined!\n");
 					assert(false);
 			fi;
 		:: else->;
@@ -525,7 +526,7 @@ inline nodeResourceFitScore(podSpec)
 	:: else -> break;
 	od;
 
-	printf("[**]Finished nodeResourceFitScore.\n")
+	printf("[**][SchedulerPlugins] Finished nodeResourceFitScore.\n")
 	printfNodeScore();
 }
 
@@ -616,7 +617,7 @@ ptsp1:	skip;
 			// We count all the pods, including terminating pods, as we don't model the terminating state for now. 
 			short count = 0;
 			findMatchedPod(i, j, podSpec);
-			printf("[****]Matched pod for {node %d, topologyKey %d} is %d\n", i, podSpec.topoSpreadConstraints[j].topologyKey, count)
+			printf("[****][SchedulerPlugins] Matched pod for {node %d, topologyKey %d} is %d\n", i, podSpec.topoSpreadConstraints[j].topologyKey, count)
 			topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] = topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] + count;
 ptsp4: 		skip;
 		}
@@ -647,12 +648,12 @@ inline podTopologySpreadScore(podSpec)
 			// which means that, if a topo has more domains, the more the matched pods, the more the scores
 			short curValue = nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey];
 			// [estimate] they did a round on the score, while we are all floored. 
-			printf("[******] topoKey %d, curValue %d\n", podSpec.topoSpreadConstraints[j].topologyKey, curValue)
+			printf("[******][SchedulerPlugins] topoKey %d, curValue %d\n", podSpec.topoSpreadConstraints[j].topologyKey, curValue)
 			if
 				:: curValue != -1 ->
 			nodes[i].curScore = nodes[i].curScore + topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] * topologyNormalizingWeight[j] + (podSpec.topoSpreadConstraints[j].maxSkew - 1)
-			printf("[******] Current Constraints on key %d. Node %d, curScore %d.\n", podSpec.topoSpreadConstraints[j].topologyKey, i, nodes[i].curScore)
-			printf("[******] TopopairToCount %d, weight %d, maxSkew %d \n", topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue], topologyNormalizingWeight[j], podSpec.topoSpreadConstraints[j].maxSkew)
+			printf("[******][SchedulerPlugins] Current Constraints on key %d. Node %d, curScore %d.\n", podSpec.topoSpreadConstraints[j].topologyKey, i, nodes[i].curScore)
+			printf("[******][SchedulerPlugins] TopopairToCount %d, weight %d, maxSkew %d \n", topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue], topologyNormalizingWeight[j], podSpec.topoSpreadConstraints[j].maxSkew)
 				:: else->;
 			fi;
 ptss2:		skip;
@@ -716,7 +717,7 @@ inline podTopologySpreadScoring(podSpec)
 	podTopologySpreadScore(podSpec);
 	podTopologySpreadNormalizeScore();
 
-	printf("[***]Finished podTopologySpreadScoring.\n")
+	printf("[***][SchedulerPlugins] Finished podTopologySpreadScoring.\n")
 	printfNodeScore();
 }
 

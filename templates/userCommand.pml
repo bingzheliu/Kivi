@@ -12,7 +12,7 @@ proctype applyDeployment(short deploymentTemplateId)
 		for (i : 1 .. DEP_NUM) {
 			if
 				:: d[i].name == deploymentTemplates[deploymentTemplateId].name ->
-					printf("[**] Applying the template %d to deployment {Id %d, index %d}\n", deploymentTemplateId, d[i].id, i);
+					printf("[**][applyDeployment] Applying the template %d to deployment {Id %d, index %d}\n", deploymentTemplateId, d[i].id, i);
 					// [Limitation] We only support the following fields for updates for now. 
 					// If replicas is not specified, then it's the default value 1. https://github.com/kubernetes/kubernetes/issues/67135
 					d[i].specReplicas = (deploymentTemplates[deploymentTemplateId].specReplicas == -1 -> 1 : deploymentTemplates[deploymentTemplateId].specReplicas);
@@ -49,7 +49,7 @@ proctype createTargetDeployment(short deploymentId)
 				d[deploymentId].status = 1;
 				dcQueue[dcTail] = deploymentId;
 				dcTail++;
-				printf("[***] Created deployment %d\n", deploymentId)
+				printf("[***][createTargetDeployment] Created deployment %d\n", deploymentId)
 			:: else ->;
 		fi;
 	}

@@ -53,7 +53,7 @@ inline updatePodIds(replicaset, curPod)
 inline copyDeploymentInfoToPod(pod, curD)
 {
 	atomic{
-		pod.status = 1;
+		// pod.status = 1;
 		pod.workloadType = 1;
 		pod.workloadId = curD;
 		pod.loc = 0;

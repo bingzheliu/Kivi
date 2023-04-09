@@ -40,10 +40,12 @@ inline scorePods()
 
 inline deleteAPodUpdate()
 {
+	pods[podSelected].status = 3;
 	kblQueue[kblTail] = podSelected;
 	kblTail++;
 }
 
+// TODO: check on if a pod has not been scheduled, will it be considered in deletion?
 inline deleteAPod()
 {
 	int cur_max = 0;
@@ -61,14 +63,14 @@ inline deleteAPod()
 					podSelected = i;
 				:: else->;
 				fi;
-				printf("[***]pod score %d: %d; max: %d\n", i, pods[i].score, cur_max);
+				printf("[***][Deployment] pod score %d: %d; max: %d\n", i, pods[i].score, cur_max);
 			:: else->;
 		fi;
 		i++;
 	:: else -> break;
 	od;
 
-	printf("[**]Deleting pod %d\n", podSelected);
+	printf("[**][Deployment] Deleting pod %d\n", podSelected);
 	// TODO: deal with the scenairo that the deletion failed. 
 	deleteAPodUpdate();
 }
@@ -99,7 +101,8 @@ inline enqueuePods(batchSize)
 			if
 			:: pods[j].status == 0 ->
 				copyDeploymentInfoToPod(pods[j], curD);
-				printf("[**]Adding a new pod %d to deployment %d\n", j, curD)
+				pods[j].status = 2;
+				printf("[**][Deployment] Adding a new pod %d to deployment %d\n", j, curD)
 				sQueue[sTail] = j;
 				sTail++;
 				break;
@@ -125,9 +128,9 @@ inline scale(curReplicaSet)
 	:: curReplicaSet.specReplicas <  curReplicaSet.replicas ->
 		// Let assume the deleting pods is atomic
 		atomic {
-			printf("[**]Starting the deployment controller to delete pods\n");
-
 			short diff =  curReplicaSet.replicas - curReplicaSet.specReplicas;
+
+			printf("[**][Deployment] Starting the deployment controller to delete %d pods\n", diff);
 			deletePods(diff);
 
 			podSelected = 0;
@@ -143,7 +146,7 @@ inline scale(curReplicaSet)
 		atomic {
 			remaining = curReplicaSet.specReplicas - curReplicaSet.replicas - d[curD].replicasInCreation;
 			batchSize = (remaining < SlowStartInitialBatchSize -> remaining : SlowStartInitialBatchSize)
-			printf("[**]Too few replicas in replicaSet %d need to create %d\n", curReplicaSet.id, remaining);
+			printf("[**][Deployment] Too few replicas in replicaSet %d need to create %d\n", curReplicaSet.id, remaining);
 		}
 		do
 		:: batchSize > 0 ->
@@ -207,24 +210,26 @@ proctype deploymentController()
 {
 	short i = 0, j = 0, k = 0, max = 0, podSelected = 0;
 
-	do
+endDC:	do
 		:: (dcIndex < dcTail) ->
-			int curD = dcQueue[dcIndex];
+				short curD = dcQueue[dcIndex];
+				printf("[**][Deployment] Start to work on deployment %d\n", curD)
 
-			if
-			:: (d[curD].specReplicas != d[curD].replicas) -> 
-				d[curD].replicaSets[d[curD].curVersion].specReplicas = d[curD].specReplicas;
-				scale(d[curD].replicaSets[d[curD].curVersion]);
-			// TODO: refine this rollout condition
-			:: else-> ;
-				//rollout();
-			fi;
+				if
+				:: (d[curD].specReplicas != d[curD].replicas) -> 
+					d[curD].replicaSets[d[curD].curVersion].specReplicas = d[curD].specReplicas;
+					scale(d[curD].replicaSets[d[curD].curVersion]);
+				// TODO: refine this rollout condition
+				:: else-> ;
+					printf("[**][Deployment] Deployment %d specReplicas is the same as replicas\n", curD)
+					//rollout();
+				fi;
 
-			atomic{
-				hpaQueue[hpaTail] = curD;
-				hpaTail ++;
+				atomic{
+					hpaQueue[hpaTail] = curD;
+					hpaTail ++;
 
-				dcIndex++;
-			}
-	od;
+					dcIndex++;
+				}
+		od;
 }

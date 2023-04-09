@@ -1,6 +1,8 @@
 #include "[$CONFIG_FILENAME]"
 
-#include "../../templates/include.pml"
+#include "[$FILE_BASE]/templates/include.pml"
+
+#include "[$EVENT_FILENAME]"
 
 #include "[$INTENT_FILENAME]"
 
@@ -23,13 +25,17 @@ init{
 
 	[$USER_COMMAND]
 
-	int i = 1;
-	for (i : 1 .. NODE_NUM) {
-		run kernelPanic(i);
-	}
+	// int i = 1;
+	// for (i : 1 .. NODE_NUM) {
+	// 	run kernelPanic(i);
+	// }
 
-	for (i : 1 .. POD_NUM) {
-		run podCpuChangeWithPattern(i);
-	}
+	// for (i : 1 .. NODE_NUM) {
+	// 	run podCpuChangeWithPattern(i);
+	// }
+
+	// run podCpuChangeWithPattern()
+
+	[$EVENT]
 
 }

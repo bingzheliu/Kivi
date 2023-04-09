@@ -29,14 +29,18 @@ inline computeReplicasForMetric(curMetricName, curMetricTarget, curMetricType)
 	short metricsTotal = 0, requestTotal = 0, totalReplicas = d[curD].replicas;
 	do
 		:: p < totalReplicas ->
-			k = d[curD].replicaSets[d[curD].curVersion].podIds[j];
 
+			k = d[curD].replicaSets[d[curD].curVersion].podIds[j];
+			printf("[***][HPA] curD %d, j %d, d[curD].curVersion %d, k %d, pods[k].status %d \n", curD, j, d[curD].curVersion, k, pods[k].status)
+
+			// TODO: now that we added the unreadyPod status, we consider the pod being terminiated still part of the calcluation. Need to check on the code.
 			if 
-				:: k == 0 || pods[k].status == 0 -> 
+				:: k == 0 || (pods[k].status != 1 && pods[k].status != 3) -> 
 					goto hpa2;
 				:: else->
 					p++;
 			fi;
+			printf("[*****][HPA] Calculating metrics for pod %d (status %d), totalReplicas %d\n", k, pods[k].status, totalReplicas)
 
 			// assuming all the pods are good. Can add the code to process unready pods here. 
 			if 
@@ -50,7 +54,7 @@ inline computeReplicasForMetric(curMetricName, curMetricTarget, curMetricType)
 						:: curMetricName == 1 ->
 							metricsTotal = metricsTotal + pods[k].memory;
 						:: else->
-							printf("[*Warning]Invalid metric name\n");
+							printf("[*Warning][HPA] Invalid metric name\n");
 							assert(false);
 					fi;
 				// utlization
@@ -65,17 +69,17 @@ inline computeReplicasForMetric(curMetricName, curMetricTarget, curMetricType)
 							metricsTotal = metricsTotal + pods[k].memory;
 							requestTotal = requestTotal + podTemplates[pods[k].podTemplateId].memRequested;
 						:: else->
-							printf("[*Warning]Invalid metric name\n");
+							printf("[*Warning][HPA] Invalid metric name\n");
 							assert(false);
 					fi;
 				:: else -> 
-					printf("[*Warning]Invalid metric type\n");
+					printf("[*Warning][HPA] Invalid metric type\n");
 			fi;
 hpa2:		j++;
 		:: else->break;
 	od;
 
-	printf("[****]Computing metric, metricsTotal is %d, requestTotal is %d\n", metricsTotal, requestTotal)
+	printf("[****][HPA] Computing metric, metricsTotal is %d, requestTotal is %d\n", metricsTotal, requestTotal)
 
 	short currentUsage = 0;
 	if
@@ -84,7 +88,7 @@ hpa2:		j++;
 		:: curMetricType == 1 ->
 			currentUsage = metricsTotal * 100 / requestTotal;
 	fi;
-	printf("[****]Computing metric, currentUsage is %d\n", currentUsage)
+	printf("[****][HPA] Computing metric, currentUsage is %d\n", currentUsage)
 
 	// math.Abs(1.0-usageRatio) <= c.tolerance
 	// Warning: if exits equal sign, for the cases of large sets of nodes, they may be always within the tolerance, no matter of the TOLERANCE
@@ -93,8 +97,10 @@ hpa2:		j++;
 			replicaCountProposal = d[curD].specReplicas;
 		:: else -> 
 			// estimate: this should be ceil, so we just add 1; meaning if it's exact equal to N, then it would become N+1
-			printf("[**]Exceed the HPA tolerence\n")
-			printf("[****]Current curMetricType %d, currentUsage %d, metricsTotal %d, totalReplicas %d, curMetricTarget %d\n", curMetricType, currentUsage, metricsTotal, totalReplicas, curMetricTarget)
+			// newReplicas := int32(math.Ceil(newUsageRatio * float64(len(metrics))))
+			// TODO: this way of calculation can result in slow-growing "issue", should be double checked on this
+			printf("[**][HPA] Exceed the HPA tolerence\n")
+			printf("[****][HPA] Current curMetricType %d, currentUsage %d, metricsTotal %d, totalReplicas %d, curMetricTarget %d\n", curMetricType, currentUsage, metricsTotal, totalReplicas, curMetricTarget)
 			if
 				:: curMetricType == 0 ->
 					replicaCountProposal = metricsTotal / curMetricTarget + 1;
@@ -175,7 +181,7 @@ inline normalizeDesiredReplicas()
 proctype hpa()
 {
 	short i = 0, j = 0, k = 0, p = 0;
-	do
+endHPA:	do
 		:: (hpaIndex < hpaTail) -> 
 			atomic{
 				// TODO: check, potentially can have issue because the curD can be shared acrose the controller
@@ -185,7 +191,7 @@ proctype hpa()
 				// [NS] Timestamp is not actually implemented.
 				short replicas = 0, timestamp = 0, metric = 0;
 
-				printf("[****] HPA working on deployment %d\n", curD)
+				printf("[****][HPA] HPA working on deployment %d\n", curD)
 
 				if
 					::d[curD].hpaSpec.isEnabled == 0 ->
@@ -200,10 +206,10 @@ proctype hpa()
 						if
 							// TODO: double check if the below is >= or >, it could affect the logic
 							::currentReplicas > d[curD].hpaSpec.maxReplicas ->
-								printf("[**]Current number of replicas above Spec.MaxReplicas\n");
+								printf("[**][HPA] Current number of replicas above Spec.MaxReplicas\n");
 								desiredReplicas = d[curD].hpaSpec.maxReplicas;
 							::currentReplicas < d[curD].hpaSpec.minReplicas ->
-								printf("[**]Current number of replicas below Spec.MinReplicas\n");
+								printf("[**][HPA] Current number of replicas below Spec.MinReplicas\n");
 								desiredReplicas = d[curD].hpaSpec.minReplicas;
 							::else->
 								computeReplicasForMetrics()
@@ -213,16 +219,16 @@ proctype hpa()
 										rescaleMetric = metric;
 									:: else ->;
 								fi;
-								printf("[**]Got new desiredReplicas %d, was %d\n", desiredReplicas, currentReplicas)
+								printf("[**][HPA] Got new desiredReplicas %d, was %d\n", desiredReplicas, currentReplicas)
 								// not modeling normalizeDesiredReplicasWithBehaviors for now.
 								normalizeDesiredReplicas();
-								printf("[***]After normalizing, got new desiredReplicas %d, was %d\n", desiredReplicas, currentReplicas)
+								printf("[***][HPA] After normalizing, got new desiredReplicas %d, was %d\n", desiredReplicas, currentReplicas)
 						fi;
 				fi;
 
 				if 
 					:: desiredReplicas != currentReplicas ->
-						printf("[**]Need to rescale, scale metric is %d, orgional is %d, now is %d.\n", rescaleMetric, currentReplicas, desiredReplicas);
+						printf("[**][HPA] Need to rescale, scale metric is %d, orgional is %d, now is %d.\n", rescaleMetric, currentReplicas, desiredReplicas);
 						// in k8s, it will trigger client-go.scale. Here we do it directly by writing into the deployment.
 						d[curD].specReplicas = desiredReplicas;
 						dcQueue[dcTail] = curD;
@@ -232,7 +238,7 @@ proctype hpa()
 
 
 
-hpa1:			printf("[****] HPA finished on deployment %d\n", curD)
+hpa1:			printf("[****][HPA] HPA finished on deployment %d\n", curD)
 				hpaIndex ++;
 			}
 	od;

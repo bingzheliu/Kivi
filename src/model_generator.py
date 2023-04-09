@@ -169,7 +169,27 @@ def generate_intent_check(json_config, s_intent):
 
 	return s_intent
 
-def generate_model(json_config, pml_config, pml_main, pml_intent, config_filename, intent_filename):
+def generate_event(json_config, s_main_event, pml_event):
+	# Processing pod CPU change pattern
+	s_cpu_change = ""
+	s_cpu_change_stmt = "      ::  pods[[$i]].status == 1 && pods[[$i]].curCpuIndex < podTemplates[pods[[$i]].podTemplateId].maxCpuChange -> \n       podCpuChangeWithPatternExec([$i])\n"
+	for tp in json_config["setup"]["podTemplates"]:
+		if tp["maxCpuChange"] > 0:
+			# Becuase some pods may be up/changed later, so we need to put every pod onto the check...
+			for i in range(1, len(json_config["setup"]["pods"])+1):
+				s_cpu_change += s_cpu_change_stmt.replace("[$i]", str(i))
+			break
+	if len(s_cpu_change) > 0:
+		pml_event = pml_event.replace("[$podCpuChangeWithPattern]", s_cpu_change)
+		s_main_event += ("run podCpuChangeWithPattern()\n")
+	else:
+		pml_event = pml_event.replace("[$podCpuChangeWithPattern]", ":: true->break")
+
+
+	return s_main_event, pml_event
+			
+
+def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, config_filename, intent_filename, event_filename, file_base):
 	userDefinedConstraints = check_for_completion_add_default(json_config)
 	process_labels(json_config)
 
@@ -185,13 +205,19 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, config_filenam
 	s_intent = ""
 	s_intent = generate_intent_check(json_config, s_intent)
 
+	s_main_event = ""
+	s_main_event, pml_event = generate_event(json_config, s_main_event, pml_event)
+
 	#print(s_proc, s_user_command)
 	
 	pml_main = pml_main.replace("[$INIT_SETUP]", s_init) \
 					   .replace("[$CONTROLLERS]", s_proc) \
 					   .replace("[$USER_COMMAND]", s_user_command) \
 					   .replace("[$CONFIG_FILENAME]", str(config_filename)) \
-					   .replace("[$INTENT_FILENAME]", str(intent_filename))
+					   .replace("[$INTENT_FILENAME]", str(intent_filename)) \
+					   .replace("[$EVENT_FILENAME]", str(event_filename)) \
+					   .replace("[$EVENT]", str(s_main_event)) \
+					   .replace("[$FILE_BASE]", str(file_base))
 
 	pml_config = pml_config.replace("[$MAX_POD]", str(pod_num+3)) \
 						   .replace("[$NODE_NUM]", str(node_num)) \
@@ -206,14 +232,14 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, config_filenam
 	pml_intent += s_intent
 						   
 
-	return pml_config, pml_main, pml_intent
+	return pml_config, pml_main, pml_intent, pml_event
 
 
-def model_generator(file_base, case_id, scale):
-	filename = file_base + "/temp/" + str(case_id) + "/configs/" + case_id + "_" + scale + ".json"
-	case_generator(filename, case_id, scale)
+def model_generator(pml_base_path, file_base, case_id, scale):
+	config_filename = pml_base_path + "/configs/" + case_id + "_" + scale + ".json"
+	case_generator(config_filename, case_id, scale)
 
-	with open(filename) as f:
+	with open(config_filename) as f:
 		json_config = json.load(f)
 
 	with open(file_base + "/templates/config.pml") as f:
@@ -225,19 +251,26 @@ def model_generator(file_base, case_id, scale):
 	with open(file_base + "/templates/intentsCheck.pml") as f:
 		pml_intent = f.read()
 
+	with open(file_base + "/templates/eventGenerate.pml") as f:
+		pml_event = f.read()
+
 	config_filename = "config_" + case_id + "_" + scale + ".pml"
 	intent_filename = "intentsCheck_" + case_id + "_" + scale + ".pml"
-	pml_config, pml_main, pml_intent = generate_model(json_config, pml_config, pml_main, pml_intent, config_filename, intent_filename)
+	event_filename = "event_" + case_id + "_" + scale + ".pml"
+	pml_config, pml_main, pml_intent, pml_event = generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, config_filename, intent_filename, event_filename, file_base)
 	
-	with open(file_base + "/temp/" + str(case_id) + "/" + config_filename, "w") as f:
+	with open(pml_base_path + "/" + config_filename, "w") as f:
 		f.write(pml_config)
 
 	main_filename = "main_" + case_id + "_" + scale + ".pml"
-	with open(file_base + "/temp/" + str(case_id) + "/" +  main_filename, "w") as f:
+	with open(pml_base_path + "/" +  main_filename, "w") as f:
 		f.write(pml_main)
 
-	with open(file_base + "/temp/" + str(case_id) + "/" +  intent_filename, "w") as f:
+	with open(pml_base_path + "/" +  intent_filename, "w") as f:
 		f.write(pml_intent)
+
+	with open(pml_base_path + "/" +  event_filename, "w") as f:
+		f.write(pml_event)
 
 	return main_filename
 

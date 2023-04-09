@@ -7,31 +7,35 @@ proctype kubelet() {
 	printf("[**]kubelet controller started.\n");
 
 	// TODO: deal with the scenairo that the deletion failed. 
-	do
+endK:	do
 		:: (kblIndex < kblTail) ->
 			atomic {
 				i = kblQueue[kblIndex];
-				pods[i].status = 0;
-				pods[i].curCpuIndex = 0;
-				d[pods[i].workloadId].replicas --;
-				d[pods[i].workloadId].replicaSets[d[pods[i].workloadId].curVersion].replicas --;
-				podTotal = podTotal - 1;
-
-				j = pods[i].loc
-				nodes[j].numPod = nodes[j].numPod - 1;
-				nodes[j].cpuLeft = nodes[j].cpuLeft + pods[i].cpu;
-				nodes[j].memLeft = nodes[j].memLeft + pods[i].memory;
-
-				printf("[**]Deleted pod %d on node %d\n", i, j);
-
 				if 
-					:: pods[i].workloadType == 1 ->
-						dcQueue[dcTail] = pods[i].workloadId;
-						dcTail++;
-					:: else->;
-				fi;
-				// TODO: add a pod info clear func. Not clearing pod info for now, as we will override them later. But this may potentially cause problem if we made mistakes on overriding. 
+					:: pods[i].status == 0 ->
+						printf("[**][Kubelet] Pod %d has already been deleted\n", i)
+					:: else->
+						pods[i].status = 0;
+						pods[i].curCpuIndex = 0;
+						d[pods[i].workloadId].replicas --;
+						d[pods[i].workloadId].replicaSets[d[pods[i].workloadId].curVersion].replicas --;
+						podTotal = podTotal - 1;
 
+						j = pods[i].loc
+						nodes[j].numPod = nodes[j].numPod - 1;
+						nodes[j].cpuLeft = nodes[j].cpuLeft + pods[i].cpu;
+						nodes[j].memLeft = nodes[j].memLeft + pods[i].memory;
+
+						printf("[**][Kubelet] Deleted pod %d on node %d, deployment %d now have %d replicas\n", i, j, pods[i].workloadId, d[pods[i].workloadId].replicas);
+
+						if 
+							:: pods[i].workloadType == 1 ->
+								dcQueue[dcTail] = pods[i].workloadId;
+								dcTail++;
+							:: else->;
+						fi;
+						// TODO: add a pod info clear func. Not clearing pod info for now, as we will override them later. But this may potentially cause problem if we made mistakes on overriding. 
+				fi;
 				kblIndex++;
 			}
 	od;

@@ -1,36 +1,5 @@
 
 
-// TODO: this is a passive event, may need to be distinguished 
-// TODO: this may start too many process if nodes number is large. work on a different kind of implementation. 
-proctype kernelPanic(short i)
-{
-	int times = 0;
-
-	do 
-		:: nodes[i].status == 1 && (nodes[i].cpuLeft * 100 / nodes[i].cpu <= 2) -> 
-			atomic{
-				times ++;
-				printf("[**]node %d kernel panic, times %d\n", i, times)
-				nodes[i].status = 2;
-
-				ncQueue[ncTail] = i;
-				ncTail ++;
-				
-				if 
-					:: times > 5 ->
-						assert(false)
-					:: else->;
-				fi;
-			}	
-		// recover from panic
-		:: nodes[i].status == 2 && (nodes[i].cpuLeft * 100 / nodes[i].cpu > 2) ->
-			atomic{
-				printf("[**]node %d kernel panic recovered\n", i)
-				nodes[i].status = 1;
-			}
-	od;
-}
-
 short cur_node_in_maintenance = 0;
 // up to p node could be put down at the same time
 // TODO: check on if we could enforce some kind of ordering of the process. maintenance should take times, and two consecutive maintenance job should not happen too soon than scheduling
@@ -42,7 +11,7 @@ proctype maintenance(short p)
 		if 
 			:: nodes[i].status == 1 && nodes[i].maintained == 0 && cur_node_in_maintenance < p  ->
 				cur_node_in_maintenance ++;
-				printf("[***] %d node is in maintenance\n", cur_node_in_maintenance);
+				printf("[***][maintenanceNode] %d node is in maintenance\n", cur_node_in_maintenance);
 				run maintenanceNode(i);
 		fi;
 	}
@@ -51,7 +20,7 @@ proctype maintenance(short p)
 proctype maintenanceNode(short i)
 {
 	atomic {
-		printf("[**] Starting maintenance for node %d\n", i)
+		printf("[**][maintenanceNode] Starting maintenance for node %d\n", i)
 		nodes[i].status = 0;
 		ncQueue[ncTail] = i;
 		ncTail ++;
@@ -62,7 +31,7 @@ proctype maintenanceNode(short i)
 				nodes[i].status = 1;
 				nodes[i].maintained = 1;
 				cur_node_in_maintenance --;
-				printf("[**] End maintenance for node %d\n", i)
+				printf("[**][maintenanceNode] End maintenance for node %d\n", i)
 			}
 	fi;
 }
@@ -75,25 +44,6 @@ proctype nodeFailure(short i)
 	nodes[i].status = 1;
 }
 
-proctype podCpuChangeWithPattern(short i)
-{
-	short cur_pod_template_id = pods[i].podTemplateId;
-	do 
-		::  pods[i].status == 1 && pods[i].curCpuIndex < podTemplates[cur_pod_template_id].maxCpuChange ->
-			atomic{
-				short cpu_change = podTemplates[cur_pod_template_id].curCpuRequest[pods[i].curCpuIndex] - pods[i].cpu
-				updatePodCpuUsageOnNode(i, cpu_change);
-				pods[i].curCpuIndex ++;
-
-				if 
-					:: pods[i].workloadType == 1 ->
-						hpaQueue[hpaTail] = pods[i].workloadId;
-						hpaTail ++;
-					:: else ->;
-				fi;
-			}
-	od;
-}
 
 proctype eventCpuChange(short targetDeployment)
 {
@@ -115,12 +65,12 @@ proctype eventCpuChange(short targetDeployment)
 			// Because some podIds can be invalid, so need to do a post-processing
 			j = 0;
 			k = 0;
-			printf("[**]Index %d is selected\n", index_selected)
+			printf("[**][eventCpuChange]Index %d is selected\n", index_selected)
 			do
 				:: j <= index_selected->
 					pod_selected = d[targetDeployment].replicaSets[d[targetDeployment].curVersion].podIds[k]
 					if
-						:: (pods[pod_selected].status == 0) || (pod_selected == 0)->
+						:: (pods[pod_selected].status != 1) || (pod_selected == 0)->
 							k++;
 						:: else->
 							j++;

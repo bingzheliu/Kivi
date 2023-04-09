@@ -77,12 +77,12 @@ inline selectHost()
 
 	if
 	:: max == -1 -> 
-		printf("[*]No feasiable node!\n");
+		printf("[*][Scheduler] No feasiable node!\n");
 		assert(false);
 	:: else->;
 	fi;
 
-	printf("[**]Pod %d is scheduled on node %d, with score %d\n", curPod, selectedNode, max);
+	printf("[**][Scheduler] Pod %d is scheduled on node %d, with score %d\n", curPod, selectedNode, max);
 }
 
 
@@ -129,7 +129,7 @@ inline bindNode()
 			updatePodIds(d[j].replicaSets[d[j].curVersion], curPod)
 			d[j].replicaSets[d[j].curVersion].replicas++;
 			d[pods[i].workloadId].replicasInCreation --;
-			
+
 		:: else ->;
 	fi;
 
@@ -139,37 +139,41 @@ inline bindNode()
 proctype scheduler()
 {
 	short i = 0, j = 0, k = 0, max = 0;
-	printf("[**]Scheduler started.\n");
+	printf("[**][Scheduler] Scheduler started.\n");
 
-	do
-	:: (sIndex < sTail) ->
-		atomic{
-			short curPod = sQueue[sIndex];
-			short selectedNode = 0;
-			// TODO: support other types of workload resources
+endS:	do
+		:: (sIndex < sTail) ->
+			atomic{
+				short curPod = sQueue[sIndex];
+				short selectedNode = 0;
+				// TODO: support other types of workload resources
 
-			printf("[**]Attempting to schedule Pod %d\n", curPod);
+				printf("[**][Scheduler] Attempting to schedule Pod %d\n", curPod);
+				if 
+					:: pods[curPod].status == 1 ->
+						printf("[**][Scheduler] Pod %d has been scheduled!\n", curPod)
+					:: else->
+						clearNodeScore();
+						scheduleOne();
+						checkIfUnschedulable();
+						bindNode();
 
-			clearNodeScore();
-			scheduleOne();
-			checkIfUnschedulable();
-			bindNode();
+						// Only support HPA for deployment for now.
+						if 
+							:: pods[curPod].workloadType == 1 ->
+								hpaQueue[hpaTail] = pods[curPod].workloadId;
+								hpaTail ++;
+							:: else ->;
+						fi;
+				fi;
 
-			// Only support HPA for deployment for now.
-			if 
-				:: pods[curPod].workloadType == 1 ->
-					hpaQueue[hpaTail] = pods[curPod].workloadId;
-					hpaTail ++;
-				:: else ->;
-			fi;
+				selectedNode = 0;
+				i = 0;
+				j = 0;
+				k = 0;
+				max = 0;
 
-			selectedNode = 0;
-			i = 0;
-			j = 0;
-			k = 0;
-			max = 0;
-
-			sIndex ++;
-		}
-	od;
+				sIndex ++;
+			}
+		od;
 }

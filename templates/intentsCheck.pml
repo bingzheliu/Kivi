@@ -1,5 +1,5 @@
 // This need to be automatically populated according to user's intents
-//Check for H2
+// Check for H2
 // never {
 // 	do
 // 	:: d[1].replicas < d[1].hpaSpec.minReplicas -> break
@@ -18,15 +18,15 @@
 
 
 // Check for H1
-// proctype check()
-// {
-// 	if 
-// 		:: d[1].replicas == d[1].hpaSpec.maxReplicas ->
-// 		 	printf("[*] Entering stage 2 for check!\n")
-// 		 	if 
-// 		 		:: d[1].replicas == d[1].hpaSpec.minReplicas || d[1].replicas < d[1].hpaSpec.maxReplicas - 5 ->
-// 		 			printf("[*] The number of replicas was oscillating, now %d\n", d[1].replicas)
-// 		 			assert(false)
-// 		 	fi;
-// 	fi;
-// }
+proctype check()
+{
+	if 
+		:: d[1].replicas == d[1].hpaSpec.maxReplicas ->
+		 	printf("[*] Entering stage 2 for check!\n")
+		 	if 
+		 		:: d[1].replicas == d[1].hpaSpec.minReplicas || d[1].replicas < d[1].hpaSpec.maxReplicas - 5 ->
+		 			printf("[*] The number of replicas was oscillating, now %d\n", d[1].replicas)
+		 			assert(false)
+		 	fi;
+	fi;
+}

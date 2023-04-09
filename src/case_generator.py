@@ -274,10 +274,7 @@ def generate_H2(num_node):
 		cur_node["status"] = 1
 		case_config["setup"]["nodes"].append(cur_node)
 		cur_node["labels"] = {}
-		if (i+1)/2 < num_node/2:
-			cur_node["labels"]["zone"] = 0
-		else:
-			cur_node["labels"]["zone"] = 1
+		cur_node["labels"]["zone"] = 1
 
 
 	## Generate Pods
@@ -285,7 +282,7 @@ def generate_H2(num_node):
 	deployment_to_pod[1] = []
 	case_config["setup"]["pods"] = []
 
-	for i in range(0, num_node+10):
+	for i in range(0, num_node+3):
 		cur_pod = {}
 		cur_pod["id"] = cur_id
 		cur_id += 1
@@ -352,7 +349,7 @@ def generate_H2(num_node):
 	d["hpaSpec"]["metricTypes"] = []
 	d["hpaSpec"]["metricTypes"].append(1)
 	d["hpaSpec"]["minReplicas"] = num_node
-	d["hpaSpec"]["maxReplicas"] = num_node+9
+	d["hpaSpec"]["maxReplicas"] = num_node+2
 
 	case_config["setup"]["d"].append(d)
 

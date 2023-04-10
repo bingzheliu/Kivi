@@ -209,7 +209,7 @@ proctype deploymentController()
 	short i = 0, j = 0, k = 0, max = 0, podSelected = 0;
 
 endDC:	do
-		:: (dcIndex < dcTail) ->
+		:: (dcIndex != dcTail) ->
 				atomic{
 					short curD = dcQueue[dcIndex];
 					printf("[**][Deployment] Start to work on deployment %d\n", curD)
@@ -225,8 +225,7 @@ endDC:	do
 					fi;
 
 						updateQueue(hpaQueue, hpaTail, hpaIndex, curD)
-
-						dcIndex++;
+						updateQueueIndex(dcIndex)
 				}
 		od;
 }

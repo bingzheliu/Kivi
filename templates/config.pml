@@ -12,7 +12,7 @@
 #define DEP_TEMPLATE_NUM [$DEP_TEMPLATE_NUM]
 
 
-#define MAX_QUEUE_SIZE 600
+#define MAX_QUEUE_SIZE 20
 /*----------- deployment Config ------------*/
 #define MAX_CPU_PATTERN 10
 

@@ -21,6 +21,9 @@ def parse_spin_error_trail(output, failure_type, log_level):
 			if count - 1 <= int(log_level):
 				result_log += (s + "\n")
 
+		if "START OF CYCLE" in s:
+			result_log += (s + "\n")
+
 		if s.startswith("pan:1:") or s.startswith("spin: trail ends"):
 			failure_details = output_lines[i-1] + "\n"
 			while not s.startswith("global vars"):
@@ -41,7 +44,7 @@ def analyze_assert(file_error_trail):
 def parse_pan_output(output):
 	total_mem = 0
 	elapsed_time = 0
-	failure_type = 0
+	failure_type = "None"
 	error_trail_name = None
 	failure_details = ""
 	for s in output.splitlines():
@@ -57,6 +60,9 @@ def parse_pan_output(output):
 
 		if "pan: wrote" in s:
 			error_trail_name = s.split("pan: wrote")[1].strip()	 
+
+		if "pan:1: non-progress cycle" in s:
+			failure_type = "non-progress cycle"
 
 		if "error:" in s:
 			failure_type = analyze_assert(s)

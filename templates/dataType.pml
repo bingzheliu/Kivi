@@ -1,4 +1,7 @@
 // TODO: refine the array sizes to save spaces. 
+// typedef queueType {
+// 	short q[MAX_QUEUE_SIZE]
+// }
 
 typedef twoDArray {
 	short a[MAX_2D];

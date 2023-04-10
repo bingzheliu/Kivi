@@ -83,9 +83,9 @@ hpa2:		j++;
 
 	short currentUsage = 0;
 	if
-		:: curMetricType == 0 ->
+		:: curMetricType == 0 && totalReplicas != 0 ->
 			currentUsage = metricsTotal / totalReplicas;
-		:: curMetricType == 1 ->
+		:: curMetricType == 1 && requestTotal != 0 ->
 			currentUsage = metricsTotal * 100 / requestTotal;
 	fi;
 	printf("[****][HPA] Computing metric, currentUsage is %d\n", currentUsage)
@@ -182,7 +182,7 @@ proctype hpa()
 {
 	short i = 0, j = 0, k = 0, p = 0;
 endHPA:	do
-		:: (hpaIndex < hpaTail) -> 
+		:: (hpaIndex != hpaTail) -> 
 			atomic{
 				// TODO: check, potentially can have issue because the curD can be shared acrose the controller
 				short curD = hpaQueue[hpaIndex];
@@ -238,7 +238,7 @@ endHPA:	do
 				fi;
 
 hpa1:			printf("[****][HPA] HPA finished on deployment %d\n", curD)
-				hpaIndex ++;
+				updateQueueIndex(hpaIndex);
 			}
 	od;
 }

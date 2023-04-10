@@ -172,12 +172,16 @@ inline updateQueue(queue, tail, index, item)
 {
 	atomic{
 		d_step {
+
 			if 
 				:: item == 0 ->
 					printf("[*Internal error] Item put to queue shoudn't be 0!")
 					assert(false)
 				:: else->
 			fi;
+
+			printQueue(queue, tail)
+			printf("[*****] tail %d, index %d, item %d\n", tail, index, item)
 
 			short _tail;
 			if 
@@ -187,7 +191,7 @@ inline updateQueue(queue, tail, index, item)
 					_tail = tail - 1
 			fi;
 			if
-				:: queue[_tail] != item ->
+				:: index == tail || queue[_tail] != item ->
 					queue[tail] = item
 					if
 						:: tail == MAX_QUEUE_SIZE-1->
@@ -204,9 +208,46 @@ inline updateQueue(queue, tail, index, item)
 				:: else->
 			fi
 
+			printQueue(queue, tail)
+			printf("[*****] tail %d, index %d, item %d\n", tail, index, item)
+
+
 		}
 	}
 }
+
+inline printQueue(queue, tail) 
+{
+	atomic{
+		d_step {
+			short _i = 0;
+			printf("[*****] Printing queue: ")
+			for(_i : 0 .. tail) {
+				printf("%d ", queue[_i])
+			}
+			printf("\n")
+		}
+	}
+}
+
+inline updateQueueIndex(index)
+{
+	atomic{
+		d_step {
+			if
+				:: index == MAX_QUEUE_SIZE-1->
+					index = 0
+				:: else->
+					index ++
+			fi
+		}
+	}
+}
+
+// inline queueItemSize()
+// {
+	
+// }
 
 
 

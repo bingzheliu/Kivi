@@ -141,7 +141,7 @@ proctype scheduler()
 	printf("[**][Scheduler] Scheduler started.\n");
 
 endS:	do
-		:: (sIndex < sTail) ->
+		:: (sIndex != sTail) ->
 			atomic{
 				short curPod = sQueue[sIndex];
 				short selectedNode = 0;
@@ -173,7 +173,7 @@ endS:	do
 				k = 0;
 				max = 0;
 
-				sIndex ++;
+				updateQueueIndex(sIndex)
 			}
 		od;
 }

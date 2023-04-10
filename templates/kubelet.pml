@@ -8,7 +8,7 @@ proctype kubelet() {
 
 	// TODO: deal with the scenairo that the deletion failed. 
 endK:	do
-		:: (kblIndex < kblTail) ->
+		:: (kblIndex != kblTail) ->
 			atomic {
 				i = kblQueue[kblIndex];
 				if 
@@ -36,7 +36,7 @@ endK:	do
 						fi;
 						// TODO: add a pod info clear func. Not clearing pod info for now, as we will override them later. But this may potentially cause problem if we made mistakes on overriding. 
 				fi;
-				kblIndex++;
+				updateQueueIndex(kblIndex)
 			}
 	od;
 

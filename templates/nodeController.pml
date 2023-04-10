@@ -10,7 +10,7 @@ proctype nodeController() {
 	printf("[**][nodeController] Node controller started.\n");
 
 endNC:	do
-		:: (ncIndex < ncTail) ->
+		:: (ncIndex != ncTail) ->
 			atomic{
 				i = ncQueue[ncIndex];
 				if 
@@ -29,7 +29,7 @@ endNC:	do
 					:: else->;
 				fi;
 
-				ncIndex ++;
+				updateQueueIndex(ncIndex)
 			}
 		od;
 }

@@ -5,7 +5,7 @@ from model_generator import model_generator
 from result_parser import *
 from util import *
 
-
+# TODO: deal with the situation where max search is too small
 def run_script(commands, print_stdout):
 	s_output = ""
 	for s in commands:
@@ -23,19 +23,16 @@ def run_script(commands, print_stdout):
 	return stdout, stderr
 
 # TODO: keep steam the output from the ./pan, and if see "max search depth too small", we could just stop the execuation and adjust the running configs for pan
-def verifer_operator(result_base_path, pml_base_path, file_base, case_id, scale, log_level, pan_para):
+def verifer_operator(result_base_path, pml_base_path, file_base, case_id, scale, log_level, pan_compile, pan_para):
 	main_filename = model_generator(pml_base_path, file_base, case_id, scale)
 
 	stdout, stderr = run_script([file_base + '/libs/Spin/Src/spin', '-a', pml_base_path + "/" + main_filename], True)
 	myprint(stdout, logger.debug)
 	
-	stdout, stderr = run_script(['gcc', '-o', 'pan', 'pan.c', '-DVECTORSZ=450000'], True)
+	stdout, stderr = run_script(['gcc', '-o', 'pan', 'pan.c'] + pan_compile, True)
 
 	with open(result_base_path + "/" + str(scale), "w") as fw:
-		if pan_para != "":
-			stdout, stderr = run_script(['./pan', '-m'+str(pan_para), '-b'], False)
-		else:
-			stdout, stderr = run_script(['./pan', '-m10000000'], False)
+		stdout, stderr = run_script(['./pan']+pan_para, False)
 		with open(result_base_path + "/raw_data/exec_" + str(case_id) + "_" + str(scale), "w") as fr:
 			fr.write(stdout.decode())
 		failure_type, failure_details, error_trail_name, total_mem, elapsed_time = parse_pan_output(stdout.decode())
@@ -72,10 +69,14 @@ if __name__ == '__main__':
 	my_mkdir(pml_base_path + "/configs")
 
 	# bounded model checking
-	pan_para = ""
+	pan_para = ['-m10000000']
+	pan_compile = ['-DVECTORSZ=450000']
 	if len(sys.argv) > 4:
 		pan_para = sys.argv[4]
+		pan_para = pan_para.split(" ")
+		if "-l" in pan_para:
+			pan_compile.append("-DNP")
 
-	verifer_operator(result_base_path, pml_base_path, file_base, case_id, scale, log_level, pan_para)
+	verifer_operator(result_base_path, pml_base_path, file_base, case_id, scale, log_level, pan_compile, pan_para)
 
 	

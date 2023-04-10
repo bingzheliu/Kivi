@@ -12,8 +12,8 @@
 #define DEP_TEMPLATE_NUM [$DEP_TEMPLATE_NUM]
 
 
+#define MAX_QUEUE_SIZE 600
 /*----------- deployment Config ------------*/
-#define DEPLOYMENT_QUEUE_SIZE 600
 #define MAX_CPU_PATTERN 10
 
 
@@ -26,8 +26,6 @@
 #define userDefinedConstraints [$userDefinedConstraints]
 
 // scheduler "internal" config, set for their default values. 
-#define SCHEDULER_QUEUE_SIZE 600
-
 #define MAX_LABEL 10
 #define MAX_VALUE [$MAX_NODE]
 #define MAX_2D [$MAX_NODE]
@@ -40,7 +38,6 @@
 /*----------- hpa Config ------------*/
 
 // HPA "internal" config, set for their default values. 
-#define HPA_QUEUE_SIZE 600
 
 // default is 10 ( == 0.1 in percentage)
 #define HPA_TOLERANCE 10
@@ -50,8 +47,4 @@
 #define HPA_SCALE_UP_LIMIT_FACTOR  2
 
 #define MAX_NUM_METRICS 10
-
-
-#define DEFAULT_QUEUE_SIZE 250
-
 

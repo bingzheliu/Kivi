@@ -43,8 +43,7 @@ inline deleteAPodUpdate()
 {
 	d[curD].replicasInDeletion ++;
 	pods[podSelected].status = 3;
-	kblQueue[kblTail] = podSelected;
-	kblTail++;
+	updateQueue(kblQueue, kblTail, kblIndex, podSelected)	
 }
 
 // TODO: check on if a pod has not been scheduled, will it be considered in deletion?
@@ -65,7 +64,7 @@ inline deleteAPod()
 					podSelected = i;
 				:: else->;
 				fi;
-				printf("[***][Deployment] pod score %d: %d; max: %d\n", i, pods[i].score, cur_max);
+				printf("[******][Deployment] pod score %d: %d; max: %d\n", i, pods[i].score, cur_max);
 			:: else->;
 		fi;
 		i++;
@@ -105,8 +104,7 @@ inline enqueuePods(batchSize)
 				copyDeploymentInfoToPod(pods[j], curD);
 				pods[j].status = 2;
 				printf("[**][Deployment] Adding a new pod %d to deployment %d\n", j, curD)
-				sQueue[sTail] = j;
-				sTail++;
+				updateQueue(sQueue, sTail, sIndex, j)
 				break;
 			:: else->;
 			fi;
@@ -159,7 +157,7 @@ inline scale(curReplicaSet)
 			enqueuePods(batchSize);
 			remaining = remaining - batchSize;
 			min(batchSize, remaining, 2*batchSize);
-			
+
 		:: else -> break;
 		od;
 	:: else->;
@@ -226,8 +224,7 @@ endDC:	do
 						//rollout();
 					fi;
 
-						hpaQueue[hpaTail] = curD;
-						hpaTail ++;
+						updateQueue(hpaQueue, hpaTail, hpaIndex, curD)
 
 						dcIndex++;
 				}

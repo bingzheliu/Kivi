@@ -18,7 +18,7 @@ endK:	do
 						pods[i].status = 0;
 						pods[i].curCpuIndex = 0;
 						d[pods[i].workloadId].replicas --;
-						d[pods[i].workloadId].replicaSets[d[pods[i].workloadId].curVersion].replicas --;
+						replicasetDeletePod(d[pods[i].workloadId].replicaSets[d[pods[i].workloadId].curVersion], i)
 						d[pods[i].workloadId].replicasInDeletion --;
 						podTotal = podTotal - 1;
 
@@ -31,8 +31,7 @@ endK:	do
 
 						if 
 							:: pods[i].workloadType == 1 ->
-								dcQueue[dcTail] = pods[i].workloadId;
-								dcTail++;
+								updateQueue(dcQueue, dcTail, dcIndex, pods[i].workloadId)
 							:: else->;
 						fi;
 						// TODO: add a pod info clear func. Not clearing pod info for now, as we will override them later. But this may potentially cause problem if we made mistakes on overriding. 

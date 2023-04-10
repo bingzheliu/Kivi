@@ -32,8 +32,7 @@ inline podCpuChangeWithPatternExec(i)
 
 		if 
 			:: pods[i].workloadType == 1 ->
-				hpaQueue[hpaTail] = pods[i].workloadId;
-				hpaTail ++;
+				updateQueue(hpaQueue, hpaTail, hpaIndex,  pods[i].workloadId)
 			:: else ->;
 		fi;
 	}
@@ -79,8 +78,7 @@ endKP:	do
 					printf("[**]node %d kernel panic, times %d\n", i, times)
 					nodes[i].status = 2;
 
-					ncQueue[ncTail] = i;
-					ncTail ++;
+					updateQueue(ncQueue, ncTail, ncIndex, i)
 					
 					if 
 						:: times > 5 ->

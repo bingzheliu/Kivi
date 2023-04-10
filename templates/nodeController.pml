@@ -21,8 +21,7 @@ endNC:	do
 							for (j : 1 .. POD_NUM ) {
 								if 
 									:: pods[j].loc == i && pods[j].status != 0 ->
-											kblQueue[kblTail] = j;
-											kblTail++;
+										updateQueue(kblQueue, kblTail, kblIndex, j)
 									:: else ->;
 								fi;
 							}

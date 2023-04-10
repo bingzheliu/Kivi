@@ -1,23 +1,23 @@
 #include "../templates/dataType.pml"
 
 // in controller_utils 
-short sQueue[SCHEDULER_QUEUE_SIZE];
+short sQueue[MAX_QUEUE_SIZE];
 short sTail = 0;
 short sIndex = 0;
 
-short dcQueue[DEPLOYMENT_QUEUE_SIZE];
+short dcQueue[MAX_QUEUE_SIZE];
 short dcTail = 0;
 short dcIndex = 0;
 
-short hpaQueue[HPA_QUEUE_SIZE];
+short hpaQueue[MAX_QUEUE_SIZE];
 short hpaTail = 0;
 short hpaIndex = 0;
 
-short ncQueue[DEFAULT_QUEUE_SIZE];
+short ncQueue[MAX_QUEUE_SIZE];
 short ncTail = 0;
 short ncIndex = 0;
 
-short kblQueue[DEFAULT_QUEUE_SIZE];
+short kblQueue[MAX_QUEUE_SIZE];
 short kblTail = 0;
 short kblIndex = 0;
 

@@ -22,8 +22,7 @@ proctype maintenanceNode(short i)
 	atomic {
 		printf("[**][maintenanceNode] Starting maintenance for node %d\n", i)
 		nodes[i].status = 0;
-		ncQueue[ncTail] = i;
-		ncTail ++;
+		updateQueue(ncQueue, ncTail, ncIndex, i)
 	}	// This condition is hard coded, meaning to wait for the node to fully shut down, and then put it back.
 	if 
 		:: nodes[i].numPod == 0 && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail ->
@@ -39,8 +38,7 @@ proctype maintenanceNode(short i)
 proctype nodeFailure(short i)
 {
 	nodes[i].status = 0;
-	ncQueue[ncTail] = i;
-	ncTail ++;
+	updateQueue(ncQueue, ncTail, ncIndex, i)
 	nodes[i].status = 1;
 }
 
@@ -90,8 +88,7 @@ proctype eventCpuChange(short targetDeployment)
 			// Only support HPA for deployment for now.
 			if 
 				:: pods[pod_selected].workloadType == 1 ->
-					hpaQueue[hpaTail] = pods[pod_selected].workloadId;
-					hpaTail ++;
+					updateQueue(hpaQueue, hpaTail, hpaIndex, pods[pod_selected].workloadId)
 				:: else ->;
 			fi;
 

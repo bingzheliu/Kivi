@@ -25,8 +25,7 @@ proctype applyDeployment(short deploymentTemplateId)
 			fi;
 		}
 
-		dcQueue[dcTail] = curD;
-		dcTail++;
+		updateQueue(dcQueue, dcTail, dcIndex, curD)		
 	}
 }
 
@@ -36,8 +35,7 @@ proctype createDeployment(short maxDeploymentId)
 		short curD;
 		select(curD : 0 .. maxDeploymentId);
 
-		dcQueue[dcTail] = curD;
-		dcTail++;
+		updateQueue(dcQueue, dcTail, dcIndex, curD)		
 	}
 }
 
@@ -47,8 +45,7 @@ proctype createTargetDeployment(short deploymentId)
 		if 
 			:: d[deploymentId].status == 0 ->
 				d[deploymentId].status = 1;
-				dcQueue[dcTail] = deploymentId;
-				dcTail++;
+				updateQueue(dcQueue, dcTail, dcIndex, deploymentId)		
 				printf("[***][createTargetDeployment] Created deployment %d\n", deploymentId)
 			:: else ->;
 		fi;
@@ -74,7 +71,6 @@ proctype scaleDeployment(short maxDeploymentId)
 
 		d[curD].specReplicas = d[curD].specReplicas + ranScale;
 
-		dcQueue[dcTail] = curD;
-		dcTail++;
+		updateQueue(dcQueue, dcTail, dcIndex, curD)		
 	}
 }

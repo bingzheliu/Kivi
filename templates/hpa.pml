@@ -231,12 +231,11 @@ endHPA:	do
 						printf("[**][HPA] Need to rescale, scale metric is %d, orgional is %d, now is %d.\n", rescaleMetric, currentReplicas, desiredReplicas);
 						// in k8s, it will trigger client-go.scale. Here we do it directly by writing into the deployment.
 						d[curD].specReplicas = desiredReplicas;
-						dcQueue[dcTail] = curD;
-						dcTail++;
+						updateQueue(dcQueue, dcTail, dcIndex, curD)						
+						// dcQueue[dcTail] = curD;
+						// dcTail++;
 					:: else->;
 				fi;
-
-
 
 hpa1:			printf("[****][HPA] HPA finished on deployment %d\n", curD)
 				hpaIndex ++;

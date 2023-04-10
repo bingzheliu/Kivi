@@ -126,8 +126,7 @@ inline bindNode()
 			d[j].replicas ++;
 
 			k = d[j].replicaSets[d[j].curVersion].replicas;
-			updatePodIds(d[j].replicaSets[d[j].curVersion], curPod)
-			d[j].replicaSets[d[j].curVersion].replicas++;
+			replicasetAddPod(d[j].replicaSets[d[j].curVersion], curPod)
 			d[pods[i].workloadId].replicasInCreation --;
 
 		:: else ->;
@@ -161,8 +160,9 @@ endS:	do
 						// Only support HPA for deployment for now.
 						if 
 							:: pods[curPod].workloadType == 1 ->
-								hpaQueue[hpaTail] = pods[curPod].workloadId;
-								hpaTail ++;
+								updateQueue(hpaQueue, hpaTail, hpaIndex, pods[curPod].workloadId)
+								// hpaQueue[hpaTail] = pods[curPod].workloadId;
+								// hpaTail ++;
 							:: else ->;
 						fi;
 				fi;

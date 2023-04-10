@@ -17,6 +17,7 @@ def run_script(commands, print_stdout):
 	                     stderr=subprocess.PIPE)
 	stdout, stderr = spin_script.communicate()
 
+
 	myprint(stderr.decode(), logger.error)
 	
 	return stdout, stderr
@@ -32,7 +33,7 @@ def verifer_operator(result_base_path, pml_base_path, file_base, case_id, scale,
 
 	with open(result_base_path + "/" + str(scale), "w") as fw:
 		if pan_para != "":
-			stdout, stderr = run_script(['./pan', pan_para], False)
+			stdout, stderr = run_script(['./pan', '-m'+str(pan_para), '-b'], False)
 		else:
 			stdout, stderr = run_script(['./pan', '-m10000000'], False)
 		with open(result_base_path + "/raw_data/exec_" + str(case_id) + "_" + str(scale), "w") as fr:
@@ -70,6 +71,7 @@ if __name__ == '__main__':
 	my_mkdir(file_base+"/temp/"+ str(case_id) + "/" + str(scale))
 	my_mkdir(pml_base_path + "/configs")
 
+	# bounded model checking
 	pan_para = ""
 	if len(sys.argv) > 4:
 		pan_para = sys.argv[4]

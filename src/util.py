@@ -29,8 +29,7 @@ logger = setup_logger('verifier_logger', logging.DEBUG)
 # second file logger
 model_logger = setup_logger('model_logger', logging.INFO)
 
-log_level = 5
-
+log_level = 3
 
 
 # TODO: each run of an execuation should actually be one class, so they won't affect each other.

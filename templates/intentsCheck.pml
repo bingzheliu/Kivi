@@ -18,12 +18,12 @@
 
 
 // Check for H1
-proctype check()
+proctype checkH1()
 {
-	if 
-		:: d[1].replicas == d[1].hpaSpec.maxReplicas ->
+endCH1:	if 
+			:: d[1].replicas == d[1].hpaSpec.maxReplicas ->
 		 	printf("[*] Entering stage 2 for check!\n")
-		 	if 
+endCH2:		if 
 		 		:: d[1].replicas == d[1].hpaSpec.minReplicas || d[1].replicas < d[1].hpaSpec.maxReplicas - 5 ->
 		 			printf("[*] The number of replicas was oscillating, now %d\n", d[1].replicas)
 		 			assert(false)

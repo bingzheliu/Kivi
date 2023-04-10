@@ -162,12 +162,15 @@ def generate_user_command(json_config, s_user_command):
 			
 	return s_user_command
 
-def generate_intent_check(json_config, s_intent):
+def generate_intent(json_config, s_intentscheck_intent, s_main_intent):
 	if "intents" in json_config:
 		for intent in json_config["intents"]:
-			s_intent += (intent + "\n")
+			if "run" in intent:
+				s_main_intent += (intent + "\n")
+			else:
+				s_intentscheck_intent += (intent + "\n")
 
-	return s_intent
+	return s_intentscheck_intent, s_main_intent
 
 def generate_event(json_config, s_main_event, pml_event):
 	# Processing pod CPU change pattern
@@ -202,8 +205,9 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, con
 	s_user_command = ""
 	s_user_command = generate_user_command(json_config, s_user_command)
 
-	s_intent = ""
-	s_intent = generate_intent_check(json_config, s_intent)
+	s_intentscheck_intent = ""
+	s_main_intent = ""
+	s_intentscheck_intent, s_main_intent = generate_intent(json_config, s_intentscheck_intent, s_main_intent)
 
 	s_main_event = ""
 	s_main_event, pml_event = generate_event(json_config, s_main_event, pml_event)
@@ -217,7 +221,8 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, con
 					   .replace("[$INTENT_FILENAME]", str(intent_filename)) \
 					   .replace("[$EVENT_FILENAME]", str(event_filename)) \
 					   .replace("[$EVENT]", str(s_main_event)) \
-					   .replace("[$FILE_BASE]", str(file_base))
+					   .replace("[$FILE_BASE]", str(file_base)) \
+					   .replace("[$INTENTS]", str(s_main_intent))
 
 	pml_config = pml_config.replace("[$MAX_POD]", str(pod_num+3)) \
 						   .replace("[$NODE_NUM]", str(node_num)) \
@@ -229,7 +234,7 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, con
 						   .replace("[$DEP_TEMPLATE_NUM]", str(dt_num+1)) \
 						   .replace("[$userDefinedConstraints]", str(userDefinedConstraints)) 
 
-	pml_intent += s_intent
+	pml_intent += s_intentscheck_intent
 						   
 
 	return pml_config, pml_main, pml_intent, pml_event

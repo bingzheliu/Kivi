@@ -181,7 +181,7 @@ inline updateQueue(queue, tail, index, item)
 			fi;
 
 			printQueue(queue, tail)
-			printf("[*****] tail %d, index %d, item %d\n", tail, index, item)
+			printf("[******] tail %d, index %d, item %d\n", tail, index, item)
 
 			short _tail;
 			if 
@@ -209,7 +209,7 @@ inline updateQueue(queue, tail, index, item)
 			fi
 
 			printQueue(queue, tail)
-			printf("[*****] tail %d, index %d, item %d\n", tail, index, item)
+			printf("[******] tail %d, index %d, item %d\n", tail, index, item)
 
 
 		}
@@ -221,7 +221,7 @@ inline printQueue(queue, tail)
 	atomic{
 		d_step {
 			short _i = 0;
-			printf("[*****] Printing queue: ")
+			printf("[******] Printing queue: ")
 			for(_i : 0 .. tail) {
 				printf("%d ", queue[_i])
 			}
@@ -246,7 +246,7 @@ inline updateQueueIndex(index)
 
 // inline queueItemSize()
 // {
-	
+
 // }
 
 

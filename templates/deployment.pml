@@ -224,7 +224,7 @@ endDC:	do
 						//rollout();
 					fi;
 
-						updateQueue(hpaQueue, hpaTail, hpaIndex, curD)
+						//updateQueue(hpaQueue, hpaTail, hpaIndex, curD)
 						updateQueueIndex(dcIndex)
 				}
 		od;

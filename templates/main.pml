@@ -11,9 +11,6 @@ init{
 
 	// init finished
 	init_status = 1
-	
-	// TODO: check on if the order of running the following actually matter or not
-	//run check();
 
 	run deploymentController();
 	run scheduler();
@@ -37,5 +34,11 @@ init{
 	// run podCpuChangeWithPattern()
 
 	[$EVENT]
+
+	// TODO: check on if the order of running the following actually matter or not
+	// Intent check for H1
+	// run checkH1();
+
+	[$INTENTS]
 
 }

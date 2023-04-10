@@ -80,7 +80,7 @@ typedef replicaSetType {
 	
 	/*****internal****/
 	// when use each podId, need to check whether 1) podIds is 0, or 2) the related pod status is 0. The index can be larger than replicas.
-	short podIds[MAX_POD*10];
+	short podIds[MAX_POD];
 
 }
 

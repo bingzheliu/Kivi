@@ -87,6 +87,9 @@ hpa2:		j++;
 			currentUsage = metricsTotal / totalReplicas;
 		:: curMetricType == 1 && requestTotal != 0 ->
 			currentUsage = metricsTotal * 100 / requestTotal;
+		:: else->
+			printf("[*Internal error] Unknown metric types %d or 0 occur in variables (%d totalReplicas, %d requestTotal)", curMetricType, totalReplicas, requestTotal)
+			assert(false)
 	fi;
 	printf("[****][HPA] Computing metric, currentUsage is %d\n", currentUsage)
 
@@ -195,6 +198,9 @@ endHPA:	do
 
 				if
 					::d[curD].hpaSpec.isEnabled == 0 ->
+						goto hpa1;
+					// TODO: check on this condition -- now we add this because HPA should not start to calculate if there's no replicas
+					:: d[curD].replicas == 0 ->
 						goto hpa1;
 					::else->;
 				fi;

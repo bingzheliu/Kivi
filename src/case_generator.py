@@ -121,6 +121,9 @@ def generate_H1(num_node):
 
 	case_config["events"] = {}
 
+	case_config["intents"] = []
+	case_config["intents"].append("run checkH1()\n")
+
 	return case_config
 
 

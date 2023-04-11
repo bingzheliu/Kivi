@@ -42,13 +42,15 @@ proctype createDeployment(short maxDeploymentId)
 proctype createTargetDeployment(short deploymentId)
 {
 	atomic{
-		if 
-			:: d[deploymentId].status == 0 ->
-				d[deploymentId].status = 1;
-				updateQueue(dcQueue, dcTail, dcIndex, deploymentId)		
-				printf("[***][createTargetDeployment] Created deployment %d\n", deploymentId)
-			:: else ->;
-		fi;
+		d_step{
+			if 
+				:: d[deploymentId].status == 0 ->
+					d[deploymentId].status = 1;
+					updateQueue(dcQueue, dcTail, dcIndex, deploymentId)		
+					printf("[***][createTargetDeployment] Created deployment %d\n", deploymentId)
+				:: else ->;
+			fi;
+		}
 	}
 }
 

@@ -28,7 +28,7 @@ def verifer_operator(result_base_path, pml_base_path, file_base, case_id, scale,
 
 	stdout, stderr = run_script([file_base + '/libs/Spin/Src/spin', '-a', pml_base_path + "/" + main_filename], True)
 	myprint(stdout, logger.debug)
-	
+
 	stdout, stderr = run_script(['gcc', '-o', 'pan', 'pan.c'] + pan_compile, True)
 
 	with open(result_base_path + "/" + str(scale), "w") as fw:

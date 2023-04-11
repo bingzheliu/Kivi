@@ -28,9 +28,12 @@ nodeType nodes[NODE_NUM+1];
 podTemplateType podTemplates[POD_TEMPLATE_NUM];
 deploymentType deploymentTemplates[DEP_TEMPLATE_NUM];
 
-short podTotal;
+// short podTotal;
 
 short init_status = 0;
+
+// // This is a counter that could be used for all the forloop in nested functions
+// hidden short gi = 0;
 
 #include "../templates/util.pml"
 

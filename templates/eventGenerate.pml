@@ -25,8 +25,7 @@
 inline podCpuChangeWithPatternExec(i)
 {
 	d_step {
-		short cur_pod_template_id = pods[i].podTemplateId;
-		short cpu_change = podTemplates[cur_pod_template_id].curCpuRequest[pods[i].curCpuIndex] - pods[i].cpu
+		short cpu_change = podTemplates[pods[i].podTemplateId].curCpuRequest[pods[i].curCpuIndex] - pods[i].cpu
 		updatePodCpuUsageOnNode(i, cpu_change);
 		pods[i].curCpuIndex ++;
 
@@ -35,6 +34,7 @@ inline podCpuChangeWithPatternExec(i)
 				updateQueue(hpaQueue, hpaTail, hpaIndex,  pods[i].workloadId)
 			:: else ->;
 		fi;
+		cpu_change = 0
 	}
 }
 
@@ -69,7 +69,7 @@ endPCCWP:			atomic{
 // TODO: this may start too many process if nodes number is large. work on a different kind of implementation. 
 proctype kernelPanic(short i)
 {
-	int times = 0;
+	short times = 0;
 
 endKP:	do 
 		:: nodes[i].status == 1 && (nodes[i].cpuLeft * 100 / nodes[i].cpu <= 2) -> 

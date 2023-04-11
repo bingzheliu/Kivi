@@ -15,6 +15,7 @@
 #define MAX_QUEUE_SIZE 20
 /*----------- deployment Config ------------*/
 #define MAX_CPU_PATTERN 10
+#define SlowStartInitialBatchSize 1
 
 
 /*----------- scheduler Config ------------*/

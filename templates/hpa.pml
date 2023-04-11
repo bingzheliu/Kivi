@@ -54,7 +54,7 @@ inline computeReplicasForMetric(curMetricName, curMetricTarget, curMetricType)
 						:: curMetricName == 1 ->
 							metricsTotal = metricsTotal + pods[k].memory;
 						:: else->
-							printf("[*Warning][HPA] Invalid metric name\n");
+							printf("[*Internal error][HPA] Invalid metric name\n");
 							assert(false);
 					fi;
 				// utlization
@@ -69,11 +69,11 @@ inline computeReplicasForMetric(curMetricName, curMetricTarget, curMetricType)
 							metricsTotal = metricsTotal + pods[k].memory;
 							requestTotal = requestTotal + podTemplates[pods[k].podTemplateId].memRequested;
 						:: else->
-							printf("[*Warning][HPA] Invalid metric name\n");
+							printf("[*Internal error][HPA] Invalid metric name\n");
 							assert(false);
 					fi;
 				:: else -> 
-					printf("[*Warning][HPA] Invalid metric type\n");
+					printf("[*Internal error][HPA] Invalid metric type\n");
 			fi;
 hpa2:		j++;
 		:: else->break;
@@ -112,6 +112,11 @@ hpa2:		j++;
 			fi;
 			
 	fi;
+
+	metricsTotal = 0;
+	requestTotal = 0;
+	totalReplicas = 0;
+	currentUsage = 0;
 }
 
 inline computeReplicasForMetrics()
@@ -133,6 +138,9 @@ inline computeReplicasForMetrics()
 		:: else -> break;
 	od;
 
+	replicaCountProposal = 0;
+	metricNameProposal = 0;
+	timestampProposal = 0;
 /*
 	for (i : 0 .. d[curD].hpaSpec.numMetrics) {
 		computeReplicasForMetric(d[curD].hpaSpec.metricNames[i], d[curD].hpaSpec.metricTargets[i], d[curD].hpaSpec.metricTypes[i]);
@@ -172,6 +180,10 @@ inline convertDesiredReplicasWithRules()
 			desiredReplicas = maximumAllowedReplicas;
 		:: else->;
 	fi;
+
+	scaleUpLimit = 0;
+	maximumAllowedReplicas = 0;
+	minimumAllowedReplicas = 0;
 }	
 
 inline normalizeDesiredReplicas()
@@ -187,64 +199,75 @@ proctype hpa()
 endHPA:	do
 		:: (hpaIndex != hpaTail) -> 
 			atomic{
-				// TODO: check, potentially can have issue because the curD can be shared acrose the controller
-				short curD = hpaQueue[hpaIndex];
-				short currentReplicas = d[curD].specReplicas;
-				short desiredReplicas = 0, rescaleMetric = 0;
-				// [NS] Timestamp is not actually implemented.
-				short replicas = 0, timestamp = 0, metric = 0;
+				d_step{
+					// TODO: check, potentially can have issue because the curD can be shared acrose the controller
+					short curD = hpaQueue[hpaIndex];
+					short currentReplicas = d[curD].specReplicas;
+					short desiredReplicas = 0, rescaleMetric = 0;
+					// [NS] Timestamp is not actually implemented.
+					short replicas = 0, timestamp = 0, metric = 0;
 
-				printf("[****][HPA] HPA working on deployment %d\n", curD)
+					printf("[****][HPA] HPA working on deployment %d\n", curD)
 
-				if
-					::d[curD].hpaSpec.isEnabled == 0 ->
-						goto hpa1;
-					// TODO: check on this condition -- now we add this because HPA should not start to calculate if there's no replicas
-					:: d[curD].replicas == 0 ->
-						goto hpa1;
-					::else->;
-				fi;
+					if
+						// TODO: check on this condition -- now we add this because HPA should not start to calculate if there's no replicas
+						::d[curD].hpaSpec.isEnabled == 0 || d[curD].replicas == 0 ->
+							skip
+						::else->;
+							if
+								:: currentReplicas == 0 ->
+									desiredReplicas = 0;
+								:: else -> 
+									if
+										// TODO: double check if the below is >= or >, it could affect the logic
+										::currentReplicas > d[curD].hpaSpec.maxReplicas ->
+											printf("[**][HPA] Current number of replicas above Spec.MaxReplicas\n");
+											desiredReplicas = d[curD].hpaSpec.maxReplicas;
+										::currentReplicas < d[curD].hpaSpec.minReplicas ->
+											printf("[**][HPA] Current number of replicas below Spec.MinReplicas\n");
+											desiredReplicas = d[curD].hpaSpec.minReplicas;
+										::else->
+											computeReplicasForMetrics()
+											if 
+												:: replicas > desiredReplicas -> 
+													desiredReplicas = replicas;
+													rescaleMetric = metric;
+												:: else ->;
+											fi;
+											printf("[**][HPA] Got new desiredReplicas %d, was %d\n", desiredReplicas, currentReplicas)
+											// not modeling normalizeDesiredReplicasWithBehaviors for now.
+											normalizeDesiredReplicas();
+											printf("[***][HPA] After normalizing, got new desiredReplicas %d, was %d\n", desiredReplicas, currentReplicas)
+									fi;
+							fi;
 
-				if
-					:: currentReplicas == 0 ->
-						desiredReplicas = 0;
-					:: else -> 
-						if
-							// TODO: double check if the below is >= or >, it could affect the logic
-							::currentReplicas > d[curD].hpaSpec.maxReplicas ->
-								printf("[**][HPA] Current number of replicas above Spec.MaxReplicas\n");
-								desiredReplicas = d[curD].hpaSpec.maxReplicas;
-							::currentReplicas < d[curD].hpaSpec.minReplicas ->
-								printf("[**][HPA] Current number of replicas below Spec.MinReplicas\n");
-								desiredReplicas = d[curD].hpaSpec.minReplicas;
-							::else->
-								computeReplicasForMetrics()
-								if 
-									:: replicas > desiredReplicas -> 
-										desiredReplicas = replicas;
-										rescaleMetric = metric;
-									:: else ->;
-								fi;
-								printf("[**][HPA] Got new desiredReplicas %d, was %d\n", desiredReplicas, currentReplicas)
-								// not modeling normalizeDesiredReplicasWithBehaviors for now.
-								normalizeDesiredReplicas();
-								printf("[***][HPA] After normalizing, got new desiredReplicas %d, was %d\n", desiredReplicas, currentReplicas)
-						fi;
-				fi;
+							if 
+								:: desiredReplicas != currentReplicas ->
+									printf("[**][HPA] Need to rescale, scale metric is %d, orgional is %d, now is %d.\n", rescaleMetric, currentReplicas, desiredReplicas);
+									// in k8s, it will trigger client-go.scale. Here we do it directly by writing into the deployment.
+									d[curD].specReplicas = desiredReplicas;
+									updateQueue(dcQueue, dcTail, dcIndex, curD)						
+									// dcQueue[dcTail] = curD;
+									// dcTail++;
+								:: else->;
+							fi;
+					fi;
 
-				if 
-					:: desiredReplicas != currentReplicas ->
-						printf("[**][HPA] Need to rescale, scale metric is %d, orgional is %d, now is %d.\n", rescaleMetric, currentReplicas, desiredReplicas);
-						// in k8s, it will trigger client-go.scale. Here we do it directly by writing into the deployment.
-						d[curD].specReplicas = desiredReplicas;
-						updateQueue(dcQueue, dcTail, dcIndex, curD)						
-						// dcQueue[dcTail] = curD;
-						// dcTail++;
-					:: else->;
-				fi;
+					printf("[****][HPA] HPA finished on deployment %d\n", curD)
+					updateQueueIndex(hpaIndex);
 
-hpa1:			printf("[****][HPA] HPA finished on deployment %d\n", curD)
-				updateQueueIndex(hpaIndex);
+					i = 0;
+					j = 0;
+					k = 0;
+					p = 0;
+					currentReplicas = 0;
+					curD = 0;
+					desiredReplicas = 0;
+					rescaleMetric = 0;
+					replicas = 0;
+					timestamp = 0;
+					metric = 0;
+				}
 			}
 	od;
 }

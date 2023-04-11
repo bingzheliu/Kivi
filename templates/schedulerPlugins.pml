@@ -145,14 +145,13 @@ inline findMatchedPod(i, j, podSpec)
 			:: (pods[k].status != 1 || pods[k].loc != i) -> goto fmpend;
 			:: else->;
 		fi;
-		short p = 0;
-		short t = pods[k].podTemplateId;
+		p = 0;
 
 		// go through all the labels in constraints, and see if the pod matches all of them
 		for (p : 0 .. podSpec.topoSpreadConstraints[j].numMatchedLabel - 1) {
 			//printf("[******] matching pod %d with key %d\n", k, podSpec.topoSpreadConstraints[j].labelKey[p])
 			if 
-				::(podTemplates[t].labelKeyValue[podSpec.topoSpreadConstraints[j].labelKey[p]] != podSpec.topoSpreadConstraints[j].labelValue[p]) -> goto fmpend;
+				::(podTemplates[pods[k].podTemplateId].labelKeyValue[podSpec.topoSpreadConstraints[j].labelKey[p]] != podSpec.topoSpreadConstraints[j].labelValue[p]) -> goto fmpend;
 				:: else->; 
 			fi;
 		}
@@ -221,6 +220,8 @@ stopo2:				j++;
 							tpPairToMatchNum[key].a[nodes[i].labelKeyValue[key]] = tpPairToMatchNum[key].a[nodes[i].labelKeyValue[key]] + count;
 					fi;
 					printf("[****][SchedulerPlugins] Matched pod for {%d, %d} is %d\n", key, nodes[i].labelKeyValue[key], count)
+					count = 0;
+					key = 0;
 stopo5:				j++;
 				:: else -> break;
 			od;
@@ -265,6 +266,7 @@ stopo1: 	i++;
 			fi;
 		}
 		tpKeyToCriticalPaths[i] = curMin;
+		curMin = 0;
 	}
 }
 
@@ -302,7 +304,7 @@ inline podTopologySpreadFilter(podSpec)
 				fi;
 
 				short selfMatchNum = 0;
-				short p = 0;
+				p = 0;
 				bit flag = 0;
 				for (p : 0 .. podSpec.topoSpreadConstraints[j].numMatchedLabel - 1) {
 						if 
@@ -325,7 +327,14 @@ inline podTopologySpreadFilter(podSpec)
 						printf("[***][SchedulerPlugins] Node %d not passing topoSpreadConstraints %d\n", i, j)
 						nodes[i].score = -1;
 					:: else->;
-stopo6:			fi;
+				fi;
+				selfMatchNum = 0;
+				flag = 0;
+				key = 0;
+				selfMatchNum = 0;
+				minMatchNum = 0;
+
+stopo6:	 		skip;
 			}	
 stopo4:		i++;
 		:: else->break;
@@ -355,6 +364,9 @@ inline podTopologySpreadFiltering(podSpec)
 	podTopologySpreadFilter(podSpec);
 
 	printfNodeScore();
+
+	clearArray(tpKeyToDomainsNum, MAX_LABEL)
+	clearArray(tpKeyToCriticalPaths, MAX_LABEL)
 }
 
 
@@ -528,6 +540,9 @@ inline nodeResourceFitScore(podSpec)
 
 	printf("[**][SchedulerPlugins] Finished nodeResourceFitScore.\n")
 	printfNodeScore();
+
+	cpuScore = 0;
+	memScore = 0;
 }
 
 inline podTopologySpreadPreScore(podSpec)
@@ -543,7 +558,7 @@ inline podTopologySpreadPreScore(podSpec)
 		// in this iteration, they iterate only on filtered node
 		if 
 			:: nodes[i].score == -1 -> goto ptsp1;
-			:: else;
+			:: else->;
 		fi;
 
 		j = 0;
@@ -571,7 +586,9 @@ inline podTopologySpreadPreScore(podSpec)
 					topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] = 0; 
 					topoSize[podSpec.topoSpreadConstraints[j].topologyKey]++;
 				:: else->;
-ptsp2:		fi;
+			fi;
+			curValue = 0;
+ptsp2:		skip;
 		}
 ptsp1:	skip;			
 	}
@@ -619,6 +636,8 @@ ptsp1:	skip;
 			findMatchedPod(i, j, podSpec);
 			printf("[****][SchedulerPlugins] Matched pod for {node %d, topologyKey %d} is %d\n", i, podSpec.topoSpreadConstraints[j].topologyKey, count)
 			topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] = topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] + count;
+			count = 0;
+			curValue = 0;
 ptsp4: 		skip;
 		}
 ptsp3:	skip;
@@ -656,6 +675,7 @@ inline podTopologySpreadScore(podSpec)
 			printf("[******][SchedulerPlugins] TopopairToCount %d, weight %d, maxSkew %d \n", topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue], topologyNormalizingWeight[j], podSpec.topoSpreadConstraints[j].maxSkew)
 				:: else->;
 			fi;
+			curValue = 0;
 ptss2:		skip;
 		}
 ptss1:  skip;
@@ -696,6 +716,9 @@ ptsns1: skip;
 		fi;
 ptsns2: nodes[i].curScore = 0;
 	}
+
+	minScore = 0;
+	maxScore = 0;
 }
 
 inline podTopologySpreadScoring(podSpec)
@@ -719,6 +742,10 @@ inline podTopologySpreadScoring(podSpec)
 
 	printf("[***][SchedulerPlugins] Finished podTopologySpreadScoring.\n")
 	printfNodeScore();
+
+	clearArray(ignoredNode, NODE_NUM+1)
+	clearArray(topologyNormalizingWeight, MAX_LABEL)
+	clearArray(topoSize, MAX_LABEL)
 }
 
 /* May not implement for now, as it is suggested not to use it in large cluster. 

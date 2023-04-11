@@ -118,7 +118,7 @@ inline bindNode()
 
 	pods[curPod].loc = nodes[selectedNode].id;
 	pods[curPod].status = 1;
-	podTotal++;
+	//podTotal++;
 
 	if 
 		:: pods[curPod].workloadType == 1 ->
@@ -137,43 +137,47 @@ inline bindNode()
 
 proctype scheduler()
 {
-	short i = 0, j = 0, k = 0, max = 0;
+	short i = 0, j = 0, k = 0, max = 0, p = 0;
 	printf("[**][Scheduler] Scheduler started.\n");
 
 endS:	do
 		:: (sIndex != sTail) ->
 			atomic{
-				short curPod = sQueue[sIndex];
-				short selectedNode = 0;
-				// TODO: support other types of workload resources
+				d_step{
+					short curPod = sQueue[sIndex];
+					short selectedNode = 0;
+					// TODO: support other types of workload resources
 
-				printf("[**][Scheduler] Attempting to schedule Pod %d\n", curPod);
-				if 
-					:: pods[curPod].status == 1 ->
-						printf("[**][Scheduler] Pod %d has been scheduled!\n", curPod)
-					:: else->
-						clearNodeScore();
-						scheduleOne();
-						checkIfUnschedulable();
-						bindNode();
+					printf("[**][Scheduler] Attempting to schedule Pod %d\n", curPod);
+					if 
+						:: pods[curPod].status == 1 ->
+							printf("[**][Scheduler] Pod %d has been scheduled!\n", curPod)
+						:: else->
+							clearNodeScore();
+							scheduleOne();
+							checkIfUnschedulable();
+							bindNode();
 
-						// Only support HPA for deployment for now.
-						if 
-							:: pods[curPod].workloadType == 1 ->
-								updateQueue(hpaQueue, hpaTail, hpaIndex, pods[curPod].workloadId)
-								// hpaQueue[hpaTail] = pods[curPod].workloadId;
-								// hpaTail ++;
-							:: else ->;
-						fi;
-				fi;
+							// Only support HPA for deployment for now.
+							if 
+								:: pods[curPod].workloadType == 1 ->
+									updateQueue(hpaQueue, hpaTail, hpaIndex, pods[curPod].workloadId)
+									// hpaQueue[hpaTail] = pods[curPod].workloadId;
+									// hpaTail ++;
+								:: else ->;
+							fi;
+					fi;
 
-				selectedNode = 0;
-				i = 0;
-				j = 0;
-				k = 0;
-				max = 0;
+					selectedNode = 0;
+					i = 0;
+					j = 0;
+					k = 0;
+					p = 0;
+					max = 0;
+					curPod = 0;
 
-				updateQueueIndex(sIndex)
+					updateQueueIndex(sIndex)
+				}
 			}
 		od;
 }

@@ -14,7 +14,6 @@ inline test_duplication()
 	:: else -> goto L4;
 	od;
 	}
-	_m = 0;
 }
 
 
@@ -76,8 +75,8 @@ inline replicasetDeletePod(replicaset, curPod)
 			od;			
 
 			replicaset.replicas--;
+
 			_m = 0;
-	
 			// printPodIds(replicaset)
 		}
 	}
@@ -188,7 +187,7 @@ inline updateQueue(queue, tail, index, item)
 			// printQueue(queue, tail)
 			// printf("[******] tail %d, index %d, item %d\n", tail, index, item)
 
-			short _m = 0;
+			short _m = 0
 			if 
 				:: tail == 0 -> 
 					_m = MAX_QUEUE_SIZE-1
@@ -212,8 +211,7 @@ inline updateQueue(queue, tail, index, item)
 					fi
 				:: else->
 			fi
-			 _m = 0;
-	
+			_m = 0;
 
 			// printQueue(queue, tail)
 			// printf("[******] tail %d, index %d, item %d\n", tail, index, item)
@@ -231,7 +229,7 @@ inline printQueue(queue, tail)
 				printf("%d ", queue[_m])
 			}
 			printf("\n")
-			_m = 0
+			_m = 0;
 		}
 	}
 }

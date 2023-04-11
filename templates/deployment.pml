@@ -49,7 +49,7 @@ inline deleteAPodUpdate()
 // TODO: check on if a pod has not been scheduled, will it be considered in deletion?
 inline deleteAPod()
 {
-	int cur_max = 0;
+	short cur_max = 0;
 	i = 1;
 	podSelected = 0;
 	
@@ -74,6 +74,8 @@ inline deleteAPod()
 	printf("[**][Deployment] Deleting pod %d\n", podSelected);
 	// TODO: deal with the scenairo that the deletion failed. 
 	deleteAPodUpdate();
+
+	cur_max = 0;
 }
 
 inline deletePods(numPods)
@@ -89,6 +91,9 @@ inline deletePods(numPods)
 		numPodDeleted ++;
 	:: else -> break;
 	od;
+
+	numPodDeleted = 0;
+	clearArray(podsOnNode, NODE_NUM+1)
 }
 
 inline enqueuePods(batchSize)
@@ -120,7 +125,6 @@ inline enqueuePods(batchSize)
 inline scale(curReplicaSet)
 {
 	// $$$$ this variable can be parameterized. 
-	short SlowStartInitialBatchSize = 1;
 	short batchSize = 0, remaining = 0;
 
 	// TODO: add dealing pause
@@ -162,6 +166,9 @@ inline scale(curReplicaSet)
 		od;
 	:: else->;
 	fi;
+
+	batchSize = 0;
+	remaining = 0;
 }
 
 
@@ -196,6 +203,8 @@ inline rollout()
 
 			d[curD].curVersion = newV;
 	fi;
+	oldV = 0;
+	newV = 0;
 }
 
 
@@ -206,26 +215,33 @@ inline rollout()
 // TODO: what if there's both pods in creation and deletion? 
 proctype deploymentController()
 {
-	short i = 0, j = 0, k = 0, max = 0, podSelected = 0;
+		short i = 0, j = 0, podSelected = 0;
 
 endDC:	do
 		:: (dcIndex != dcTail) ->
 				atomic{
-					short curD = dcQueue[dcIndex];
-					printf("[**][Deployment] Start to work on deployment %d\n", curD)
+					d_step {
+						short curD = dcQueue[dcIndex];
+						printf("[**][Deployment] Start to work on deployment %d\n", curD)
 
-					if
-					:: (d[curD].specReplicas != d[curD].replicas + d[curD].replicasInCreation - d[curD].replicasInDeletion) -> 
-						d[curD].replicaSets[d[curD].curVersion].specReplicas = d[curD].specReplicas;
-						scale(d[curD].replicaSets[d[curD].curVersion]);
-					// TODO: refine this rollout condition
-					:: else-> ;
-						printf("[**][Deployment] Deployment %d specReplicas is the same as replicas\n", curD)
-						//rollout();
-					fi;
+						if
+						:: (d[curD].specReplicas != d[curD].replicas + d[curD].replicasInCreation - d[curD].replicasInDeletion) -> 
+							d[curD].replicaSets[d[curD].curVersion].specReplicas = d[curD].specReplicas;
+							scale(d[curD].replicaSets[d[curD].curVersion]);
+						// TODO: refine this rollout condition
+						:: else-> ;
+							printf("[**][Deployment] Deployment %d specReplicas is the same as replicas\n", curD)
+							//rollout();
+						fi;
 
 						//updateQueue(hpaQueue, hpaTail, hpaIndex, curD)
 						updateQueueIndex(dcIndex)
+
+						i = 0; 
+						j = 0; 
+						podSelected = 0;
+						curD = 0;
+					}
 				}
 		od;
 }

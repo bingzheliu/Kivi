@@ -349,8 +349,9 @@ inline podTopologySpreadFiltering(podSpec)
 {
 	/*----- preFilter ----*/
 	twoDArray tpPairToMatchNum[MAX_LABEL];
-	short tpKeyToDomainsNum[MAX_LABEL]
+	short tpKeyToDomainsNum[MAX_LABEL];
 	short tpKeyToCriticalPaths[MAX_LABEL];
+
 	i = 0;
 	for (i : 0 .. MAX_LABEL-1) {
 		j = 0;

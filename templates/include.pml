@@ -22,11 +22,13 @@ short kblTail = 0;
 short kblIndex = 0;
 
 // All these arrays start at index 1
-deploymentType d[MAX_DEPLOYMENT];
-podType pods[MAX_POD];
+deploymentType d[DEP_NUM+1];
+podType pods[POD_NUM+1];
 nodeType nodes[NODE_NUM+1];
-podTemplateType podTemplates[POD_TEMPLATE_NUM];
-deploymentType deploymentTemplates[DEP_TEMPLATE_NUM];
+
+// These would be read-only and not affecting the states
+hidden podTemplateType podTemplates[POD_TEMPLATE_NUM+1];
+hidden deploymentType deploymentTemplates[DEP_TEMPLATE_NUM+1];
 
 // short podTotal;
 

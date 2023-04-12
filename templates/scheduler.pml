@@ -175,6 +175,7 @@ endS:	do
 					p = 0;
 					max = 0;
 					curPod = 0;
+					clearNodeScore();
 
 					updateQueueIndex(sIndex)
 				}

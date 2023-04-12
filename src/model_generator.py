@@ -70,6 +70,14 @@ def process_labels(json_config):
 						key_to_value[l].add(cur_topo["labels"][l])
 
 	model_logger.debug(key_to_value)
+	max_label = len(key_to_value)
+	max_value = 0
+	for k in key_to_value:
+		if len(key_to_value[k]) > max_value:
+			max_value = len(key_to_value[k])
+
+	#print(max_label, max_value, key_to_value)
+
 	for k in key_to_value:
 		key_to_value[k] = list(key_to_value[k])
 	key_to_value = list(key_to_value.items())
@@ -99,6 +107,8 @@ def process_labels(json_config):
 
 	#print(json_config["setup"]["nodes"])
 	#print(json_config["setup"]["podTemplates"])
+
+	return max_label, max_value
 	
 
 def generate_init_auto(cur_prefix, cur_json, s_init):
@@ -194,7 +204,7 @@ def generate_event(json_config, s_main_event, pml_event):
 
 def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, config_filename, intent_filename, event_filename, file_base):
 	userDefinedConstraints = check_for_completion_add_default(json_config)
-	process_labels(json_config)
+	max_label, max_value = process_labels(json_config)
 
 	s_init = ""
 	s_init, pod_num, node_num, deployment_num, pt_num, dt_num = generate_init(json_config["setup"], s_init)
@@ -222,17 +232,20 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, con
 					   .replace("[$EVENT_FILENAME]", str(event_filename)) \
 					   .replace("[$EVENT]", str(s_main_event)) \
 					   .replace("[$FILE_BASE]", str(file_base)) \
-					   .replace("[$INTENTS]", str(s_main_intent))
+					   .replace("[$INTENTS]", str(s_main_intent)) 
 
-	pml_config = pml_config.replace("[$MAX_POD]", str(pod_num+3)) \
-						   .replace("[$NODE_NUM]", str(node_num)) \
+	pml_config = pml_config.replace("[$NODE_NUM]", str(node_num)) \
 						   .replace("[$POD_NUM]", str(pod_num)) \
-						   .replace("[$MAX_NODE]", str(node_num+3)) \
-						   .replace("[$MAX_DEPLOYMENT]", str(deployment_num+3)) \
 						   .replace("[$DEP_NUM]", str(deployment_num)) \
-						   .replace("[$POD_TEMPLATE_NUM]", str(pt_num+2)) \
-						   .replace("[$DEP_TEMPLATE_NUM]", str(dt_num+1)) \
-						   .replace("[$userDefinedConstraints]", str(userDefinedConstraints)) 
+						   .replace("[$POD_TEMPLATE_NUM]", str(pt_num)) \
+						   .replace("[$DEP_TEMPLATE_NUM]", str(dt_num)) \
+						   .replace("[$userDefinedConstraints]", str(userDefinedConstraints)) \
+					   	   .replace("[$MAX_LABEL]", str(max_label+1)) \
+					   	   .replace("[$MAX_VALUE]", str(max_value+1))
+
+						   #.replace("[$MAX_POD]", str(pod_num+3)) \
+						   #.replace("[$MAX_NODE]", str(node_num+3)) \
+						   #.replace("[$MAX_DEPLOYMENT]", str(deployment_num+3)) \
 
 	pml_intent += s_intentscheck_intent
 						   

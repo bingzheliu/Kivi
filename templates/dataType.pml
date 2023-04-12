@@ -11,14 +11,14 @@ typedef nodeType {
 	short id;
 	short name;
 
-	short cpu;
-	short cpuLeft;
-	short memory;
-	short memLeft;
+	byte cpu;
+	byte cpuLeft;
+	byte memory;
+	byte memLeft;
 
 	// 0: false, 1: ready, 2: unhealthy
-	short status;
-	short numPod;
+	unsigned status : 3;
+	byte numPod;
 
 	// index is the key, and each index store its value, only 1 value for 1 key
 	short labelKeyValue[MAX_LABEL];
@@ -40,24 +40,25 @@ typedef nodeType {
 // But for now, it's OK to assume that is created by other resources: https://kubernetes.io/docs/concepts/workloads/pods/#working-with-pods
 typedef podType {
 	short id;
-	short loc;
+	// No more than 255 nodes
+	byte loc;
 
 	// https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
 	// 0: idle; 1: running (the only healthy status); 
 	// 2: pending (not count for replicas); 3: being terminated (still count for replicas) 
-	short status;
+	unsigned status : 3;
 
 	// resource
-	short cpu;
-	short memory;
+	byte cpu;
+	byte memory;
 
 	/*----internal----*/
 	// 0: pod, 1: deployment
 	// potentially can support CronJob, Job, etc. in the future. 
-	short workloadType;
+	unsigned workloadType : 3;
 	// If workloadType is 0 (pod), then this is the ID for a podTemplate array (need to define such an array somewhere).
-	short workloadId;
-	short podTemplateId;
+	byte workloadId;
+	byte podTemplateId;
 
 	short score;
 	//short num_deschedule;
@@ -67,7 +68,7 @@ typedef podType {
 	bit important;
 
 	// CPU pattern change index
-	short curCpuIndex;
+	byte curCpuIndex;
 }
 
 typedef replicaSetType {
@@ -76,21 +77,22 @@ typedef replicaSetType {
 
 	short replicas;
 	short specReplicas;
-	short version;
+	byte version;
 	
 	/*****internal****/
 	// when use each podId, need to check whether 1) podIds is 0, or 2) the related pod status is 0. The index can be larger than replicas.
-	short podIds[MAX_POD];
+	short podIds[POD_NUM];
 
 }
 
+// No more than 255 HPA metrics
 typedef hpaSpecType {
 	bit isEnabled;
-	short numMetrics;
-	short metricNames[MAX_NUM_METRICS];
+	byte numMetrics;
+	byte metricNames[MAX_NUM_METRICS];
 	short metricTargets[MAX_NUM_METRICS];
 	// 0 means values, including PodMetric and the valued ResourceMetric; 1 means utlization, including ResourceMetric
-	short metricTypes[MAX_NUM_METRICS];
+	byte metricTypes[MAX_NUM_METRICS];
 
 	short minReplicas;
 	short maxReplicas;
@@ -100,16 +102,16 @@ typedef hpaSpecType {
 typedef affinityRuleType {
 	bit isRequired;
 	// weight: [1:100]
-	short weight;
-	short numMatchedNode;
-	short matchedNode[MAX_NODE];
+	byte weight;
+	byte numMatchedNode;
+	byte matchedNode[NODE_NUM+1];
 }
 
 typedef topoSpreadConType {
-	short maxSkew;
-	short minDomains;
+	byte maxSkew;
+	byte minDomains;
 
-	short topologyKey;
+	byte topologyKey;
 
 	// 0: DoNotSchedule, 1: ScheduleAnyway
 	bit whenUnsatisfiable;
@@ -117,10 +119,10 @@ typedef topoSpreadConType {
 	// labelSelector: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/label-selector/#LabelSelector
 	// We only support match labels, or anything that can be translated into match labels. 
 	// We merge matchLabelKeys with the labelSelector, which is also how they are implemented. 
-	short numMatchedLabel;
-	short labelKey[MAX_LABEL];
-	short labelValue[MAX_LABEL]
-
+	// All label values should not exceed 255
+	byte numMatchedLabel;
+	byte labelKey[MAX_LABEL];
+	byte labelValue[MAX_LABEL]
 
 	// 0: ignore, 1: honor
 	bit nodeAffinityPolicy;
@@ -136,20 +138,20 @@ typedef podTemplateType {
 	/*--- metadata ---*/
 	// TODO: this may need to be seperate from this template as it's a runtime info
 	// now this label is for a workload; if the label is per pod, need to model it in a different way.
-	short labelKeyValue[MAX_LABEL];
+	byte labelKeyValue[MAX_LABEL];
 
 	/*--- podSpec ---*/
 	// https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#PodSpec
 
 	// In fact, the requested CPU and memory will be defined for each container in the pod, but we simplified them into one resources for now, and may pre-process the container info in the wrapper functions. 
 	// https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#resources
-	short cpuRequested;
-	short memRequested;
+	byte cpuRequested;
+	byte memRequested;
 
 	// For scheduler: https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#scheduling
 	//// node affinity, https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
 	affinityRuleType affinityRules[MAX_LABEL];
-	short numRules;
+	byte numRules;
 	//// node name
 	short nodeName;
 
@@ -159,17 +161,17 @@ typedef podTemplateType {
 		noScheduleNode: stores a list of node name that is noSchedulable.
 		preferNoScheduleNode: stores a list of node name (can be duplicated, meaning there's multiple taint for that node) that is preferNoScheduleNode. Assuming # of preferred taint is less than 2 in average for node. 
 	*/
-	short numNoScheduleNode;
-	short noScheduleNode[MAX_NODE];
+	byte numNoScheduleNode;
+	byte noScheduleNode[NODE_NUM+1];
 	short numPreferNoScheduleNode;
-	short preferNoScheduleNode[NODE_NUM*2];
+	byte preferNoScheduleNode[NODE_NUM*2];
 
 	//// Pod Spreading Policy
-	short numTopoSpreadConstraints;
+	byte numTopoSpreadConstraints;
 	topoSpreadConType topoSpreadConstraints[MAX_TOPO_CON];
 
-	short maxCpuChange;
-	short curCpuRequest[MAX_CPU_PATTERN];
+	byte maxCpuChange;
+	byte curCpuRequest[MAX_CPU_PATTERN];
 
 	/* 
 	   Not implemented.
@@ -199,23 +201,22 @@ typedef deploymentType {
 
 	/*-----For rollout or recreate-----*/
 	// default is 25%
-	short maxSurge;
+	byte maxSurge;
 	// default is 25%
-	short maxUnavailable;
+	byte maxUnavailable;
 
 	// https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
 	// 0 is recreate, 1 is rollingupdates
 	bit strategy;
 
-	short podTemplateId;
+	byte podTemplateId;
 
 	/*-----For HPA-----*/
 	hpaSpecType hpaSpec;
 
-
 	// Internal 
-	short replicasInDeletion;
-	short replicasInCreation;
+	byte replicasInDeletion;
+	byte replicasInCreation;
 
 	/*-----omitting-----*/
 	// short progressDeadlineSeconds;

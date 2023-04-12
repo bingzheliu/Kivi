@@ -1,8 +1,9 @@
 
 /*----------- k8s cluster setup ------------*/
-#define MAX_POD [$MAX_POD]
-#define MAX_NODE [$MAX_NODE]
-#define MAX_DEPLOYMENT [$MAX_DEPLOYMENT]
+//#define MAX_POD [$MAX_POD]
+//#define MAX_NODE [$MAX_NODE]
+//#define MAX_DEPLOYMENT [$MAX_DEPLOYMENT]
+// Can't be more than 255
 #define NODE_NUM [$NODE_NUM]
 #define POD_NUM [$POD_NUM]
 #define DEP_NUM [$DEP_NUM]
@@ -27,9 +28,9 @@
 #define userDefinedConstraints [$userDefinedConstraints]
 
 // scheduler "internal" config, set for their default values. 
-#define MAX_LABEL 10
-#define MAX_VALUE [$MAX_NODE]
-#define MAX_2D [$MAX_NODE]
+#define MAX_LABEL [$MAX_LABEL]
+#define MAX_VALUE [$MAX_VALUE]
+#define MAX_2D [$MAX_VALUE]
 // https://github.com/kubernetes/kubernetes/blob/c549b59983e114a872b0df18d74c1d217f3f62bd/pkg/scheduler/framework/interface.go#L109
 #define MAX_NODE_SCORE 100
 

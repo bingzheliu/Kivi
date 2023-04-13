@@ -539,7 +539,7 @@ inline nodeResourceFitScore(podSpec)
 	:: else -> break;
 	od;
 
-	printf("[**][SchedulerPlugins] Finished nodeResourceFitScore.\n")
+	printf("[***][SchedulerPlugins] Finished nodeResourceFitScore.\n")
 	printfNodeScore();
 
 	cpuScore = 0;
@@ -635,7 +635,7 @@ ptsp1:	skip;
 			// We count all the pods, including terminating pods, as we don't model the terminating state for now. 
 			short count = 0;
 			findMatchedPod(i, j, podSpec);
-			printf("[****][SchedulerPlugins] Matched pod for {node %d, topologyKey %d} is %d\n", i, podSpec.topoSpreadConstraints[j].topologyKey, count)
+			printf("[*****][SchedulerPlugins] Matched pod for {node %d, topologyKey %d} is %d\n", i, podSpec.topoSpreadConstraints[j].topologyKey, count)
 			topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] = topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] + count;
 			count = 0;
 			curValue = 0;

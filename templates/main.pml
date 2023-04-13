@@ -22,11 +22,6 @@ init{
 
 	[$USER_COMMAND]
 
-	// int i = 1;
-	// for (i : 1 .. NODE_NUM) {
-	// 	run kernelPanic(i);
-	// }
-
 	// for (i : 1 .. NODE_NUM) {
 	// 	run podCpuChangeWithPattern(i);
 	// }

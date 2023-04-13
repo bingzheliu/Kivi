@@ -12,7 +12,7 @@ def parse_spin_error_trail(output, failure_type, log_level):
 	output_lines = output.splitlines()
 
 	for i in range(0, len(output_lines)):
-		s = output_lines[i]
+		s = output_lines[i].strip()
 		if s.startswith("[*"):
 			count = 0
 			while s[count] != "]":
@@ -86,7 +86,7 @@ if __name__ == '__main__':
 	# parse_pan_output(file_base, file_exec_log, file_error_trail)
 	with open(filename) as f:
 		failure_type = ""
-		result_log, failure_details = parse_spin_error_trail(f.read(), failure_type, 3)
+		result_log, failure_details = parse_spin_error_trail(f.read(), failure_type, 2)
 		print(result_log, failure_details)
 
 

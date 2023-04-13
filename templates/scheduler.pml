@@ -140,9 +140,9 @@ proctype scheduler()
 	short i = 0, j = 0, k = 0, max = 0, p = 0;
 	printf("[**][Scheduler] Scheduler started.\n");
 
+	atomic{
 endS:	do
 		:: (sIndex != sTail) ->
-			atomic{
 				d_step{
 					short curPod = sQueue[sIndex];
 					short selectedNode = 0;
@@ -161,7 +161,7 @@ endS:	do
 							// Only support HPA for deployment for now.
 							if 
 								:: pods[curPod].workloadType == 1 ->
-									updateQueue(hpaQueue, hpaTail, hpaIndex, pods[curPod].workloadId)
+									updateQueue(hpaQueue, hpaTail, hpaIndex, pods[curPod].workloadId, MAX_HPA_QUEUE)
 									// hpaQueue[hpaTail] = pods[curPod].workloadId;
 									// hpaTail ++;
 								:: else ->;
@@ -177,8 +177,8 @@ endS:	do
 					curPod = 0;
 					clearNodeScore();
 
-					updateQueueIndex(sIndex)
+					updateQueueIndex(sIndex, MAX_SCHEDULER_QUEUE)
 				}
-			}
 		od;
+	}
 }

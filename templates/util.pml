@@ -117,11 +117,11 @@ inline copyDeploymentInfoToPod(pod, curD)
 inline printfNodeScore()
 {
 	atomic{
-		printf("[****]Printing score for the current plugin...\n");
+		printf("[*****]Printing score for the current plugin...\n");
 
 		short _m = 1;
 		for (_m : 1 .. NODE_NUM) {
-		   printf("[****]Node %d, score: %d, curScore: %d\n", _m, nodes[_m].score, nodes[_m].curScore)
+		   printf("[*****]Node %d, score: %d, curScore: %d\n", _m, nodes[_m].score, nodes[_m].curScore)
 		}
 		_m = 0;
 	}
@@ -172,7 +172,7 @@ inline updatePodCpuUsageOnNode(pod_selected, cpu_change)
 // update the queue without adding duplicated items
 // Initially, all items in the queue is 0
 // The queue is a rotation queue. and can only store the event of MAX_QUEUE_SIZE
-inline updateQueue(queue, tail, index, item)
+inline updateQueue(queue, tail, index, item, max_queue_size)
 {
 	atomic{
 		d_step {
@@ -191,7 +191,7 @@ inline updateQueue(queue, tail, index, item)
 			short _m = 0;
 			if 
 				:: tail == 0 -> 
-					_m = MAX_QUEUE_SIZE-1
+					_m = max_queue_size-1
 				:: else->
 					_m = tail - 1
 			fi;
@@ -199,15 +199,18 @@ inline updateQueue(queue, tail, index, item)
 				:: index == tail || queue[_m] != item ->
 					queue[tail] = item
 					if
-						:: tail == MAX_QUEUE_SIZE-1->
+						:: tail == max_queue_size-1->
 							tail = 0
 						:: else->
 							tail ++
 					fi
 					if 
 						:: tail == index ->
-							printf("[*Internal error] Queue is full, increase queue size!")
-							assert(false)
+							printf("[*Warning] Queue is full! Halt this process for now!")
+							tail != index;
+							printf("[*Warning] Queue size decreased!")
+							// printf("[*Internal error] Queue is full, increase queue size!")
+							// assert(false)
 						:: else->
 					fi
 				:: else->
@@ -236,12 +239,12 @@ inline printQueue(queue, tail)
 	}
 }
 
-inline updateQueueIndex(index)
+inline updateQueueIndex(index, max_queue_size)
 {
 	atomic{
 		d_step {
 			if
-				:: index == MAX_QUEUE_SIZE-1->
+				:: index == max_queue_size-1->
 					index = 0
 				:: else->
 					index ++

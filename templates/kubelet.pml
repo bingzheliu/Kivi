@@ -32,12 +32,12 @@ endK:	do
 
 							if 
 								:: pods[i].workloadType == 1 ->
-									updateQueue(dcQueue, dcTail, dcIndex, pods[i].workloadId)
+									updateQueue(dcQueue, dcTail, dcIndex, pods[i].workloadId, MAX_DEP_QUEUE)
 								:: else->;
 							fi;
 							// TODO: add a pod info clear func. Not clearing pod info for now, as we will override them later. But this may potentially cause problem if we made mistakes on overriding. 
 					fi;
-					updateQueueIndex(kblIndex)
+					updateQueueIndex(kblIndex, MAX_KUBELET_QUEUE)
 
 					i = 0;
 					j = 0;

@@ -104,7 +104,7 @@ typedef affinityRuleType {
 	// weight: [1:100]
 	byte weight;
 	byte numMatchedNode;
-	byte matchedNode[NODE_NUM+1];
+	byte matchedNode[MAX_MATCHED_NODE];
 }
 
 typedef topoSpreadConType {
@@ -138,7 +138,7 @@ typedef podTemplateType {
 	/*--- metadata ---*/
 	// TODO: this may need to be seperate from this template as it's a runtime info
 	// now this label is for a workload; if the label is per pod, need to model it in a different way.
-	byte labelKeyValue[MAX_LABEL];
+	short labelKeyValue[MAX_LABEL];
 
 	/*--- podSpec ---*/
 	// https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#PodSpec
@@ -150,7 +150,7 @@ typedef podTemplateType {
 
 	// For scheduler: https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#scheduling
 	//// node affinity, https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
-	affinityRuleType affinityRules[MAX_LABEL];
+	affinityRuleType affinityRules[MAX_AFFINITY_RULE];
 	byte numRules;
 	//// node name
 	short nodeName;
@@ -162,9 +162,9 @@ typedef podTemplateType {
 		preferNoScheduleNode: stores a list of node name (can be duplicated, meaning there's multiple taint for that node) that is preferNoScheduleNode. Assuming # of preferred taint is less than 2 in average for node. 
 	*/
 	byte numNoScheduleNode;
-	byte noScheduleNode[NODE_NUM+1];
+	byte noScheduleNode[MAX_NO_SCHEDULE_NODE];
 	short numPreferNoScheduleNode;
-	byte preferNoScheduleNode[NODE_NUM*2];
+	byte preferNoScheduleNode[MAX_PEFER_NO_CHEDULE_NODE];
 
 	//// Pod Spreading Policy
 	byte numTopoSpreadConstraints;
@@ -201,13 +201,13 @@ typedef deploymentType {
 
 	/*-----For rollout or recreate-----*/
 	// default is 25%
-	byte maxSurge;
+	short maxSurge;
 	// default is 25%
-	byte maxUnavailable;
+	short maxUnavailable;
 
 	// https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
 	// 0 is recreate, 1 is rollingupdates
-	bit strategy;
+	short strategy;
 
 	byte podTemplateId;
 

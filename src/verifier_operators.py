@@ -29,7 +29,7 @@ def verifer_operator(result_base_path, pml_base_path, file_base, case_id, scale,
 	stdout, stderr = run_script([file_base + '/libs/Spin/Src/spin', '-a', pml_base_path + "/" + main_filename], True)
 	myprint(stdout, logger.debug)
 
-	stdout, stderr = run_script(['gcc', '-o', 'pan', 'pan.c'] + pan_compile, True)
+	stdout, stderr = run_script(['gcc'] + pan_compile, True)
 
 	with open(result_base_path + "/" + str(scale), "w") as fw:
 		stdout, stderr = run_script(['./pan']+pan_para, False)
@@ -70,12 +70,22 @@ if __name__ == '__main__':
 
 	# bounded model checking
 	pan_para = ['-m10000000']
-	pan_compile = ['-DVECTORSZ=450000']
+	pan_compile = ['-DSAFETY', '-DNOCOMP', '-DSFH', '-o', 'pan', 'pan.c', '-DVECTORSZ=450000']
 	if len(sys.argv) > 4:
 		pan_para = sys.argv[4]
-		pan_para = pan_para.split(" ")
+		pan_compile_added = []
 		if "-l" in pan_para:
-			pan_compile.append("-DNP")
+			pan_compile_added = pan_compile_added + ['-DNP']
+
+		if "-RS" in pan_para:
+			pan_compile_added = pan_compile_added + ['-DT_RAND', '-DP_RAND']
+
+		if "-v" in pan_para:
+			pan_compile_added = pan_compile_added + ['-DCHECK']
+
+
+		pan_compile = pan_compile_added + pan_compile
+		pan_para = pan_para.split(" ")
 
 	verifer_operator(result_base_path, pml_base_path, file_base, case_id, scale, log_level, pan_compile, pan_para)
 

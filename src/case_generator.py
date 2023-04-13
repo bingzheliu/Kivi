@@ -249,7 +249,7 @@ def generate_S6(num_node):
 
 	case_config["intents"] = []
 	# TODO: have a more general list of user intents
-	case_config["intents"].append("\nnever \n{\n do\n  :: init_status == 1 && d[1].replicas < d[1].specReplicas - " + str(p) +  " -> break\n  :: else\n od;\n}\n")
+	#case_config["intents"].append("\nnever \n{\n do\n  :: init_status == 1 && d[1].replicas < d[1].specReplicas - " + str(p) +  " -> break\n  :: else\n od;\n}\n")
 
 	return case_config
 
@@ -384,6 +384,8 @@ def generate_H2(num_node):
 
 	case_config["events"] = {}
 
+	case_config["intents"] = []
+	case_config["intents"].append( "never {\n do \n:: d[1].replicas < d[1].hpaSpec.minReplicas -> break\n :: else\n od;\n}")
 	return case_config
 
 def generate_S4(num_node):
@@ -458,7 +460,7 @@ def generate_S4(num_node):
 	d["replicas"] = 0
 	d["podTemplateId"] = 1
 
-	d["hpaSpec"] = {}
+	#d["hpaSpec"] = {}
 	# d["hpaSpec"]["isEnabled"] = 1
 	# d["hpaSpec"]["numMetrics"] = 1
 	# d["hpaSpec"]["metricNames"] = []
@@ -467,8 +469,8 @@ def generate_S4(num_node):
 	# d["hpaSpec"]["metricTargets"].append(100)
 	# d["hpaSpec"]["metricTypes"] = []
 	# d["hpaSpec"]["metricTypes"].append(1)
-	d["hpaSpec"]["minReplicas"] = num_node*2+1 
-	d["hpaSpec"]["maxReplicas"] = num_node*2 + 4
+	#d["hpaSpec"]["minReplicas"] = num_node*2+1 
+	#d["hpaSpec"]["maxReplicas"] = num_node*2 + 4
 
 	case_config["setup"]["d"].append(d)
 
@@ -491,7 +493,7 @@ def generate_S4(num_node):
 	case_config["userCommand"]["createTargetDeployment"] = 1
 
 	case_config["events"] = {}
-
+	case_config["events"]["kernelPanic"] = {}
 	return case_config
 
 ## HPA + scheduler (pod spreading) + deployment controller + CPU change

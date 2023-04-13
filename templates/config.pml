@@ -12,10 +12,14 @@
 #define POD_TEMPLATE_NUM [$POD_TEMPLATE_NUM]
 #define DEP_TEMPLATE_NUM [$DEP_TEMPLATE_NUM]
 
-
-#define MAX_QUEUE_SIZE 20
+// Propotional to the pods/nodes/deployments size
+#define MAX_SCHEDULER_QUEUE [$POD_QUEUE]
+#define MAX_KUBELET_QUEUE [$POD_QUEUE]
+#define MAX_NODE_CONTROLLER_QUEUE [$NODE_QUEUE]
+#define MAX_HPA_QUEUE [$DEP_QUEUE]
+#define MAX_DEP_QUEUE [$DEP_QUEUE]
 /*----------- deployment Config ------------*/
-#define MAX_CPU_PATTERN 10
+
 #define SlowStartInitialBatchSize 1
 
 
@@ -34,8 +38,6 @@
 // https://github.com/kubernetes/kubernetes/blob/c549b59983e114a872b0df18d74c1d217f3f62bd/pkg/scheduler/framework/interface.go#L109
 #define MAX_NODE_SCORE 100
 
-#define MAX_TOPO_CON 3
-
 
 /*----------- hpa Config ------------*/
 
@@ -48,5 +50,11 @@
 #define HPA_SCALE_UP_LIMIT_MIN 4
 #define HPA_SCALE_UP_LIMIT_FACTOR  2
 
-#define MAX_NUM_METRICS 10
+#define MAX_NUM_METRICS [$MAX_NUM_METRICS]
+#define MAX_NO_SCHEDULE_NODE [$MAX_NO_SCHEDULE_NODE]
+#define MAX_PEFER_NO_CHEDULE_NODE [$MAX_PEFER_NO_CHEDULE_NODE]
+#define MAX_TOPO_CON [$MAX_TOPO_CON]
+#define MAX_AFFINITY_RULE [$MAX_AFFINITY_RULE]
+#define MAX_MATCHED_NODE [$MAX_MATCHED_NODE]
+#define MAX_CPU_PATTERN [$MAX_CPU_PATTERN]
 

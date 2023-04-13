@@ -43,7 +43,7 @@ inline deleteAPodUpdate()
 {
 	d[curD].replicasInDeletion ++;
 	pods[podSelected].status = 3;
-	updateQueue(kblQueue, kblTail, kblIndex, podSelected)	
+	updateQueue(kblQueue, kblTail, kblIndex, podSelected, MAX_KUBELET_QUEUE)	
 }
 
 // TODO: check on if a pod has not been scheduled, will it be considered in deletion?
@@ -109,7 +109,7 @@ inline enqueuePods(batchSize)
 				copyDeploymentInfoToPod(pods[j], curD);
 				pods[j].status = 2;
 				printf("[**][Deployment] Adding a new pod %d to deployment %d\n", j, curD)
-				updateQueue(sQueue, sTail, sIndex, j)
+				updateQueue(sQueue, sTail, sIndex, j, MAX_SCHEDULER_QUEUE)
 				break;
 			:: else->;
 			fi;
@@ -235,7 +235,7 @@ endDC:	do
 						fi;
 
 						//updateQueue(hpaQueue, hpaTail, hpaIndex, curD)
-						updateQueueIndex(dcIndex)
+						updateQueueIndex(dcIndex, MAX_DEP_QUEUE)
 
 						i = 0; 
 						j = 0; 

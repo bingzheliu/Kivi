@@ -155,13 +155,16 @@ def generate_controllers_events(json_config, s_proc):
 
 	if "events" in json_config:
 		for c in json_config["events"]:
-			c_para = ""
-			for para in default_parameter_order[c]:
-				#print(c, para, c_para)
-				c_para += (str(json_config["events"][c][para]) + ",")
-			c_para = c_para[0:-1]
-			#print(c_para)
-			s_proc += ("run " + c + "(" + c_para + ");\n")
+			if c in event_default_str:
+				s_proc += event_default_str[c]
+			else:
+				c_para = ""
+				for para in default_parameter_order[c]:
+					#print(c, para, c_para)
+					c_para += (str(json_config["events"][c][para]) + ",")
+				c_para = c_para[0:-1]
+				#print(c_para)
+				s_proc += ("run " + c + "(" + c_para + ");\n")
 
 	return s_proc
 
@@ -182,7 +185,7 @@ def generate_intent(json_config, s_intentscheck_intent, s_main_intent):
 
 	return s_intentscheck_intent, s_main_intent
 
-def generate_event(json_config, s_main_event, pml_event):
+def generate_other_event(json_config, s_main_event, pml_event):
 	# Processing pod CPU change pattern
 	s_cpu_change = ""
 	s_cpu_change_stmt = "      ::  pods[[$i]].status == 1 && pods[[$i]].curCpuIndex < podTemplates[pods[[$i]].podTemplateId].maxCpuChange -> \n       podCpuChangeWithPatternExec([$i])\n"
@@ -200,7 +203,40 @@ def generate_event(json_config, s_main_event, pml_event):
 
 
 	return s_main_event, pml_event
-			
+
+# TODO: following two functions can be more generalized
+def get_max_num_metrics(json_config):
+	max_num_metrics = 1
+	for d in json_config["setup"]["d"]:
+		if "hpaSpec" in d:
+			if d["hpaSpec"]["numMetrics"] > max_num_metrics:
+				max_num_metrics = d["hpaSpec"]["numMetrics"]
+	return max_num_metrics
+
+def get_max_pod_template(json_config):
+	max_no_schedule_node = 1
+	max_no_prefer_schedule_node = 1
+	max_affinity_rules = 1
+	max_matched_node = 1
+	max_topo_con = 1
+	max_cpu_pattern = 1
+	for pt in json_config["setup"]["podTemplates"]:
+		if pt["numRules"] > max_affinity_rules:
+			max_affinity_rules = pt["numRules"]
+		if pt["numNoScheduleNode"] > max_no_schedule_node:
+			max_no_schedule_node = pt["numNoScheduleNode"]
+		if pt["numPreferNoScheduleNode"] > max_no_prefer_schedule_node:
+			max_no_prefer_schedule_node = pt["numPreferNoScheduleNode"]
+		if int(pt["numRules"]) > 0:
+			for ar in pt["affinityRules"]:
+				if ar["numMatchedNode"] > max_matched_node:
+					max_matched_node = ar["numMatchedNode"]
+		if pt["numTopoSpreadConstraints"] > max_topo_con:
+			max_topo_con = pt["numTopoSpreadConstraints"]
+		if pt["maxCpuChange"] > max_cpu_pattern:
+			max_cpu_pattern = pt["maxCpuChange"]
+
+	return max_no_schedule_node, max_no_prefer_schedule_node, max_affinity_rules, max_matched_node, max_topo_con, max_cpu_pattern
 
 def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, config_filename, intent_filename, event_filename, file_base):
 	userDefinedConstraints = check_for_completion_add_default(json_config)
@@ -220,7 +256,7 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, con
 	s_intentscheck_intent, s_main_intent = generate_intent(json_config, s_intentscheck_intent, s_main_intent)
 
 	s_main_event = ""
-	s_main_event, pml_event = generate_event(json_config, s_main_event, pml_event)
+	s_main_event, pml_event = generate_other_event(json_config, s_main_event, pml_event)
 
 	#print(s_proc, s_user_command)
 	
@@ -234,6 +270,8 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, con
 					   .replace("[$FILE_BASE]", str(file_base)) \
 					   .replace("[$INTENTS]", str(s_main_intent)) 
 
+	max_no_schedule_node, max_no_prefer_schedule_node, max_affinity_rules, max_matched_node, max_topo_con, max_cpu_pattern = get_max_pod_template(json_config)
+
 	pml_config = pml_config.replace("[$NODE_NUM]", str(node_num)) \
 						   .replace("[$POD_NUM]", str(pod_num)) \
 						   .replace("[$DEP_NUM]", str(deployment_num)) \
@@ -241,7 +279,18 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, con
 						   .replace("[$DEP_TEMPLATE_NUM]", str(dt_num)) \
 						   .replace("[$userDefinedConstraints]", str(userDefinedConstraints)) \
 					   	   .replace("[$MAX_LABEL]", str(max_label+1)) \
-					   	   .replace("[$MAX_VALUE]", str(max_value+1))
+					   	   .replace("[$MAX_VALUE]", str(max_value+1)) \
+					   	   .replace("[$DEP_QUEUE]", str(deployment_num*2)) \
+					   	   .replace("[$POD_QUEUE]", str(pod_num*2)) \
+					   	   .replace("[$NODE_QUEUE]", str(node_num*2)) \
+					   	   .replace("[$MAX_NUM_METRICS]", str(get_max_num_metrics(json_config))) \
+					   	   .replace("[$MAX_NO_SCHEDULE_NODE]", str(max_no_schedule_node)) \
+					   	   .replace("[$MAX_PEFER_NO_CHEDULE_NODE]", str(max_no_prefer_schedule_node)) \
+					   	   .replace("[$MAX_AFFINITY_RULE]", str(max_affinity_rules)) \
+					   	   .replace("[$MAX_MATCHED_NODE]", str(max_matched_node)) \
+					   	   .replace("[$MAX_TOPO_CON]", str(max_topo_con)) \
+					   	   .replace("[$MAX_CPU_PATTERN]", str(max_cpu_pattern)) 
+
 
 						   #.replace("[$MAX_POD]", str(pod_num+3)) \
 						   #.replace("[$MAX_NODE]", str(node_num+3)) \

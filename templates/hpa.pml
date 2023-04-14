@@ -1,7 +1,7 @@
 /*
 	 HPA controller. Author: Bingzhe Liu. 02/20/2023.
 	 1. HPA object is created per deployment/resource. In the implementation, all the HPA objects are maintained by an HPA controller. 
-	 HPA controller is implemented with a queue of events. But these events are actually periodically added to the HPA (by controller-manager). 
+	 HPA controller is implemented with a queue of events. But these events are actually periodically (default 15 seconds) added to the HPA (by controller-manager). 
 	 So instead of implemeting the period events, we just make it triggered by any resource changes, to simplify and make it scale better by avoiding unuseful execuation. 
 	 TODO: I have not figured out how controller-manager enqueue the events for HPA. 
 	 2. HPA look into all the desired state in a stablizationWindows and choose the largest one for scale down. We currently don't model this. 
@@ -196,8 +196,9 @@ inline normalizeDesiredReplicas()
 proctype hpa()
 {
 	short i = 0, j = 0, k = 0, p = 0;
+	short local_last_time = 0;
 endHPA:	do
-		:: (hpaIndex != hpaTail) -> 
+		:: (hpaIndex != hpaTail) && (time-local_last_time >= HPA_WAIT_TIME || (sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail && ncIndex == ncTail))-> 
 			atomic{
 				d_step{
 					// TODO: check, potentially can have issue because the curD can be shared acrose the controller
@@ -207,7 +208,7 @@ endHPA:	do
 					// [NS] Timestamp is not actually implemented.
 					short replicas = 0, timestamp = 0, metric = 0;
 
-					printf("[****][HPA] HPA working on deployment %d\n", curD)
+					printf("[**][HPA] HPA working on deployment %d\n", curD)
 
 					if
 						// TODO: check on this condition -- now we add this because HPA should not start to calculate if there's no replicas
@@ -253,8 +254,17 @@ endHPA:	do
 							fi;
 					fi;
 
-					printf("[****][HPA] HPA finished on deployment %d\n", curD)
+					printf("[**][HPA] HPA finished on deployment %d\n", curD)
 					updateQueueIndex(hpaIndex, MAX_HPA_QUEUE);
+
+					if 
+						:: local_last_time + HPA_WAIT_TIME + HPA_RUN_TIME > time->
+							time = local_last_time + HPA_WAIT_TIME + HPA_RUN_TIME
+						:: else-> 
+							time = time+HPA_RUN_TIME;
+					fi;
+					local_last_time = time;
+					printf("[**]time %d, local_last_time %d\n", time, local_last_time)
 
 					i = 0;
 					j = 0;

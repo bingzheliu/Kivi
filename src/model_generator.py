@@ -188,7 +188,7 @@ def generate_intent(json_config, s_intentscheck_intent, s_main_intent):
 def generate_other_event(json_config, s_main_event, pml_event):
 	# Processing pod CPU change pattern
 	s_cpu_change = ""
-	s_cpu_change_stmt = "      ::  pods[[$i]].status == 1 && pods[[$i]].curCpuIndex < podTemplates[pods[[$i]].podTemplateId].maxCpuChange -> \n       podCpuChangeWithPatternExec([$i])\n"
+	s_cpu_change_stmt = "      ::  pods[[$i]].status == 1 && pods[[$i]].curCpuIndex < podTemplates[pods[[$i]].podTemplateId].maxCpuChange && (podTemplates[pods[[$i]].podTemplateId].timeCpuRequest[pods[[$i]].curCpuIndex] + pods[[$i]].startTime <= time || (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail)) -> \n podCpuChangeWithPatternExec([$i])\n"
 	for tp in json_config["setup"]["podTemplates"]:
 		if tp["maxCpuChange"] > 0:
 			# Becuase some pods may be up/changed later, so we need to put every pod onto the check...
@@ -289,7 +289,7 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, con
 					   	   .replace("[$MAX_AFFINITY_RULE]", str(max_affinity_rules)) \
 					   	   .replace("[$MAX_MATCHED_NODE]", str(max_matched_node)) \
 					   	   .replace("[$MAX_TOPO_CON]", str(max_topo_con)) \
-					   	   .replace("[$MAX_CPU_PATTERN]", str(max_cpu_pattern)) 
+					   	   .replace("[$MAX_CPU_PATTERN]", str(max_cpu_pattern+1)) 
 
 
 						   #.replace("[$MAX_POD]", str(pod_num+3)) \

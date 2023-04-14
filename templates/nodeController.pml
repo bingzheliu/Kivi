@@ -32,6 +32,7 @@ endNC:	do
 					fi;
 
 					updateQueueIndex(ncIndex, MAX_NODE_CONTROLLER_QUEUE)
+					time = time + NODEC_RUN_TIME
 
 					i = 0;
 					j = 0;

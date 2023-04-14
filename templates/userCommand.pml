@@ -5,6 +5,7 @@
 	2. User can't add new node if they are using the affinity spec. Same reason as 1. 
 */
 
+// We don't assign a time for user command now, and assume each command won't take much time, as they just enqueue the events. 
 proctype applyDeployment(short deploymentTemplateId)
 {
 	atomic {

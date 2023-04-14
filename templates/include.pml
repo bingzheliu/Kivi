@@ -32,7 +32,9 @@ hidden deploymentType deploymentTemplates[DEP_TEMPLATE_NUM+1];
 
 // short podTotal;
 
-short init_status = 0;
+bit init_status = 0;
+
+short time = 0;
 
 // // This is a counter that could be used for all the forloop in nested functions
 // hidden short gi = 0;

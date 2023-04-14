@@ -237,6 +237,8 @@ endDC:	do
 						//updateQueue(hpaQueue, hpaTail, hpaIndex, curD)
 						updateQueueIndex(dcIndex, MAX_DEP_QUEUE)
 
+						time = time + DEP_RUN_TIME
+
 						i = 0; 
 						j = 0; 
 						podSelected = 0;

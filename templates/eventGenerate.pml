@@ -34,6 +34,13 @@ inline podCpuChangeWithPatternExec(i)
 				updateQueue(hpaQueue, hpaTail, hpaIndex,  pods[i].workloadId, MAX_HPA_QUEUE)
 			:: else ->;
 		fi;
+		if 
+			:: podTemplates[pods[i].podTemplateId].timeCpuRequest[pods[i].curCpuIndex] + pods[i].startTime >= time->
+				time = podTemplates[pods[i].podTemplateId].timeCpuRequest[pods[i].curCpuIndex] + pods[i].startTime
+			:: else->;
+		fi;
+		printf("[**] Finished pod CPU change on pod %d for its # %d (of %d) at time %d\n", i, pods[i].curCpuIndex, podTemplates[pods[i].podTemplateId].maxCpuChange, time)
+
 		cpu_change = 0
 	}
 }
@@ -45,7 +52,7 @@ proctype podCpuChangeWithPattern()
 				:: true -> 
 endPCCWP:			atomic{
 					if
-							// ::  pods[0].status == 1 && pods[0].curCpuIndex < podTemplates[pods[0].podTemplateId].maxCpuChange ->
+							// ::  pods[0].status == 1 && pods[0].curCpuIndex < podTemplates[pods[0].podTemplateId].maxCpuChange && (podTemplates[pods[0].podTemplateId].timeCpuRequest[pods[0].curCpuIndex] + pods[0].startTime >= time || (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail)) ->
 							// 		podCpuChangeWithPatternExec(0)
 							// ::  pods[1].status == 1 && pods[1].curCpuIndex < podTemplates[pods[1].podTemplateId].maxCpuChange ->
 							// 		podCpuChangeWithPatternExec(1)

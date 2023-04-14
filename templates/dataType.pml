@@ -69,6 +69,8 @@ typedef podType {
 
 	// CPU pattern change index
 	byte curCpuIndex;
+
+	short startTime;
 }
 
 typedef replicaSetType {
@@ -172,6 +174,7 @@ typedef podTemplateType {
 
 	byte maxCpuChange;
 	byte curCpuRequest[MAX_CPU_PATTERN];
+	byte timeCpuRequest[MAX_CPU_PATTERN];
 
 	/* 
 	   Not implemented.

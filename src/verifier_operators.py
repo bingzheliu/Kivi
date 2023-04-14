@@ -70,7 +70,8 @@ if __name__ == '__main__':
 
 	# bounded model checking
 	pan_para = ['-m10000000']
-	pan_compile = ['-DSAFETY', '-DNOCOMP', '-DSFH', '-o', 'pan', 'pan.c', '-DVECTORSZ=450000']
+	#'-DSAFETY', '-DNOCOMP', '-DSFH',
+	pan_compile = [ '-o', 'pan', 'pan.c', '-DVECTORSZ=450000']
 	if len(sys.argv) > 4:
 		pan_para = sys.argv[4]
 		pan_compile_added = []

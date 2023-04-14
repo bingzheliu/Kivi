@@ -10,7 +10,7 @@ proctype maintenance(short p)
 		short i = 1;
 		for (i : 1 .. NODE_NUM) {
 			if 
-				:: nodes[i].status == 1 && nodes[i].maintained == 0 && cur_node_in_maintenance < p  ->
+				:: nodes[i].status == 1 && nodes[i].maintained == 0 && cur_node_in_maintenance < p ->
 					cur_node_in_maintenance ++;
 					printf("[***][maintenanceNode] # of %d nodes in maintenance\n", cur_node_in_maintenance);
 					run maintenanceNode(i);
@@ -23,16 +23,23 @@ proctype maintenance(short p)
 proctype maintenanceNode(short i)
 {
 	atomic {
+		short local_last_time = time;
 		printf("[**][maintenanceNode] Starting maintenance for node %d\n", i)
 		nodes[i].status = 0;
 		updateQueue(ncQueue, ncTail, ncIndex, i, MAX_NODE_CONTROLLER_QUEUE)
 		// This condition is hard coded, meaning to wait for the node to fully shut down, and then put it back.
 		if 
-			:: nodes[i].numPod == 0 && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail ->
+			:: ((time - local_last_time >= MAINTENANCE_WAIT_TIME) || (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail)) ->
 					nodes[i].status = 1;
 					nodes[i].maintained = 1;
 					cur_node_in_maintenance --;
 					printf("[**][maintenanceNode] End maintenance for node %d\n", i)
+					if 
+						:: local_last_time + MAINTENANCE_WAIT_TIME > time ->
+							time = local_last_time + MAINTENANCE_WAIT_TIME 
+						:: else->;
+					fi
+					printf("[**]time %d, local_last_time %d, hpaTail %d, hpaIndex %d\n", time, local_last_time, hpaTail, hpaIndex)
 		fi;
 	}
 }

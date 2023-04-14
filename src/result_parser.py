@@ -25,7 +25,8 @@ def parse_spin_error_trail(output, failure_type, log_level):
 			result_log += (s + "\n")
 
 		if s.startswith("pan:1:") or s.startswith("spin: trail ends"):
-			failure_details = output_lines[i-1] + "\n"
+			failure_details = "Failure details -------->\n"
+			failure_details += (output_lines[i-1] + "\n")
 			while not s.startswith("global vars"):
 				failure_details += (s+"\n")
 				i += 1
@@ -86,7 +87,7 @@ if __name__ == '__main__':
 	# parse_pan_output(file_base, file_exec_log, file_error_trail)
 	with open(filename) as f:
 		failure_type = ""
-		result_log, failure_details = parse_spin_error_trail(f.read(), failure_type, 2)
+		result_log, failure_details = parse_spin_error_trail(f.read(), failure_type, 5)
 		print(result_log, failure_details)
 
 

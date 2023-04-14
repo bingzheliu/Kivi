@@ -118,6 +118,7 @@ inline bindNode()
 
 	pods[curPod].loc = nodes[selectedNode].id;
 	pods[curPod].status = 1;
+	pods[curPod].startTime = time;
 	//podTotal++;
 
 	if 
@@ -167,6 +168,8 @@ endS:	do
 								:: else ->;
 							fi;
 					fi;
+
+					time = time + SCHEDULER_RUN_TIME
 
 					selectedNode = 0;
 					i = 0;

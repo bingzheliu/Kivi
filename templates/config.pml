@@ -50,6 +50,7 @@
 #define HPA_SCALE_UP_LIMIT_MIN 4
 #define HPA_SCALE_UP_LIMIT_FACTOR  2
 
+/*----------- Array Config ------------*/
 #define MAX_NUM_METRICS [$MAX_NUM_METRICS]
 #define MAX_NO_SCHEDULE_NODE [$MAX_NO_SCHEDULE_NODE]
 #define MAX_PEFER_NO_CHEDULE_NODE [$MAX_PEFER_NO_CHEDULE_NODE]
@@ -57,4 +58,14 @@
 #define MAX_AFFINITY_RULE [$MAX_AFFINITY_RULE]
 #define MAX_MATCHED_NODE [$MAX_MATCHED_NODE]
 #define MAX_CPU_PATTERN [$MAX_CPU_PATTERN]
+
+
+/*----------- Time Config ------------*/
+#define HPA_RUN_TIME 1
+#define HPA_WAIT_TIME 15
+#define SCHEDULER_RUN_TIME 1
+#define DEP_RUN_TIME 1
+#define KUBELET_RUN_TIME 1
+#define NODEC_RUN_TIME 1
+#define MAINTENANCE_WAIT_TIME 60
 

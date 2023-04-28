@@ -26,7 +26,7 @@ elements_required = {"nodes" : ["id", "name", "cpu", "cpuLeft", "memory", "memLe
 
 default_values = { 
 	"nodes" : {"score" : 0, "curScore" : 0, "curAffinity" : 0, "curTaint" : 0, "labels" : None, "maintained" : 0}, \
-	"pods" : {"status" : 0, "important" : 0, "workloadType" : 0, "workloadId" : 0, "score" : 0, "cpu" : 0, "memory" : 0, "curCpuIndex" : 0, "startTime" : 0}, \
+	"pods" : {"status" : 0, "loc" : 0, "podTemplateId" : 0, "important" : 0, "workloadType" : 0, "workloadId" : 0, "score" : 0, "cpu" : 0, "memory" : 0, "curCpuIndex" : 0, "startTime" : 0}, \
 	# maxReplicas must be defined by users
 	"d": { "curVersion" : 0, "specReplicas" : 1, "maxSurge" : 25, "maxUnavailable" : 25, "strategy" : 1, "hpaSpec" : {"isEnabled" : 0, "numMetrics" : 0, "minReplicas" : 1}}, \
 	# https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/#internal-default-constraints

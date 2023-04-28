@@ -116,7 +116,7 @@ inline bindNode()
 	nodes[selectedNode].cpuLeft = nodes[selectedNode].cpuLeft - pods[curPod].cpu;
 	nodes[selectedNode].memLeft = nodes[selectedNode].memLeft - pods[curPod].memory;
 
-	pods[curPod].loc = nodes[selectedNode].id;
+	pods[curPod].loc = selectedNode;
 	pods[curPod].status = 1;
 	pods[curPod].startTime = time;
 	//podTotal++;

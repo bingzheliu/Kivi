@@ -140,6 +140,7 @@ inline findMatchedPod(i, j, podSpec)
 	k = 1;
 	
 	for (k : 1 .. POD_NUM) {
+		printf("[******] Matching pod %d (status %d, loc %d)\n", k, pods[k].status, pods[k].loc)
 		if 
 			// TODO: check if this pod status can be 2 (pending)
 			:: (pods[k].status != 1 || pods[k].loc != i) -> goto fmpend;
@@ -149,11 +150,12 @@ inline findMatchedPod(i, j, podSpec)
 
 		// go through all the labels in constraints, and see if the pod matches all of them
 		for (p : 0 .. podSpec.topoSpreadConstraints[j].numMatchedLabel - 1) {
-			//printf("[******] matching pod %d with key %d\n", k, podSpec.topoSpreadConstraints[j].labelKey[p])
+			printf("[******] matching pod %d with {%d, %d}\n", k, p, podSpec.topoSpreadConstraints[j].labelKey[p])
 			if 
 				::(podTemplates[pods[k].podTemplateId].labelKeyValue[podSpec.topoSpreadConstraints[j].labelKey[p]] != podSpec.topoSpreadConstraints[j].labelValue[p]) -> goto fmpend;
 				:: else->; 
 			fi;
+			printf("[******] matched pod %d with {%d, %d}\n", k, p, podSpec.topoSpreadConstraints[j].labelKey[p])
 		}
 		count++;
 fmpend:	skip;
@@ -297,11 +299,13 @@ inline podTopologySpreadFilter(podSpec)
 				fi;
 
 				short minMatchNum = tpKeyToCriticalPaths[key];
+				printf("[****] minMatchNum %d key %d\n", minMatchNum, key)
 				if
 					:: tpKeyToDomainsNum[key] < podSpec.topoSpreadConstraints[j].minDomains ->
 						minMatchNum = 0;
 					:: else->;
 				fi;
+				printf("[****] minMatchNum %d\n", minMatchNum, key)
 
 				short selfMatchNum = 0;
 				p = 0;

@@ -76,7 +76,7 @@ def process_labels(json_config):
 		if len(key_to_value[k]) > max_value:
 			max_value = len(key_to_value[k])
 
-	#print(max_label, max_value, key_to_value)
+	print(max_label, max_value, key_to_value)
 
 	for k in key_to_value:
 		key_to_value[k] = list(key_to_value[k])
@@ -171,7 +171,11 @@ def generate_controllers_events(json_config, s_proc):
 def generate_user_command(json_config, s_user_command):
 	if "userCommand" in json_config:
 		for c in json_config["userCommand"]:
-			s_user_command += ("run " + c + "(" + str(json_config["userCommand"][c]) + ");\n")
+			if isinstance(json_config["userCommand"][c], list):
+				for e in json_config["userCommand"][c]:
+					s_user_command += ("run " + c + "(" + str(e) + ");\n")
+			else:
+				s_user_command += ("run " + c + "(" + str(json_config["userCommand"][c]) + ");\n")
 			
 	return s_user_command
 
@@ -238,7 +242,7 @@ def get_max_pod_template(json_config):
 
 	return max_no_schedule_node, max_no_prefer_schedule_node, max_affinity_rules, max_matched_node, max_topo_con, max_cpu_pattern
 
-def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, config_filename, intent_filename, event_filename, file_base):
+def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, config_filename, intent_filename, event_filename, file_base, queue_size_default):
 	userDefinedConstraints = check_for_completion_add_default(json_config)
 	max_label, max_value = process_labels(json_config)
 
@@ -272,6 +276,16 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, con
 
 	max_no_schedule_node, max_no_prefer_schedule_node, max_affinity_rules, max_matched_node, max_topo_con, max_cpu_pattern = get_max_pod_template(json_config)
 
+	dep_queue = deployment_num*2
+	pod_queue = pod_num*2
+	node_queue = node_num*2
+	#print(dep_queue, pod_queue, node_queue)
+	if queue_size_default is not None:
+		dep_queue = dep_queue if dep_queue < queue_size_default else queue_size_default
+		pod_queue = pod_queue if pod_queue < queue_size_default else queue_size_default
+		node_queue = node_queue if node_queue < queue_size_default else queue_size_default 
+	model_logger.critical("Dep queue size "+str(dep_queue)+"; Pod queue size "+str(pod_queue)+"; Node queue size "+str(node_queue))
+
 	pml_config = pml_config.replace("[$NODE_NUM]", str(node_num)) \
 						   .replace("[$POD_NUM]", str(pod_num)) \
 						   .replace("[$DEP_NUM]", str(deployment_num)) \
@@ -280,9 +294,9 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, con
 						   .replace("[$userDefinedConstraints]", str(userDefinedConstraints)) \
 					   	   .replace("[$MAX_LABEL]", str(max_label+1)) \
 					   	   .replace("[$MAX_VALUE]", str(max_value+1)) \
-					   	   .replace("[$DEP_QUEUE]", str(deployment_num*2)) \
-					   	   .replace("[$POD_QUEUE]", str(pod_num*2)) \
-					   	   .replace("[$NODE_QUEUE]", str(node_num*2)) \
+					   	   .replace("[$DEP_QUEUE]", str(dep_queue)) \
+					   	   .replace("[$POD_QUEUE]", str(pod_queue)) \
+					   	   .replace("[$NODE_QUEUE]", str(node_queue)) \
 					   	   .replace("[$MAX_NUM_METRICS]", str(get_max_num_metrics(json_config))) \
 					   	   .replace("[$MAX_NO_SCHEDULE_NODE]", str(max_no_schedule_node)) \
 					   	   .replace("[$MAX_PEFER_NO_CHEDULE_NODE]", str(max_no_prefer_schedule_node)) \
@@ -302,13 +316,7 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, con
 	return pml_config, pml_main, pml_intent, pml_event
 
 
-def model_generator(pml_base_path, file_base, case_id, scale):
-	config_filename = pml_base_path + "/configs/" + case_id + "_" + scale + ".json"
-	case_generator(config_filename, case_id, scale)
-
-	with open(config_filename) as f:
-		json_config = json.load(f)
-
+def model_generator(json_config, pml_base_path, file_base, case_id, scale, queue_size_default=None):
 	with open(file_base + "/templates/config.pml") as f:
 		pml_config = f.read()
 
@@ -324,7 +332,7 @@ def model_generator(pml_base_path, file_base, case_id, scale):
 	config_filename = "config_" + case_id + "_" + scale + ".pml"
 	intent_filename = "intentsCheck_" + case_id + "_" + scale + ".pml"
 	event_filename = "event_" + case_id + "_" + scale + ".pml"
-	pml_config, pml_main, pml_intent, pml_event = generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, config_filename, intent_filename, event_filename, file_base)
+	pml_config, pml_main, pml_intent, pml_event = generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, config_filename, intent_filename, event_filename, file_base, queue_size_default)
 	
 	with open(pml_base_path + "/" + config_filename, "w") as f:
 		f.write(pml_config)
@@ -341,7 +349,5 @@ def model_generator(pml_base_path, file_base, case_id, scale):
 
 	return main_filename
 
-if __name__ == '__main__':
-	model_generator(sys.argv[1], sys.argv[2], sys.argv[3])
 
 

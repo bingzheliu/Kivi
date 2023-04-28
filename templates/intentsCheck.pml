@@ -21,7 +21,7 @@
 proctype checkH1()
 {
 endCH1:	if 
-			:: d[1].replicas == d[1].hpaSpec.maxReplicas ->
+			:: d[1].hpaSpec.maxReplicas != d[1].hpaSpec.minReplicas && d[1].replicas == d[1].hpaSpec.maxReplicas ->
 		 	printf("[*] Entering stage 2 for check!\n")
 endCH2:		if 
 		 		:: d[1].replicas == d[1].hpaSpec.minReplicas || d[1].replicas < d[1].hpaSpec.maxReplicas - 5 ->

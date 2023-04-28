@@ -76,7 +76,7 @@ def process_labels(json_config):
 		if len(key_to_value[k]) > max_value:
 			max_value = len(key_to_value[k])
 
-	print(max_label, max_value, key_to_value)
+	#print(max_label, max_value, key_to_value)
 
 	for k in key_to_value:
 		key_to_value[k] = list(key_to_value[k])

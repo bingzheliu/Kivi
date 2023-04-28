@@ -73,7 +73,8 @@ def verifer_operator_adjust_queue(json_config, result_base_path, pml_base_path, 
 
 def verifer_operator(result_base_path, pml_base_path, file_base, case_id, scale, log_level, pan_compile, pan_para, find_all=True):
 	if int(scale) == 0:
-		all_setup, json_config_template = finding_smallest_scale(pml_base_path, file_base, case_id, scale)
+		json_config = get_case_temeplate(file_base, case_id)
+		all_setup, json_config_template = finding_smallest_scale(json_config, pml_base_path, file_base, case_id)
 		for s in all_setup:
 			new_json_config, num_node, num_pod = generate_case_json(json_config_template, s)
 			logger.critical("===========================")
@@ -88,13 +89,13 @@ def verifer_operator(result_base_path, pml_base_path, file_base, case_id, scale,
 
 	else:
 		config_filename = pml_base_path + "/configs/" + case_id + "_" + scale + ".json"
-		case_generator(config_filename, case_id, scale)
+		case_generator(case_id, scale, config_filename)
 		with open(config_filename) as f:
 			json_config = json.load(f)
 
 		verifer_operator_adjust_queue(json_config, result_base_path, pml_base_path, file_base, case_id, scale, log_level, pan_compile, pan_para)
 
-
+# TODO: better ways to do user configs
 if __name__ == '__main__':
 	case_id = sys.argv[1]
 	scale = sys.argv[2]

@@ -299,13 +299,13 @@ inline podTopologySpreadFilter(podSpec)
 				fi;
 
 				short minMatchNum = tpKeyToCriticalPaths[key];
-				printf("[****] minMatchNum %d key %d\n", minMatchNum, key)
+				// printf("[******] minMatchNum %d key %d\n", minMatchNum, key)
 				if
 					:: tpKeyToDomainsNum[key] < podSpec.topoSpreadConstraints[j].minDomains ->
 						minMatchNum = 0;
 					:: else->;
 				fi;
-				printf("[****] minMatchNum %d\n", minMatchNum, key)
+				// printf("[******] minMatchNum %d\n", minMatchNum, key)
 
 				short selfMatchNum = 0;
 				p = 0;

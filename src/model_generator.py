@@ -168,15 +168,43 @@ def generate_controllers_events(json_config, s_proc):
 
 	return s_proc
 
+def generate_user_command_one(all_stat, json_config, c, e):
+	cur_p = 1
+	cur_stmt = ("run " + c + "(" + str(e) + ") ")
+	if "priority" in json_config["userCommand"][c]:
+		cur_stmt += ("priority " + str(json_config["userCommand"][c]["priority"]) + "\n") 
+		cur_p = json_config["userCommand"][c]["priority"]
+
+	if cur_p not in all_stat:
+		all_stat[cur_p] = cur_stmt
+	else:
+		all_stat[cur_p] += cur_stmt
+
+	return all_stat
+
+def sort_priority(element):
+	return element[0]
+
+# TODO: this priority may need to apply to events as well. 
 def generate_user_command(json_config, s_user_command):
+	all_stat = {1: ""}
+
 	if "userCommand" in json_config:
 		for c in json_config["userCommand"]:
-			if isinstance(json_config["userCommand"][c], list):
-				for e in json_config["userCommand"][c]:
-					s_user_command += ("run " + c + "(" + str(e) + ");\n")
+			if isinstance(json_config["userCommand"][c]["para"], list):
+				for e in json_config["userCommand"][c]["para"]:
+					all_stat = generate_user_command_one(all_stat, json_config, c, e)
+
 			else:
-				s_user_command += ("run " + c + "(" + str(json_config["userCommand"][c]) + ");\n")
-			
+				all_stat = generate_user_command_one(all_stat, json_config, c, str(json_config["userCommand"][c]["para"]))
+
+	all_stat = list(all_stat.items())
+	all_stat.sort(key = sort_priority, reverse=True)
+	#print(all_stat)
+
+	for p in all_stat:
+		s_user_command += p[1]
+
 	return s_user_command
 
 def generate_intent(json_config, s_intentscheck_intent, s_main_intent):

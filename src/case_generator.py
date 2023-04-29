@@ -342,7 +342,8 @@ def generate_H1(num_node):
 	case_config["controllers"]["deployment"] = {}
 
 	case_config["userCommand"] = {}
-	case_config["userCommand"]["createTargetDeployment"] = 1
+	case_config["userCommand"]["createTargetDeployment"] = {}
+	case_config["userCommand"]["createTargetDeployment"]["para"] = 1
 
 	case_config["events"] = {}
 
@@ -604,8 +605,10 @@ def generate_H2(num_node):
 	case_config["controllers"]["deployment"] = {}
 
 	case_config["userCommand"] = {}
+	case_config["userCommand"]["applyDeployment"] = {}
 	# this is the id for the index of deploymentTemplates, not the deployment name
-	case_config["userCommand"]["applyDeployment"] = 1
+	case_config["userCommand"]["applyDeployment"]["para"] = 1
+	case_config["userCommand"]["applyDeployment"]["priority"] = 0
 
 	case_config["events"] = {}
 
@@ -716,7 +719,8 @@ def generate_S4(num_node):
 	case_config["controllers"]["deployment"] = {}
 
 	case_config["userCommand"] = {}
-	case_config["userCommand"]["createTargetDeployment"] = [1]
+	case_config["userCommand"]["createTargetDeployment"] = {}
+	case_config["userCommand"]["createTargetDeployment"]["para"] = [1]
 
 	case_config["events"] = {}
 	case_config["events"]["kernelPanic"] = {}

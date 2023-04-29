@@ -9,6 +9,7 @@
 proctype applyDeployment(short deploymentTemplateId)
 {
 	atomic {
+		//printf("[***] priority applyDeployment %d\n", _priority, get_priority(_pid))
 		d_step{
 			short i = 1;
 			for (i : 1 .. DEP_NUM) {
@@ -22,7 +23,7 @@ proctype applyDeployment(short deploymentTemplateId)
 						d[i].maxUnavailable = (deploymentTemplates[deploymentTemplateId].maxUnavailable == -1 -> d[i].maxUnavailable : deploymentTemplates[deploymentTemplateId].maxUnavailable);
 						d[i].strategy = (deploymentTemplates[deploymentTemplateId].strategy == -1 -> d[i].strategy : deploymentTemplates[deploymentTemplateId].strategy);
 						updateQueue(dcQueue, dcTail, dcIndex, i, MAX_DEP_QUEUE)	
-						
+
 						break;
 					:: else->;
 				fi;
@@ -45,6 +46,7 @@ proctype createDeployment(short maxDeploymentId)
 proctype createTargetDeployment(short deploymentId)
 {
 	atomic{
+		//printf("[***] priority createTargetDeployment %d\n", _priority, get_priority(_pid))
 		d_step{
 			if 
 				:: d[deploymentId].status == 0 ->

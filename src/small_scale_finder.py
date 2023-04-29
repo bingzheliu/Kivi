@@ -126,7 +126,9 @@ def generate_case_json(json_config, cur_setup):
 	if "userCommand" not in new_json_config:
 		new_json_config["userCommand"] = {}
 	if "createTargetDeployment" not in new_json_config["userCommand"]:
-		new_json_config["userCommand"]["createTargetDeployment"] = []
+		new_json_config["userCommand"]["createTargetDeployment"] = {}
+		new_json_config["userCommand"]["createTargetDeployment"]["para"] = []
+		new_json_config["userCommand"]["createTargetDeployment"]["priority"] = 100
 	cur_d_id = 1
 	for i in range(0, len(json_config["userDefined"]["dTypes"])):		
 		max_replicas = total_nodes*json_config["userDefined"]["dTypes"][i]["proportionHPA"] + cur_setup["d"][i]
@@ -167,7 +169,7 @@ def generate_case_json(json_config, cur_setup):
 				d["hpaSpec"]["maxReplicas"] = max_replicas
 
 		new_json_config["setup"]["d"].append(d)
-		new_json_config["userCommand"]["createTargetDeployment"].append(cur_d_id)
+		new_json_config["userCommand"]["createTargetDeployment"]["para"].append(cur_d_id)
 
 		cur_d_id += 1
 

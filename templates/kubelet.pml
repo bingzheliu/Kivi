@@ -32,6 +32,7 @@ endK:	do
 
 							if 
 								:: pods[i].workloadType == 1 ->
+									printf("[******] Enqueue in kubelet\n")
 									updateQueue(dcQueue, dcTail, dcIndex, pods[i].workloadId, MAX_DEP_QUEUE)
 									updateQueue(hpaQueue, hpaTail, hpaIndex, pods[i].workloadId, MAX_HPA_QUEUE)
 								:: else->;

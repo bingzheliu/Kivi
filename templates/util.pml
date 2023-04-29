@@ -218,7 +218,7 @@ inline updateQueue(queue, tail, index, item, max_queue_size)
 			 _m = 0;
 	
 
-			// printQueue(queue, tail)
+			printQueue(queue, tail)
 			// printf("[******] tail %d, index %d, item %d\n", tail, index, item)
 		}
 	}
@@ -228,7 +228,6 @@ inline printQueue(queue, tail)
 {
 	atomic{
 		d_step {
-			short _m = 0;
 			printf("[******] Printing queue: ")
 			for(_m : 0 .. tail) {
 				printf("%d ", queue[_m])

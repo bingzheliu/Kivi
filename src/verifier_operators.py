@@ -54,20 +54,20 @@ def verifer_operator_one(json_config, result_base_path, pml_base_path, file_base
 
 def verifer_operator_adjust_queue(json_config, result_base_path, pml_base_path, file_base, case_id, scale, log_level, pan_compile, pan_para):
 	run_count = 0
-	queue_size = 20
-	failure_type, failure_details, total_mem, elapsed_time = verifer_operator_one(json_config, result_base_path, pml_base_path, file_base, case_id, scale, run_count, log_level, pan_compile, pan_para, queue_size)
+	queue_size = 10
+	failure_type, failure_details, total_mem, elapsed_time = verifer_operator_one(deepcopy(json_config), result_base_path, pml_base_path, file_base, case_id, scale, run_count, log_level, pan_compile, pan_para, None)
 
 	while queue_size < 200:
 		if len(failure_details.split("\n")) > 1 and "Queue is full!" in failure_details.split("\n")[1]:
 			run_count += 1
-			queue_size *= 2
 			logger.critical("trying queue size "+str(queue_size))
-			failure_type, failure_details, total_mem, elapsed_time = verifer_operator_one(json_config, result_base_path, pml_base_path, file_base, case_id, scale, run_count, log_level, pan_compile, pan_para, queue_size)
+			failure_type, failure_details, total_mem, elapsed_time = verifer_operator_one(deepcopy(json_config), result_base_path, pml_base_path, file_base, case_id, scale, run_count, log_level, pan_compile, pan_para, queue_size)
+			queue_size *= 2
 		else:
 			break
 
 	if queue_size > 200:
-		failure_type, failure_details, total_mem, elapsed_time = verifer_operator_one(json_config, result_base_path, pml_base_path, file_base, case_id, scale, run_count, log_level, pan_compile, pan_para, None)
+		failure_type, failure_details, total_mem, elapsed_time = verifer_operator_one(deepcopy(json_config), result_base_path, pml_base_path, file_base, case_id, scale, run_count, log_level, pan_compile, pan_para, None)
 
 	return failure_type, failure_details, total_mem, elapsed_time
 

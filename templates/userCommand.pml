@@ -21,12 +21,12 @@ proctype applyDeployment(short deploymentTemplateId)
 						d[i].maxSurge = (deploymentTemplates[deploymentTemplateId].maxSurge == -1 -> d[i].maxSurge : deploymentTemplates[deploymentTemplateId].maxSurge);
 						d[i].maxUnavailable = (deploymentTemplates[deploymentTemplateId].maxUnavailable == -1 -> d[i].maxUnavailable : deploymentTemplates[deploymentTemplateId].maxUnavailable);
 						d[i].strategy = (deploymentTemplates[deploymentTemplateId].strategy == -1 -> d[i].strategy : deploymentTemplates[deploymentTemplateId].strategy);
+						updateQueue(dcQueue, dcTail, dcIndex, i, MAX_DEP_QUEUE)	
+						
 						break;
 					:: else->;
 				fi;
 			}
-
-			updateQueue(dcQueue, dcTail, dcIndex, i, MAX_DEP_QUEUE)	
 			i = 0;
 		}	
 	}
@@ -49,6 +49,7 @@ proctype createTargetDeployment(short deploymentId)
 			if 
 				:: d[deploymentId].status == 0 ->
 					d[deploymentId].status = 1;
+					printf("[******] Enqueue in createTargetDeployment\n")
 					updateQueue(dcQueue, dcTail, dcIndex, deploymentId, MAX_DEP_QUEUE)		
 					printf("[***][createTargetDeployment] Created deployment %d\n", deploymentId)
 				:: else ->;

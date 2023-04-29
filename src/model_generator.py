@@ -281,9 +281,9 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, con
 	node_queue = node_num*2
 	#print(dep_queue, pod_queue, node_queue)
 	if queue_size_default is not None:
-		dep_queue = dep_queue if dep_queue < queue_size_default else queue_size_default
-		pod_queue = pod_queue if pod_queue < queue_size_default else queue_size_default
-		node_queue = node_queue if node_queue < queue_size_default else queue_size_default 
+		dep_queue = dep_queue if dep_queue > queue_size_default else queue_size_default
+		pod_queue = pod_queue if pod_queue > queue_size_default else queue_size_default
+		node_queue = node_queue if node_queue > queue_size_default else queue_size_default 
 	model_logger.critical("Dep queue size "+str(dep_queue)+"; Pod queue size "+str(pod_queue)+"; Node queue size "+str(node_queue))
 
 	pml_config = pml_config.replace("[$NODE_NUM]", str(node_num)) \

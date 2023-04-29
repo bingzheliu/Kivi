@@ -53,7 +53,7 @@ def get_propotion(count):
 def template_generator(json_config, user_defined):
 	json_config["userDefined"] = {}
 
-	templates = {"nodes":["cpu", "memory", "status", "labels"], "d":["status", "podTemplateId", "hpaSpec"]}
+	templates = {"nodes":["cpu", "memory", "status", "labels"], "d":["podTemplateId", "hpaSpec"]}
 
 	for t in ["nodes", "d"]:
 		type_setup = []
@@ -74,6 +74,9 @@ def template_generator(json_config, user_defined):
 					new_type["template"]["cpuLeft"] = n["cpu"]
 					new_type["template"]["memLeft"] = n["memory"]
 					new_type["template"]["numPod"] = 0
+				if t == "d":
+					new_type["template"]["status"] = 0
+				new_type["template"]["name"] = n["name"]
 				new_type["upperBound"] = user_defined[t+"_default"]["upperBound"]
 				new_type["lowerBound"] = user_defined[t+"_default"]["lowerBound"]
 				# propotion == 0 if nodeScaleType is free
@@ -111,7 +114,8 @@ def generate_case_json(json_config, cur_setup):
 		for j in range(0, cur_setup["nodes"][i]):
 			cur_node = deepcopy(json_config["userDefined"]["nodesTypes"][i]["template"])
 			cur_node["id"] = cur_id
-			cur_node["name"] = cur_id
+			if "name" not in cur_node:
+				cur_node["name"] = cur_id
 			cur_id += 1
 
 			new_json_config["setup"]["nodes"].append(cur_node)
@@ -131,7 +135,8 @@ def generate_case_json(json_config, cur_setup):
 
 		d = deepcopy(json_config["userDefined"]["dTypes"][i]["template"])
 		d["id"] = cur_id
-		d["name"] = cur_id
+		if "name" not in d:
+			d["name"] = cur_id
 		cur_id += 1
 
 		d["curVersion"] = 0

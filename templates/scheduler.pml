@@ -141,8 +141,8 @@ proctype scheduler()
 	short i = 0, j = 0, k = 0, max = 0, p = 0;
 	printf("[**][Scheduler] Scheduler started.\n");
 
-	atomic{
-endS:	do
+endSch1: atomic{
+endSch2: do
 		:: (sIndex != sTail) ->
 				d_step{
 					short curPod = sQueue[sIndex];

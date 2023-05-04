@@ -57,7 +57,7 @@ def generate_S3_template(num_node):
 	d = {}
 	d["template"] = {}
 	d["template"]["status"] = 0
-	d["lowerBound"] = 2
+	d["lowerBound"] = 1
 	d["upperBound"] = 8
 	# propotion to other deployments
 	d["proportion"] = 1
@@ -109,9 +109,8 @@ def generate_S3_template(num_node):
 	case_config["controllers"]["hpa"] = {}
 	case_config["controllers"]["deployment"] = {}
 
-	case_config["events"] = {}
-	case_config["events"]["eventCpuChange"] = {}
-	case_config["events"]["eventCpuChange"]["targetDeployment"] = 1
+	case_config["events"] = []
+	case_config["events"].append({"name":"eventCpuChange", "after_stable":True, "para": {"targetDeployment":1}})
 
 	return case_config
 
@@ -159,7 +158,7 @@ def generate_H1_template(num_node):
 	d = {}
 	d["template"] = {}
 	d["template"]["status"] = 0
-	d["lowerBound"] = 2
+	d["lowerBound"] = 1
 	d["upperBound"] = 5
 	# propotion to other deployments
 	d["proportion"] = 1
@@ -223,7 +222,7 @@ def generate_H1_template(num_node):
 	# case_config["userCommand"] = {}
 	# case_config["userCommand"]["createTargetDeployment"] = 1
 
-	case_config["events"] = {}
+	case_config["events"] = []
 
 	case_config["intents"] = []
 	case_config["intents"].append("run checkH1()\n")
@@ -341,11 +340,10 @@ def generate_H1(num_node):
 	case_config["controllers"]["hpa"] = {}
 	case_config["controllers"]["deployment"] = {}
 
-	case_config["userCommand"] = {}
-	case_config["userCommand"]["createTargetDeployment"] = {}
-	case_config["userCommand"]["createTargetDeployment"]["para"] = 1
+	case_config["userCommand"] = []
+	case_config["userCommand"].append({"name" : "createTargetDeployment", "para" : 1})
 
-	case_config["events"] = {}
+	case_config["events"] = []
 
 	case_config["intents"] = []
 	case_config["intents"].append("run checkH1()\n")
@@ -468,9 +466,8 @@ def generate_S6(num_node):
 	case_config["controllers"]["deployment"] = {}
 
 	p = 1 if num_node/5 < 1 else int(num_node/5)
-	case_config["events"] = {}
-	case_config["events"]["maintenance"] = {}
-	case_config["events"]["maintenance"]["p"] = p
+	case_config["events"] = []
+	case_config["events"].append({"name":"maintenance", "para": {"p":p}, "after_stable":True})
 
 	case_config["intents"] = []
 	# TODO: have a more general list of user intents
@@ -604,13 +601,11 @@ def generate_H2(num_node):
 	case_config["controllers"]["hpa"] = {}
 	case_config["controllers"]["deployment"] = {}
 
-	case_config["userCommand"] = {}
-	case_config["userCommand"]["applyDeployment"] = {}
+	case_config["userCommand"] = []
 	# this is the id for the index of deploymentTemplates, not the deployment name
-	case_config["userCommand"]["applyDeployment"]["para"] = 1
-	case_config["userCommand"]["applyDeployment"]["priority"] = 0
+	case_config["userCommand"].append({"name" : "applyDeployment", "para" : 1, "priority" : 0})
 
-	case_config["events"] = {}
+	case_config["events"] = []
 
 	case_config["intents"] = []
 	#case_config["intents"].append( "never {\n do \n:: d[1].replicas < d[1].hpaSpec.minReplicas -> break\n :: else\n od;\n}")
@@ -718,12 +713,11 @@ def generate_S4(num_node):
 	case_config["controllers"]["hpa"] = {}
 	case_config["controllers"]["deployment"] = {}
 
-	case_config["userCommand"] = {}
-	case_config["userCommand"]["createTargetDeployment"] = {}
-	case_config["userCommand"]["createTargetDeployment"]["para"] = [1]
+	case_config["userCommand"] = []
+	case_config["userCommand"].append({"name" : "createTargetDeployment", "para" : 1})
 
-	case_config["events"] = {}
-	case_config["events"]["kernelPanic"] = {}
+	case_config["events"] = []
+	case_config["events"].append({"name" : "kernelPanic"})
 	return case_config
 
 ## HPA + scheduler (pod spreading) + deployment controller + CPU change
@@ -879,9 +873,8 @@ def generate_S3(num_node):
 	case_config["controllers"]["hpa"] = {}
 	case_config["controllers"]["deployment"] = {}
 
-	case_config["events"] = {}
-	case_config["events"]["eventCpuChange"] = {}
-	case_config["events"]["eventCpuChange"]["targetDeployment"] = 1
+	case_config["events"] = []
+	case_config["events"].append({"name":"eventCpuChange", "after_stable": True, "para" : {"targetDeployment" : 1}})
 
 	return case_config
 
@@ -899,7 +892,8 @@ def case_generator(case_id, scale, filename=None):
 			with open(filename,'w') as f:
 				json.dump(json_config, f, indent=4)
 	else:
-		logger.critical("Unkown case ID, re-try with all lower cases.")
+		if not from_template:
+			logger.critical("Unkown case ID, re-try with all lower cases.")
 
 	return json_config
 

@@ -3,6 +3,8 @@ from datetime import datetime
 import os
 import logging
 
+import yaml
+
 # logger = logging.getLogger(__name__)
 # # :%(lineno)s 
 # FORMAT = "[%(asctime)s;%(filename)s;%(levelname)s;%(funcName)s() ] %(message)s"
@@ -45,5 +47,9 @@ def myprint(output, log_func=logger.info):
 	if len(output) > 0:
 		log_func(output)
 
+#TODO: move these to other places
+file_base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+with open(file_base+"/src/configs.yaml") as f:
+	configs = yaml.safe_load(f)
 
-
+print(configs)

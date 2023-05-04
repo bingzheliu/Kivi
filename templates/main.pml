@@ -17,10 +17,10 @@ init{
 	run hpa();
 	run nodeController();
 	run kubelet();
+
+	[$EVENT_AND_USER_COMMAND]
 	
 	[$CONTROLLERS]
-
-	[$USER_COMMAND]
 
 	// for (i : 1 .. NODE_NUM) {
 	// 	run podCpuChangeWithPattern(i);
@@ -28,12 +28,16 @@ init{
 
 	// run podCpuChangeWithPattern()
 
-	[$EVENT]
-
 	// TODO: check on if the order of running the following actually matter or not
 	// Intent check for H1
 	// run checkH1();
 
 	[$INTENTS]
+
+	if 
+		:: (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail) ->
+			[$PROC_AFTER_STABLE]
+			skip
+	fi;
 
 }

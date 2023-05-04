@@ -146,66 +146,90 @@ def generate_init(json_config, s_init):
 
 	return s_init, len(json_config["pods"]), len(json_config["nodes"]), len(json_config["d"]), len(json_config["podTemplates"]), len(json_config["deploymentTemplates"])
 
-def generate_controllers_events(json_config, s_proc):
+def generate_controllers(json_config, s_proc):
 	# TODO: the json may contains the configs of these controllers that can override the default configs. Need to process them.
 	if "controllers" in json_config:
 		for c in json_config["controllers"]:
 			if c not in default_controllers:
 				s_proc += ("run " + c + "();\n")
-
-	if "events" in json_config:
-		for c in json_config["events"]:
-			if c in event_default_str:
-				s_proc += event_default_str[c]
-			else:
-				c_para = ""
-				for para in default_parameter_order[c]:
-					#print(c, para, c_para)
-					c_para += (str(json_config["events"][c][para]) + ",")
-				c_para = c_para[0:-1]
-				#print(c_para)
-				s_proc += ("run " + c + "(" + c_para + ");\n")
-
+	
 	return s_proc
 
-def generate_user_command_one(all_stat, json_config, c, e):
+def generate_event_user_command_one(all_stat, cur_json, s_proc_after_stable):
 	cur_p = 1
-	cur_stmt = ("run " + c + "(" + str(e) + ") ")
-	if "priority" in json_config["userCommand"][c]:
-		cur_stmt += ("priority " + str(json_config["userCommand"][c]["priority"]) + "\n") 
-		cur_p = json_config["userCommand"][c]["priority"]
-
-	if cur_p not in all_stat:
-		all_stat[cur_p] = cur_stmt
+	cur_stmt = ""
+	c = cur_json["name"]
+	if c in event_uc_default_str:
+		cur_stmt = event_uc_default_str[c]
 	else:
-		all_stat[cur_p] += cur_stmt
+		if isinstance(cur_json["para"], dict):
+			c_para = ""
+			for para in default_parameter_order[c]:
+				c_para += (str(cur_json["para"][para]) + ",")
+			c_para = c_para[0:-1]
+			cur_stmt = ("run " + c + "(" + c_para + ") ")
+		else:
+			cur_stmt = ("run " + c + "(" + str(cur_json["para"]) + ") ")
 
-	return all_stat
+		if "priority" in cur_json:
+			cur_stmt += ("priority " + str(cur_json["priority"]) + "\n") 
+			cur_p = cur_json["priority"]
+
+	if "after_stable" in cur_json and cur_json["after_stable"]:
+		s_proc_after_stable += cur_stmt
+	else:
+		if cur_p not in all_stat:
+			all_stat[cur_p] = cur_stmt
+		else:
+			all_stat[cur_p] += cur_stmt
+
+	return all_stat, s_proc_after_stable
 
 def sort_priority(element):
 	return element[0]
 
 # TODO: this priority may need to apply to events as well. 
-def generate_user_command(json_config, s_user_command):
+def generate_event_user_command(json_config, s_event_uc, s_proc_after_stable):
 	all_stat = {1: ""}
 
-	if "userCommand" in json_config:
-		for c in json_config["userCommand"]:
-			if isinstance(json_config["userCommand"][c]["para"], list):
-				for e in json_config["userCommand"][c]["para"]:
-					all_stat = generate_user_command_one(all_stat, json_config, c, e)
+	# if "events" in json_config:
+	# 	for c in json_config["events"]:
+	# 		cur_proc = ""
+	# 		if c in event_default_str:
+	# 			cur_proc = event_default_str[c]
+	# 		else:
+	# 			c_para = ""
+	# 			for para in default_parameter_order[c]:
+	# 				#print(c, para, c_para)
+	# 				c_para += (str(json_config["events"][c]["para"][para]) + ",")
+	# 			c_para = c_para[0:-1]
+	# 			#print(c_para)
+	# 			cur_proc = ("run " + c + "(" + c_para + ");\n")
+	# 		if "after_stable" in json_config["events"][c] and json_config["events"][c]["after_stable"]:
+	# 			s_proc_after_stable += cur_proc
+	# 		else:
+	# 			s_proc += cur_proc
 
-			else:
-				all_stat = generate_user_command_one(all_stat, json_config, c, str(json_config["userCommand"][c]["para"]))
+	# if "userCommand" in json_config:
+	# 	for c in json_config["userCommand"]:
+	# 		if isinstance(json_config["userCommand"][c]["para"], list):
+	# 			for e in json_config["userCommand"][c]["para"]:
+	# 				all_stat = generate_user_command_one(all_stat, json_config, c, e)
+
+	# 		else:
+	for e in ["events", "userCommand"]:
+		if e in json_config:
+			for cur_json in json_config[e]:
+				all_stat, s_proc_after_stable = generate_event_user_command_one(all_stat, cur_json, s_proc_after_stable)
 
 	all_stat = list(all_stat.items())
 	all_stat.sort(key = sort_priority, reverse=True)
 	#print(all_stat)
 
 	for p in all_stat:
-		s_user_command += p[1]
+		s_event_uc += p[1]
 
-	return s_user_command
+	return s_event_uc, s_proc_after_stable
 
 def generate_intent(json_config, s_intentscheck_intent, s_main_intent):
 	if "intents" in json_config:
@@ -217,7 +241,7 @@ def generate_intent(json_config, s_intentscheck_intent, s_main_intent):
 
 	return s_intentscheck_intent, s_main_intent
 
-def generate_other_event(json_config, s_main_event, pml_event):
+def generate_other_event(json_config, s_main_event, pml_event, s_proc_after_stable):
 	# Processing pod CPU change pattern
 	s_cpu_change = ""
 	s_cpu_change_stmt = "      ::  pods[[$i]].status == 1 && pods[[$i]].curCpuIndex < podTemplates[pods[[$i]].podTemplateId].maxCpuChange && (podTemplates[pods[[$i]].podTemplateId].timeCpuRequest[pods[[$i]].curCpuIndex] + pods[[$i]].startTime <= time || (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail)) -> \n podCpuChangeWithPatternExec([$i])\n"
@@ -234,7 +258,7 @@ def generate_other_event(json_config, s_main_event, pml_event):
 		pml_event = pml_event.replace("[$podCpuChangeWithPattern]", ":: true->break")
 
 
-	return s_main_event, pml_event
+	return s_main_event, pml_event, s_proc_after_stable
 
 # TODO: following two functions can be more generalized
 def get_max_num_metrics(json_config):
@@ -274,33 +298,35 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, con
 	userDefinedConstraints = check_for_completion_add_default(json_config)
 	max_label, max_value = process_labels(json_config)
 
+	s_proc_after_stable = ""
+
 	s_init = ""
 	s_init, pod_num, node_num, deployment_num, pt_num, dt_num = generate_init(json_config["setup"], s_init)
 
 	s_proc = ""
-	s_proc = generate_controllers_events(json_config, s_proc)
+	s_proc = generate_controllers(json_config, s_proc)
 
-	s_user_command = ""
-	s_user_command = generate_user_command(json_config, s_user_command)
+	s_event_uc = ""
+	s_event_uc, s_proc_after_stable = generate_event_user_command(json_config, s_event_uc, s_proc_after_stable)
 
 	s_intentscheck_intent = ""
 	s_main_intent = ""
 	s_intentscheck_intent, s_main_intent = generate_intent(json_config, s_intentscheck_intent, s_main_intent)
 
 	s_main_event = ""
-	s_main_event, pml_event = generate_other_event(json_config, s_main_event, pml_event)
+	s_main_event, pml_event, s_proc_after_stable = generate_other_event(json_config, s_main_event, pml_event, s_proc_after_stable)
 
 	#print(s_proc, s_user_command)
 	
 	pml_main = pml_main.replace("[$INIT_SETUP]", s_init) \
 					   .replace("[$CONTROLLERS]", s_proc) \
-					   .replace("[$USER_COMMAND]", s_user_command) \
+					   .replace("[$EVENT_AND_USER_COMMAND]", s_event_uc) \
 					   .replace("[$CONFIG_FILENAME]", str(config_filename)) \
 					   .replace("[$INTENT_FILENAME]", str(intent_filename)) \
 					   .replace("[$EVENT_FILENAME]", str(event_filename)) \
-					   .replace("[$EVENT]", str(s_main_event)) \
 					   .replace("[$FILE_BASE]", str(file_base)) \
-					   .replace("[$INTENTS]", str(s_main_intent)) 
+					   .replace("[$INTENTS]", str(s_main_intent)) \
+					   .replace("[$PROC_AFTER_STABLE]", str(s_proc_after_stable))
 
 	max_no_schedule_node, max_no_prefer_schedule_node, max_affinity_rules, max_matched_node, max_topo_con, max_cpu_pattern = get_max_pod_template(json_config)
 

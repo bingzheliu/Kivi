@@ -48,7 +48,7 @@ default_parameter_order = {
 	"eventCpuChange" : ["targetDeployment"], "maintenance" : ["p"], "podCpuChangeWithPattern" : ["targetDeployment"]
 }
 
-event_default_str = {
+event_uc_default_str = {
 	"kernelPanic" : "int i = 1; \n for (i : 1 .. NODE_NUM) { \n run kernelPanic(i);\n}\n"
 }
 

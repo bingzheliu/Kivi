@@ -1,0 +1,4 @@
+---
+small_scale_finder:
+  go_through_all_num: True
+  stop_after_first_violation: False

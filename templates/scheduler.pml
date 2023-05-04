@@ -128,7 +128,7 @@ inline bindNode()
 
 			k = d[j].replicaSets[d[j].curVersion].replicas;
 			replicasetAddPod(d[j].replicaSets[d[j].curVersion], curPod)
-			d[pods[i].workloadId].replicasInCreation --;
+			d[j].replicasInCreation --;
 
 		:: else ->;
 	fi;

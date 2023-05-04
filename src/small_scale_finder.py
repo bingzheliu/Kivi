@@ -102,7 +102,6 @@ def template_generator(json_config, user_defined):
 
 	return json_config
 
-
 def generate_case_json(json_config, cur_setup):
 	new_json_config = deepcopy(json_config)
 	new_json_config.pop("userDefined")
@@ -124,11 +123,8 @@ def generate_case_json(json_config, cur_setup):
 	new_json_config["setup"]["d"] = []
 	new_json_config["setup"]["pods"] = []
 	if "userCommand" not in new_json_config:
-		new_json_config["userCommand"] = {}
-	if "createTargetDeployment" not in new_json_config["userCommand"]:
-		new_json_config["userCommand"]["createTargetDeployment"] = {}
-		new_json_config["userCommand"]["createTargetDeployment"]["para"] = []
-		new_json_config["userCommand"]["createTargetDeployment"]["priority"] = 100
+		new_json_config["userCommand"] = []
+
 	cur_d_id = 1
 	for i in range(0, len(json_config["userDefined"]["dTypes"])):		
 		max_replicas = total_nodes*json_config["userDefined"]["dTypes"][i]["proportionHPA"] + cur_setup["d"][i]
@@ -169,7 +165,12 @@ def generate_case_json(json_config, cur_setup):
 				d["hpaSpec"]["maxReplicas"] = max_replicas
 
 		new_json_config["setup"]["d"].append(d)
-		new_json_config["userCommand"]["createTargetDeployment"]["para"].append(cur_d_id)
+
+		cur_json_uc = {}
+		cur_json_uc["name"] = "createTargetDeployment"
+		cur_json_uc["para"] = cur_d_id
+		cur_json_uc["priority"] = 100
+		new_json_config["userCommand"].append(cur_json_uc)
 
 		cur_d_id += 1
 
@@ -184,10 +185,13 @@ def generate_case_json(json_config, cur_setup):
 	return new_json_config, len(new_json_config["setup"]["nodes"]), len(new_json_config["setup"]["pods"]) 
 
 def get_next_num(j):
-	if j < 4:
-		j += 1
+	if configs["small_scale_finder"]["go_through_all_num"]:
+		if j < 4:
+			j += 1
+		else:
+			j = j*2
 	else:
-		j = j*2
+		j += 1
 
 	return j
 

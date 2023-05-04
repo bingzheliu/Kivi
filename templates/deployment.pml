@@ -226,6 +226,7 @@ endDC:	do
 
 						if
 						:: (d[curD].specReplicas != d[curD].replicas + d[curD].replicasInCreation - d[curD].replicasInDeletion) -> 
+							printf("[***][Deployment] replicas spec: %d, cur: %d, in creation: %d, in deletion: %d\n", d[curD].specReplicas, d[curD].replicas, d[curD].replicasInCreation, d[curD].replicasInDeletion)
 							d[curD].replicaSets[d[curD].curVersion].specReplicas = d[curD].specReplicas;
 							scale(d[curD].replicaSets[d[curD].curVersion]);
 						// TODO: refine this rollout condition

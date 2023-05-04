@@ -1,3 +1,6 @@
+# TODO: 1. add options (OptionParser) to the system
+
+
 import json
 import subprocess
 
@@ -71,7 +74,7 @@ def verifer_operator_adjust_queue(json_config, result_base_path, pml_base_path, 
 
 	return failure_type, failure_details, total_mem, elapsed_time
 
-def verifer_operator(result_base_path, pml_base_path, file_base, case_id, scale, log_level, pan_compile, pan_para, find_all=True):
+def verifer_operator(result_base_path, pml_base_path, file_base, case_id, scale, log_level, pan_compile, pan_para):
 	if int(scale) == 0:
 		json_config = get_case_temeplate(file_base, case_id)
 		all_setup, json_config_template = finding_smallest_scale(json_config, pml_base_path, file_base, case_id)
@@ -84,7 +87,7 @@ def verifer_operator(result_base_path, pml_base_path, file_base, case_id, scale,
 		
 			if failure_type != "None":
 				logger.critical("Failure found at scale " + str_setup(s))
-				if not find_all:
+				if not configs["small_scale_finder"]["stop_after_first_violation"]:
 					break
 
 	else:
@@ -100,9 +103,9 @@ if __name__ == '__main__':
 	case_id = sys.argv[1]
 	scale = sys.argv[2]
 
-	file_base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 	if len(sys.argv) > 3:
 		file_base = os.path.abspath(sys.argv[3])
+	
 
 	result_base_path = file_base + "/results/" + str(case_id)
 	pml_base_path = file_base + "/temp/" + str(case_id) + "/" + str(scale)

@@ -49,7 +49,7 @@ default_parameter_order = {
 }
 
 event_uc_default_str = {
-	"kernelPanic" : "int i = 1; \n for (i : 1 .. NODE_NUM) { \n run kernelPanic(i);\n}\n"
+	"kernelPanic" : "for (i : 1 .. NODE_NUM) { \n run kernelPanic(i);\n}\n"
 }
 
 # TODO: check on default labels

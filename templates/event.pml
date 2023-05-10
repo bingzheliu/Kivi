@@ -57,16 +57,17 @@ proctype eventCpuChange(short targetDeployment)
 	short cpu_change = 0, pod_selected = 0, index_selected = 0;
 	bit direction = 0;
 	short i = 0;
+	short local_last_time = time;
 
 	do
-	:: i < 5 -> 
+	:: i < 5 && ((time - local_last_time >= EVENT_CPU_TIME) || (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail)) -> 
 		atomic {
 			// can we only select the pod from the running list?
 
 			d[targetDeployment].replicaSets[d[targetDeployment].curVersion].replicas != 0;
 
 			select(index_selected : 0 .. d[targetDeployment].replicaSets[d[targetDeployment].curVersion].replicas-1);
-			select(cpu_change : 1 .. 4);
+			select(cpu_change : 1 .. 6);
 			select(direction : 1 .. 1);
 
 			d_step{

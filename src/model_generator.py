@@ -324,6 +324,7 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, con
 					   .replace("[$CONFIG_FILENAME]", str(config_filename)) \
 					   .replace("[$INTENT_FILENAME]", str(intent_filename)) \
 					   .replace("[$EVENT_FILENAME]", str(event_filename)) \
+					   .replace("[$AUTO_GENERATE_EVENT]", str(s_main_event)) \
 					   .replace("[$FILE_BASE]", str(file_base)) \
 					   .replace("[$INTENTS]", str(s_main_intent)) \
 					   .replace("[$PROC_AFTER_STABLE]", str(s_proc_after_stable))

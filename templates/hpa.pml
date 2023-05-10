@@ -193,6 +193,10 @@ inline normalizeDesiredReplicas()
 }
 
 // logic in func reconcileAutoscaler. 
+
+// TODO:
+//	 1. Need to deal with multiple deployment for timestamp, where multiple deployment may be working concurrently rather than wait for a period of time; 
+// in particular, for the enqueue sentence in main for HPA, the deployment always start at #1, and may actually fail to consider other orders of deployment. 
 proctype hpa()
 {
 	short i = 0, j = 0, k = 0, p = 0;

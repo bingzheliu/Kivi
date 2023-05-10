@@ -96,7 +96,9 @@ def verifer_operator(result_base_path, pml_base_path, file_base, case_id, scale,
 		with open(config_filename) as f:
 			json_config = json.load(f)
 
-		verifer_operator_adjust_queue(json_config, result_base_path, pml_base_path, file_base, case_id, scale, log_level, pan_compile, pan_para)
+		failure_type, failure_details, total_mem, elapsed_time = verifer_operator_adjust_queue(json_config, result_base_path, pml_base_path, file_base, case_id, scale, log_level, pan_compile, pan_para)
+
+	return total_mem, elapsed_time
 
 # TODO: better ways to do user configs
 if __name__ == '__main__':

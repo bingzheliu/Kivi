@@ -11,6 +11,7 @@ init{
 
 	// init finished
 	init_status = 1
+	short i = 0;
 
 	run deploymentController();
 	run scheduler();
@@ -33,6 +34,13 @@ init{
 	// run checkH1();
 
 	[$INTENTS]
+
+	[$AUTO_GENERATE_EVENT]
+
+
+	for (i : 1 .. DEP_NUM) {
+		updateQueue(hpaQueue, hpaTail, hpaIndex, i, MAX_HPA_QUEUE);
+	}
 
 	if 
 		:: (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail) ->

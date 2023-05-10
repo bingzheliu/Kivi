@@ -61,6 +61,7 @@
 
 
 /*----------- Time Config ------------*/
+// TODO: all the time can be config along with the event by the users
 #define HPA_RUN_TIME 1
 #define HPA_WAIT_TIME 15
 #define SCHEDULER_RUN_TIME 1
@@ -69,3 +70,4 @@
 #define NODEC_RUN_TIME 1
 #define MAINTENANCE_WAIT_TIME 60
 #define KERNEL_RECOVER_TIME 60
+#define EVENT_CPU_TIME 60

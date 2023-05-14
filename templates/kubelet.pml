@@ -28,7 +28,7 @@ endK:	do
 							nodes[j].cpuLeft = nodes[j].cpuLeft + pods[i].cpu;
 							nodes[j].memLeft = nodes[j].memLeft + pods[i].memory;
 
-							printf("[**][Kubelet] Deleted pod %d on node %d, deployment %d now have %d replicas\n", i, j, pods[i].workloadId, d[pods[i].workloadId].replicas);
+							printf("[*][Kubelet] Deleted pod %d on node %d, deployment %d now have %d replicas\n", i, j, pods[i].workloadId, d[pods[i].workloadId].replicas);
 
 							if 
 								:: pods[i].workloadType == 1 ->

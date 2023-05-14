@@ -248,7 +248,7 @@ endHPA:	do
 
 							if 
 								:: desiredReplicas != currentReplicas ->
-									printf("[**][HPA] Need to rescale, scale metric is %d, orgional is %d, now is %d.\n", rescaleMetric, currentReplicas, desiredReplicas);
+									printf("[*][HPA] Need to rescale, scale metric is %d, orgional is %d, now is %d.\n", rescaleMetric, currentReplicas, desiredReplicas);
 									// in k8s, it will trigger client-go.scale. Here we do it directly by writing into the deployment.
 									d[curD].specReplicas = desiredReplicas;
 									updateQueue(dcQueue, dcTail, dcIndex, curD, MAX_DEP_QUEUE)						
@@ -268,7 +268,7 @@ endHPA:	do
 							time = time+HPA_RUN_TIME;
 					fi;
 					local_last_time = time;
-					printf("[**]time %d, local_last_time %d\n", time, local_last_time)
+					printf("[****]time %d, local_last_time %d\n", time, local_last_time)
 
 					i = 0;
 					j = 0;

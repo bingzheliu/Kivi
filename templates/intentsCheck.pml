@@ -22,7 +22,7 @@ proctype checkH1()
 {
 endCH11:	if 
 			:: d[1].hpaSpec.maxReplicas != d[1].hpaSpec.minReplicas && d[1].replicas == d[1].hpaSpec.maxReplicas ->
-		 	printf("[*] Entering stage 2 for check!\n")
+		 	printf("[**] Entering stage 2 for check!\n")
 endCH12:		if 
 		 		:: d[1].replicas == d[1].hpaSpec.minReplicas || d[1].replicas < d[1].hpaSpec.maxReplicas - 5 ->
 		 			printf("[*] The number of replicas was oscillating, now %d\n", d[1].replicas)
@@ -50,10 +50,10 @@ proctype checkH2()
 {
 endCH21:	if 
 			::  init_status == 1 && d[1].replicas == d[1].hpaSpec.maxReplicas && d[1].hpaSpec.maxReplicas != d[1].hpaSpec.minReplicas->
-		 		printf("[*] Entering stage 2 for check!\n")
+		 		printf("[**] Entering stage 2 for check!\n")
 endCH22:		if 
 			 		::d[1].replicas < d[1].hpaSpec.maxReplicas ->
-			 			printf("[*] Entering stage 3 for check!\n")
+			 			printf("[**] Entering stage 3 for check!\n")
 endCH23:			 	if 
 			 				:: d[1].replicas == d[1].hpaSpec.maxReplicas ->
 					 			// printf("[*] The number of replicas %d below the minReplicas %d\n", d[1].replicas, d[1].hpaSpec.minReplicas)

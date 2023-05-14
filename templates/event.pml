@@ -24,7 +24,7 @@ proctype maintenanceNode(short i)
 {
 	atomic {
 		short local_last_time = time;
-		printf("[**][maintenanceNode] Starting maintenance for node %d\n", i)
+		printf("[*][maintenanceNode] Starting maintenance for node %d\n", i)
 		nodes[i].status = 0;
 		updateQueue(ncQueue, ncTail, ncIndex, i, MAX_NODE_CONTROLLER_QUEUE)
 		// This condition is hard coded, meaning to wait for the node to fully shut down, and then put it back.
@@ -33,13 +33,13 @@ proctype maintenanceNode(short i)
 					nodes[i].status = 1;
 					nodes[i].maintained = 1;
 					cur_node_in_maintenance --;
-					printf("[**][maintenanceNode] End maintenance for node %d\n", i)
+					printf("[*][maintenanceNode] End maintenance for node %d\n", i)
 					if 
 						:: local_last_time + MAINTENANCE_WAIT_TIME > time ->
 							time = local_last_time + MAINTENANCE_WAIT_TIME 
 						:: else->;
 					fi
-					printf("[**]time %d, local_last_time %d, hpaTail %d, hpaIndex %d\n", time, local_last_time, hpaTail, hpaIndex)
+					printf("[****]time %d, local_last_time %d, hpaTail %d, hpaIndex %d\n", time, local_last_time, hpaTail, hpaIndex)
 		fi;
 	}
 }

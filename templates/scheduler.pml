@@ -82,7 +82,7 @@ inline selectHost()
 	:: else->;
 	fi;
 
-	printf("[**][Scheduler] Pod %d is scheduled on node %d, with score %d\n", curPod, selectedNode, max);
+	printf("[*][Scheduler] Pod %d is scheduled on node %d, with score %d\n", curPod, selectedNode, max);
 }
 
 

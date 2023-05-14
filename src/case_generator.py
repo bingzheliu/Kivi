@@ -316,7 +316,7 @@ def generate_H1(num_node, non_violation=False):
 	d["hpaSpec"]["metricTypes"] = []
 	d["hpaSpec"]["metricTypes"].append(1)
 	d["hpaSpec"]["minReplicas"] =  1 if num_node/5 < 1 else int(num_node/5)
-	d["hpaSpec"]["maxReplicas"] = num_node*2+3
+	d["hpaSpec"]["maxReplicas"] = num_node*2+4
 
 	case_config["setup"]["d"].append(d)
 

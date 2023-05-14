@@ -148,7 +148,7 @@ inline scale(curReplicaSet)
 		// Since we are doing atomic, batch may not actually make difference. But keep it for now. 
 		remaining = curReplicaSet.specReplicas - curReplicaSet.replicas - d[curD].replicasInCreation;
 		batchSize = (remaining < SlowStartInitialBatchSize -> remaining : SlowStartInitialBatchSize)
-		printf("[**][Deployment] Too few replicas in replicaSet %d need to create %d\n", curReplicaSet.id, remaining);
+		printf("[*][Deployment] Too few replicas in replicaSet %d need to create %d\n", curReplicaSet.id, remaining);
 		
 		do
 		:: batchSize > 0 ->

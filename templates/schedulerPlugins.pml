@@ -142,8 +142,8 @@ inline findMatchedPod(i, j, podSpec)
 	for (k : 1 .. POD_NUM) {
 		printf("[******] Matching pod %d (status %d, loc %d)\n", k, pods[k].status, pods[k].loc)
 		if 
-			// TODO: check if this pod status can be 2 (pending)
-			:: (pods[k].status != 1 || pods[k].loc != i) -> goto fmpend;
+			// TODO: check if this pod status can be 2 (pending) now counting 2
+			:: ((pods[k].status != 1 && pods[k].status != 2) || pods[k].loc != i) -> goto fmpend;
 			:: else->;
 		fi;
 		p = 0;

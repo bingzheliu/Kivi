@@ -108,7 +108,7 @@ inline enqueuePods(batchSize)
 			:: pods[j].status == 0 ->
 				copyDeploymentInfoToPod(pods[j], curD);
 				pods[j].status = 2;
-				printf("[**][Deployment] Adding a new pod %d to deployment %d\n", j, curD)
+				printf("[*][Deployment] create; %d; Adding a new pod %d to deployment %d\n", curD, j, curD)
 				updateQueue(sQueue, sTail, sIndex, j, MAX_SCHEDULER_QUEUE)
 				break;
 			:: else->;
@@ -148,7 +148,7 @@ inline scale(curReplicaSet)
 		// Since we are doing atomic, batch may not actually make difference. But keep it for now. 
 		remaining = curReplicaSet.specReplicas - curReplicaSet.replicas - d[curD].replicasInCreation;
 		batchSize = (remaining < SlowStartInitialBatchSize -> remaining : SlowStartInitialBatchSize)
-		printf("[*][Deployment] Too few replicas in replicaSet %d need to create %d\n", curReplicaSet.id, remaining);
+		printf("[*][Deployment] scale; %d; increase; %d; Too few replicas in replicaSet %d need to create %d\n", curD, curReplicaSet.specReplicas, curReplicaSet.id, remaining);
 		
 		do
 		:: batchSize > 0 ->

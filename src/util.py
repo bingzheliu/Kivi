@@ -26,12 +26,12 @@ def setup_logger(name, level=logging.INFO):
     return logger
 
 # first file logger
-logger = setup_logger('verifier_logger', logging.DEBUG)
+logger = setup_logger('verifier_logger', logging.INFO)
 
 # second file logger
 model_logger = setup_logger('model_logger', logging.INFO)
 
-log_level = 1
+log_level = 2
 
 
 # TODO: each run of an execuation should actually be one class, so they won't affect each other.

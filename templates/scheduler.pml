@@ -82,7 +82,7 @@ inline selectHost()
 	:: else->;
 	fi;
 
-	printf("[*][Scheduler] Pod %d is scheduled on node %d, with score %d\n", curPod, selectedNode, max);
+	printf("[*][Scheduler] scheduled; %d; %d; Pod %d is scheduled on node %d, with score %d\n", curPod, selectedNode, curPod, selectedNode, max);
 }
 
 
@@ -112,26 +112,27 @@ inline checkIfUnschedulable()
 
 inline bindNode()
 {
-	nodes[selectedNode].numPod++;
-	nodes[selectedNode].cpuLeft = nodes[selectedNode].cpuLeft - pods[curPod].cpu;
-	nodes[selectedNode].memLeft = nodes[selectedNode].memLeft - pods[curPod].memory;
-
 	pods[curPod].loc = selectedNode;
-	pods[curPod].status = 1;
-	pods[curPod].startTime = time;
-	//podTotal++;
+	updateQueue(kblQueue, kblTail, kblIndex, curPod, MAX_KUBELET_QUEUE)
+	// nodes[selectedNode].numPod++;
+	// nodes[selectedNode].cpuLeft = nodes[selectedNode].cpuLeft - pods[curPod].cpu;
+	// nodes[selectedNode].memLeft = nodes[selectedNode].memLeft - pods[curPod].memory;
 
-	if 
-		:: pods[curPod].workloadType == 1 ->
-			j = pods[curPod].workloadId;
-			d[j].replicas ++;
+	// pods[curPod].status = 1;
+	// pods[curPod].startTime = time;
+	// //podTotal++;
 
-			k = d[j].replicaSets[d[j].curVersion].replicas;
-			replicasetAddPod(d[j].replicaSets[d[j].curVersion], curPod)
-			d[j].replicasInCreation --;
+	// if 
+	// 	:: pods[curPod].workloadType == 1 ->
+	// 		j = pods[curPod].workloadId;
+	// 		d[j].replicas ++;
 
-		:: else ->;
-	fi;
+	// 		k = d[j].replicaSets[d[j].curVersion].replicas;
+	// 		replicasetAddPod(d[j].replicaSets[d[j].curVersion], curPod)
+	// 		d[j].replicasInCreation --;
+
+	// 	:: else ->;
+	// fi;
 
 	// zone_num_pod[node[node_selected].zone]++;
 }

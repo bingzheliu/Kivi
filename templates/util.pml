@@ -164,7 +164,7 @@ inline updatePodCpuUsageOnNode(pod_selected, cpu_change)
 			fi;
 			nodes[pods[pod_selected].loc].cpuLeft = nodes[pods[pod_selected].loc].cpuLeft - pods[pod_selected].cpu;
 
-			printf("[*]CPU change %d on pod %d, now %d; node %d, now %d\n", cpu_change, pod_selected, pods[pod_selected].cpu, pods[pod_selected].loc, nodes[pods[pod_selected].loc].cpuLeft);
+			printf("[*][CPU Change] cpu_change; %d; %d; CPU change %d on pod %d, now %d; node %d, now %d\n",  pod_selected, cpu_change, cpu_change, pod_selected, pods[pod_selected].cpu, pods[pod_selected].loc, nodes[pods[pod_selected].loc].cpuLeft);
 		}
 	}
 }

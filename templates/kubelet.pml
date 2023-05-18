@@ -15,6 +15,32 @@ endK:	do
 					if 
 						:: pods[i].status == 0 ->
 							printf("[**][Kubelet] Pod %d has already been deleted\n", i)
+
+						// create a pod
+						:: pods[i].status == 2 ->
+							short selectedNode = pods[i].loc
+							nodes[selectedNode].numPod++;
+							nodes[selectedNode].cpuLeft = nodes[selectedNode].cpuLeft - pods[i].cpu;
+							nodes[selectedNode].memLeft = nodes[selectedNode].memLeft - pods[i].memory;
+
+							pods[i].status = 1;
+							pods[i].startTime = time;
+							//podTotal++;
+
+							if 
+								:: pods[i].workloadType == 1 ->
+									j = pods[i].workloadId;
+									d[j].replicas ++;
+
+									// k = d[j].replicaSets[d[j].curVersion].replicas;
+									replicasetAddPod(d[j].replicaSets[d[j].curVersion], i)
+									d[j].replicasInCreation --;
+
+								:: else ->;
+							fi;
+
+							printf("[*][Kubelet] start; %d; %d; Created pod %d on node %d, deployment %d now have %d replicas\n", i, selectedNode, i, selectedNode, pods[i].workloadId, d[pods[i].workloadId].replicas);
+
 						:: else->
 							pods[i].status = 0;
 							pods[i].curCpuIndex = 0;
@@ -27,8 +53,8 @@ endK:	do
 							nodes[j].numPod = nodes[j].numPod - 1;
 							nodes[j].cpuLeft = nodes[j].cpuLeft + pods[i].cpu;
 							nodes[j].memLeft = nodes[j].memLeft + pods[i].memory;
-
-							printf("[*][Kubelet] Deleted pod %d on node %d, deployment %d now have %d replicas\n", i, j, pods[i].workloadId, d[pods[i].workloadId].replicas);
+							// TODO: move this message to Deployment
+							printf("[*][Kubelet] delete; %d; Deleted pod %d on node %d, deployment %d now have %d replicas\n", pods[i].workloadId, i, j, pods[i].workloadId, d[pods[i].workloadId].replicas);
 
 							if 
 								:: pods[i].workloadType == 1 ->

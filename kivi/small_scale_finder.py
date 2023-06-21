@@ -1,14 +1,11 @@
-
-# 
 #	1. Node type: can be mapped to the node groups in k8s cluster autoscaling. It is suggested by AWS 
 #	   that "Configure a smaller number of node groups with a larger number of nodes because the opposite configuration can negatively affect scalability."
 #	   https://docs.aws.amazon.com/eks/latest/userguide/autoscaling.html
-
-from copy import deepcopy
-import json
-import sys
-from case_generator import *
 import math
+import json
+from copy import deepcopy
+
+from cases.case_generator import case_generator, get_case_user_defined
 
 def compare_template(t1, t2, field):
 	for f in field:
@@ -185,7 +182,7 @@ def generate_case_json(json_config, cur_setup):
 	return new_json_config, len(new_json_config["setup"]["nodes"]), len(new_json_config["setup"]["pods"]) 
 
 def get_next_num(j):
-	if configs["small_scale_finder"]["go_through_all_num"]:
+	if (not args.fast_find):
 		if j < 4:
 			j += 1
 		else:
@@ -306,8 +303,9 @@ def str_setup(setup):
 
 	return s
 
-def get_case_temeplate(file_base, case_id):
-	config_template_filename = file_base + "/temp/" + case_id + "/configs/template.json"
+# Used to generate templates for pre-defined cases. 
+def get_case_temeplate(case_id):
+	#config_template_filename = pml_base_path + "/min_exp/template.json"
 	json_config = case_generator(case_id, 0)
 
 	if json_config == None:
@@ -315,12 +313,12 @@ def get_case_temeplate(file_base, case_id):
 		user_defined = get_case_user_defined(case_id)
 		json_config = template_generator(json_config, user_defined)
 
-	with open(config_template_filename,'w') as f:
-		json.dump(json_config, f, indent=4)
+	# with open(config_template_filename,'w') as f:
+	# 	json.dump(json_config, f, indent=4)
 
 	return json_config
 		
-def finding_smallest_scale(json_config, pml_base_path, file_base, case_id, sort_favor="nodes"):
+def finding_smallest_scale(json_config, pml_base_path, sort_favor="nodes"):
 	all_setup = generate_list_setup(json_config)
 	print(all_setup)
 	if sort_favor == "nodes":
@@ -332,7 +330,7 @@ def finding_smallest_scale(json_config, pml_base_path, file_base, case_id, sort_
 	count = 0
 	for s in all_setup:
 		new_json_config, num_node, num_pod = generate_case_json(json_config, s)
-		config_template_filename = file_base + "/temp/" + case_id + "/configs/" + str(count) + "_" + str(num_node) + "_" + str(num_pod) + ".json"
+		config_template_filename = pml_base_path + "/min_exp/" + str(count) + "_" + str(num_node) + "_" + str(num_pod) + ".json"
 		count += 1
 
 		with open(config_template_filename,'w') as f:
@@ -347,12 +345,11 @@ if __name__ == '__main__':
 	if len(sys.argv) > 3:
 		file_base = os.path.abspath(sys.argv[3])
 
-	result_base_path = file_base + "/results/" + str(case_id)
-	pml_base_path = file_base + "/temp/" + str(case_id)  
+	result_base_path = file_base + "/results/" + str(case_id)  
 
 	json_config = get_case_temeplate(file_base, case_id)
 	print(json_config)
-	all_setup = finding_smallest_scale(json_config, pml_base_path, file_base, case_id)
+	all_setup = finding_smallest_scale(json_config, file_base, case_id)
 
 	
 

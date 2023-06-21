@@ -4,13 +4,8 @@
 #
 #
 
-import json
-from processing_default import *
-from case_generator import *
-import sys
-
 from util import *
-
+from processing_default import check_for_completion_add_default, default_controllers, event_uc_default_str, default_parameter_order
 
 index_starts_at_one = {"pods", "nodes", "d", "podTemplates", "deploymentTemplates"}
 
@@ -174,6 +169,8 @@ def generate_event_user_command_one(all_stat, cur_json, s_proc_after_stable):
 		if "priority" in cur_json:
 			cur_stmt += ("priority " + str(cur_json["priority"]) + "\n") 
 			cur_p = cur_json["priority"]
+		else:
+			cur_stmt += "\n"
 
 	if "after_stable" in cur_json and cur_json["after_stable"]:
 		s_proc_after_stable += cur_stmt
@@ -294,7 +291,7 @@ def get_max_pod_template(json_config):
 
 	return max_no_schedule_node, max_no_prefer_schedule_node, max_affinity_rules, max_matched_node, max_topo_con, max_cpu_pattern
 
-def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, config_filename, intent_filename, event_filename, file_base, queue_size_default):
+def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, template_path, queue_size_default):
 	userDefinedConstraints = check_for_completion_add_default(json_config)
 	max_label, max_value = process_labels(json_config)
 
@@ -321,11 +318,8 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, con
 	pml_main = pml_main.replace("[$INIT_SETUP]", s_init) \
 					   .replace("[$CONTROLLERS]", s_proc) \
 					   .replace("[$EVENT_AND_USER_COMMAND]", s_event_uc) \
-					   .replace("[$CONFIG_FILENAME]", str(config_filename)) \
-					   .replace("[$INTENT_FILENAME]", str(intent_filename)) \
-					   .replace("[$EVENT_FILENAME]", str(event_filename)) \
 					   .replace("[$AUTO_GENERATE_EVENT]", str(s_main_event)) \
-					   .replace("[$FILE_BASE]", str(file_base)) \
+					   .replace("[$FILE_BASE]", str(template_path)) \
 					   .replace("[$INTENTS]", str(s_main_intent)) \
 					   .replace("[$PROC_AFTER_STABLE]", str(s_proc_after_stable))
 
@@ -371,35 +365,32 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, con
 	return pml_config, pml_main, pml_intent, pml_event
 
 
-def model_generator(json_config, pml_base_path, file_base, case_id, scale, queue_size_default=None):
-	with open(file_base + "/templates/config.pml") as f:
+def model_generator(json_config, pml_base_path, template_path, queue_size_default=None):
+	with open(template_path + "/config.pml") as f:
 		pml_config = f.read()
 
-	with open(file_base + "/templates/main.pml") as f:
+	with open(template_path + "/main.pml") as f:
 		pml_main = f.read()
 
-	with open(file_base + "/templates/intentsCheck.pml") as f:
+	with open(template_path + "/intentsCheck.pml") as f:
 		pml_intent = f.read()
 
-	with open(file_base + "/templates/eventGenerate.pml") as f:
+	with open(template_path + "/eventGenerate.pml") as f:
 		pml_event = f.read()
 
-	config_filename = "config_" + case_id + "_" + scale + ".pml"
-	intent_filename = "intentsCheck_" + case_id + "_" + scale + ".pml"
-	event_filename = "event_" + case_id + "_" + scale + ".pml"
-	pml_config, pml_main, pml_intent, pml_event = generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, config_filename, intent_filename, event_filename, file_base, queue_size_default)
+	pml_config, pml_main, pml_intent, pml_event = generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, template_path, queue_size_default)
 	
-	with open(pml_base_path + "/" + config_filename, "w") as f:
+	with open(pml_base_path + "/config.pml", "w") as f:
 		f.write(pml_config)
 
-	main_filename = "main_" + case_id + "_" + scale + ".pml"
-	with open(pml_base_path + "/" +  main_filename, "w") as f:
+	main_filename = "main.pml"
+	with open(pml_base_path + "/" + main_filename, "w") as f:
 		f.write(pml_main)
 
-	with open(pml_base_path + "/" +  intent_filename, "w") as f:
+	with open(pml_base_path + "/intentsCheck.pml", "w") as f:
 		f.write(pml_intent)
 
-	with open(pml_base_path + "/" +  event_filename, "w") as f:
+	with open(pml_base_path + "/event.pml", "w") as f:
 		f.write(pml_event)
 
 	return main_filename

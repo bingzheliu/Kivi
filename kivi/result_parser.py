@@ -1,6 +1,3 @@
-import sys
-
-
 # log_level 1: warning and critical reason that the failure happen
 # log_level 2: steps that result in the error
 # log_level 3: detailed output of all steps
@@ -19,7 +16,13 @@ def parse_spin_error_trail(output, failure_type, log_level):
 				count += 1
 
 			if count - 1 <= int(log_level):
-				result_log += (s + "\n")
+				if len(s.split("]")) > 2:
+					controller = s.split("]")[0].strip() + "]" + s.split("]")[1].strip() + "]"
+					msg = s.split("]")[2].split(";")[-1].strip()
+				else:
+					controller = s.split("]")[0].strip() + "]"
+					msg = s.split("]")[1].split(";")[-1].strip()
+				result_log += (controller + msg + "\n")
 
 		if "START OF CYCLE" in s:
 			result_log += (s + "\n")
@@ -31,7 +34,7 @@ def parse_spin_error_trail(output, failure_type, log_level):
 				failure_details += (s+"\n")
 				i += 1
 				s = output_lines[i]
-			result_log += failure_details
+			#result_log += failure_details
 
 	return 	result_log, failure_details
 				

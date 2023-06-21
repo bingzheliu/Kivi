@@ -1,10 +1,10 @@
-#include "[$CONFIG_FILENAME]"
+#include "config.pml"
 
-#include "[$FILE_BASE]/templates/include.pml"
+#include "[$FILE_BASE]/include.pml"
 
-#include "[$EVENT_FILENAME]"
+#include "event.pml"
 
-#include "[$INTENT_FILENAME]"
+#include "intentsCheck.pml"
 
 init{
 	[$INIT_SETUP]

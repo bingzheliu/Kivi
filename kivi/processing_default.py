@@ -1,9 +1,3 @@
-import copy
-import sys
-
-from util import *
-
-
 ##### Pod Topo Spreading Plugins
 # implement filterTopologySpreadConstraints and buildDefaultConstraints in common.go
 # deal with enableMatchLabelKeysInPodTopologySpread
@@ -13,6 +7,8 @@ from util import *
 # required to define for the verification, not for the config from the user. 
 # TODO: check if we need to init the score -- if this benefit verification perf or not
 # TODO: putting all the default value definition into the same file (move the definiations in config.pml into this)
+
+from util import *
 
 # A list of field in the typedef, need to be synced with dataType.pml. TODO: could auto-populate this.
 # TODO: adding the process on affinityrules, noschedulenodes, etc.
@@ -89,7 +85,7 @@ def pod_template_default(json_config):
 				if "minDomains" not in ptcon:
 					ptcon["minDomains"] = 1
 				if ptcon["labels"] is None:
-					ptcon["labels"] = copy.deepcopy(pt["labels"])
+					ptcon["labels"] = deepcopy(pt["labels"])
 
 # TODO: check if the array size match with the number
 # TODO: check if the values are valid: e.g. minDomains in the podSpreadingConstraints must be more than 0 when speicified. 
@@ -103,7 +99,7 @@ def check_for_completion_add_default(json_config):
 						if e == "topoSpreadConstraints":
 							userDefinedConstraints = 0
 						if e in default_values[resource]:
-							r[e] = copy.deepcopy(default_values[resource][e])
+							r[e] = deepcopy(default_values[resource][e])
 							#print("Filling in default value for " + e, r[e])
 						else:
 							sys.exit("[error] " + e + " in " + resource + " has not been defined!")

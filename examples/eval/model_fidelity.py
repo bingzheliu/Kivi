@@ -249,8 +249,7 @@ class Model_Fidelity:
 
 					cur_rate = self.compare_matching_rate(log_events, cur_veri_events)
 					max_rate = max_rate if cur_rate < max_rate else cur_rate
-					if  index == (total/10) or index == (total/5):
-						print(index, total, cur_rate, max_rate)
+					print(index, total, cur_rate, max_rate)
 					index += 1
 
 		print(max_rate)
@@ -332,6 +331,9 @@ class Model_Fidelity:
 
 			elif type(event) == CPU_Change:
 				names["pod"].add(event.objs[0])
+
+			elif type(event) == Maintenance:
+				names["node"].add(event.objs[0])
 	
 			else:
 				flag = True
@@ -383,9 +385,8 @@ class Model_Fidelity:
 				veri_events.append((count, CPU_Change("cpu_change", [items[1].strip()], items[-1].strip(), direction)))
 
 			elif "maintenanceNode" in log_main_info:
-				veri_events((count, Maintenance()))
+				veri_events.append((count, Maintenance(log_main_info.split("]")[-1].strip(), [items[1].strip()], items[-1].strip())))
 			
-
 			if pre_count + 1 == len(veri_events):
 				count += 1
 			else:
@@ -546,15 +547,16 @@ class Model_Fidelity:
 	def parse_command(self, events):
 		for l in self.scommand.split("\n")[1:-1]:
 			items = l.split(",")
-			t = items[3]+"Z"
+			t = items[-3]+"Z"
 			if self.in_timerange(t):
+				
 				if "apply" in items[1]:
 					events.append(([self.str_to_timestamp(t)], Apply_Dep("apply_dep", [items[1].split(" ")[2].strip()], items[1] + "; " + items[0])))
-				elif "drain" in item[0]:
-					node = item[0].split(" ")[2].strip()
+				elif "drain" in items[0]:
+					node = items[0].split(" ")[2].strip()
 					events.append(([self.str_to_timestamp(t)], Maintenance("start", [node], items[0])))
-				elif "uncordon" item[0]:
-					node = item[0].split(" ")[2].strip()
+				elif "uncordon" in items[0]:
+					node = items[0].split(" ")[2].strip()
 					events.append(([self.str_to_timestamp(t)], Maintenance("end", [node], items[0])))
 				else:
 					logger.critical("Unknown type of command ignored: " + items[1] + "; " + items[0])

@@ -82,7 +82,7 @@ endKP:	do
 		:: nodes[i].status == 1 && (nodes[i].cpuLeft * 100 / nodes[i].cpu <= 2) -> 
 				atomic{
 					times ++;
-					printf("[**]node %d kernel panic, times %d\n", i, times)
+					printf("[*]node %d kernel panic, times %d\n", i, times)
 					nodes[i].status = 2;
 
 					updateQueue(ncQueue, ncTail, ncIndex, i, MAX_NODE_CONTROLLER_QUEUE)
@@ -96,7 +96,7 @@ endKP:	do
 			// recover from panic
 			:: nodes[i].status == 2 && (nodes[i].cpuLeft * 100 / nodes[i].cpu > 2) ->
 				atomic{
-					printf("[**]node %d kernel panic recovered\n", i)
+					printf("[*]node %d kernel panic recovered\n", i)
 					nodes[i].status = 1;
 				}
 		od;

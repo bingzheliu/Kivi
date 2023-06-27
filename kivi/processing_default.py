@@ -19,7 +19,7 @@ elements_required = {"nodes" : ["id", "name", "cpu", "cpuLeft", "memory", "memLe
 									"topoSpreadConstraints", "maxCpuChange"],\
 					"deploymentTemplates" : ["id", "name", "maxSurge", "maxUnavailable", "specReplicas"]}
 
-
+# according to https://github.com/kubernetes/kubernetes/blob/master/pkg/apis/apps/v1/defaults.go#L32, https://github.com/kubernetes/kubernetes/blob/master/pkg/apis/core/v1/defaults.go#L208
 default_values = { 
 	"nodes" : {"score" : 0, "curScore" : 0, "curAffinity" : 0, "curTaint" : 0, "labels" : None, "maintained" : 0}, \
 	"pods" : {"status" : 0, "loc" : 0, "podTemplateId" : 0, "important" : 0, "workloadType" : 0, "workloadId" : 0, "score" : 0, "cpu" : 0, "memory" : 0, "curCpuIndex" : 0, "startTime" : 0}, \
@@ -29,9 +29,9 @@ default_values = {
 	# The definiation is in plugin.go, variable systemDefaultConstraints 
 	# The default selector for topoSpreadConstraints should be the same as the pod labels in metadata.
 	"podTemplates" : {"numRules" : 0, "nodeName" : 0,  "numNoScheduleNode" : 0, "numPreferNoScheduleNode" : 0, "topoSpreadSystemDefaulted": 1, "numTopoSpreadConstraints" : 2, \
-					  "topoSpreadConstraints" : [{"maxSkew" : 3, "topologyKey" : "hostname", "whenUnsatisfiable" : 1, "labels" : None}, \
+					  "cpuRequested": 0, "memRequested": 0, "topoSpreadConstraints" : [{"maxSkew" : 3, "topologyKey" : "hostname", "whenUnsatisfiable" : 1, "labels" : None}, \
 					  {"maxSkew" : 5, "topologyKey" : "zone", "whenUnsatisfiable" : 1, "labels" : None}], "maxCpuChange" : 0}, \
-	"deploymentTemplates" : {"maxSurge" : -1, "maxUnavailable" : -1, "specReplicas" : -1}
+	"deploymentTemplates" : {"maxSurge" : 25, "maxUnavailable" : 25, "specReplicas" : 1, "strategy" : 1}
 }
 
 # TODO: add default for nodeAffinityPolicy, and nodeTaintsPolicy

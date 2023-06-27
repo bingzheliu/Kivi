@@ -22,7 +22,7 @@ def parse_spin_error_trail(output, failure_type, log_level):
 				else:
 					controller = s.split("]")[0].strip() + "]"
 					msg = s.split("]")[1].split(";")[-1].strip()
-				result_log += (controller + msg + "\n")
+				result_log += (controller + " " + msg + "\n")
 
 		if "START OF CYCLE" in s:
 			result_log += (s + "\n")

@@ -488,7 +488,19 @@ inline taintTolerationScore(podSpec)
 }
 
 
-// we only model allowedPod, CPU and mem for now. 
+/*
+	Note:
+	1. we only model allowedPod, CPU and mem for now. 
+	2. If no resource request was defined, then treat them as 0, meaning all nodes always fits. 
+	   See more details in computePodResourceRequest: it leverage the Resource type defined in framework/types.go, 
+	   where if requests is empty, the Resource.Add() can't assign value to the Resource, and it will remains 0 and directly return in fitsRequest().
+	   In this case, we set cpuReqested, memRequested as 0 by default.
+
+	3. default resource spec (weight), where both cpu and mem are weighted 1: https://github.com/kubernetes/kubernetes/blob/d436f5d0b7eb87f78eb31c12466e2591c24eef59/pkg/scheduler/apis/config/v1beta3/defaults.go#L31
+	according to 
+		- LeastAllocated impl: https://github.com/kubernetes/kubernetes/blob/419e0ec3d2512afd8c1f35a44862f856bc4ac10f/pkg/scheduler/framework/plugins/noderesources/least_allocated.go#L29
+		- mostAllocated impl: https://github.com/kubernetes/kubernetes/blob/419e0ec3d2512afd8c1f35a44862f856bc4ac10f/pkg/scheduler/framework/plugins/noderesources/most_allocated.go#L30
+*/
 inline nodeResourcesFitFilter(podSpec)
 {	
 	i = 1;
@@ -507,12 +519,6 @@ inline nodeResourcesFitFilter(podSpec)
 	printfNodeScore();
 }
 
-/*
- 	default resource spec (weight), where both cpu and mem are weighted 1: https://github.com/kubernetes/kubernetes/blob/d436f5d0b7eb87f78eb31c12466e2591c24eef59/pkg/scheduler/apis/config/v1beta3/defaults.go#L31
-	according to 
-		- LeastAllocated impl: https://github.com/kubernetes/kubernetes/blob/419e0ec3d2512afd8c1f35a44862f856bc4ac10f/pkg/scheduler/framework/plugins/noderesources/least_allocated.go#L29
-		- mostAllocated impl: https://github.com/kubernetes/kubernetes/blob/419e0ec3d2512afd8c1f35a44862f856bc4ac10f/pkg/scheduler/framework/plugins/noderesources/most_allocated.go#L30
-*/
 inline nodeResourceFitScore(podSpec)
 {
 	i = 1;

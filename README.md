@@ -6,8 +6,9 @@
 
 ### Manual
 1. Create `libs`, `results` and `temp` directories under the root dir. 
-2. Install [Spin](https://github.com/nimble-code/Spin) into libs. 
+2. Install [Spin](https://github.com/nimble-code/Spin) into `libs`. 
 3. Install required libs by ```pip3 install -r requirements.txt```
+
 Then you are good!
 
 ### Script

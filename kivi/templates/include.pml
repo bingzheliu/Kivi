@@ -27,6 +27,7 @@ podType pods[POD_NUM+1];
 nodeType nodes[NODE_NUM+1];
 
 // These would be read-only and not affecting the states
+// TODO: seperate the deploymentTye and define a new deploymentTemplate type 
 hidden podTemplateType podTemplates[POD_TEMPLATE_NUM+1];
 hidden deploymentType deploymentTemplates[DEP_TEMPLATE_NUM+1];
 

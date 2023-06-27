@@ -7,6 +7,10 @@ from copy import deepcopy
 
 from cases.case_generator import case_generator, get_case_user_defined
 
+user_defined_default = {"nodes_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}, \
+						"d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion", "proportionHPA" : 2}}
+
+
 def compare_template(t1, t2, field):
 	for f in field:
 		if f in t1:
@@ -48,6 +52,9 @@ def get_propotion(count):
 	return count
 
 def template_generator(json_config, user_defined):
+	if user_defined is None:
+		user_defined = user_defined_default
+
 	json_config["userDefined"] = {}
 
 	templates = {"nodes":["cpu", "memory", "status", "labels"], "d":["podTemplateId", "hpaSpec"]}

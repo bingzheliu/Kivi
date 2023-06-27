@@ -4,9 +4,8 @@ import math
 from util import *
 
 from verifier_operators import verifier_operator
-from parser import parse_yaml
+from parser import parser
 from cases.case_generator import case_generator
-
 from small_scale_finder import template_generator, get_case_temeplate
 
 
@@ -16,7 +15,9 @@ def verifier():
 		case_id = args.path.split("/")[-1]
 		case_name = case_id
 
-		json_config, user_defined = parse_yaml(args.path, args.original)
+		# user_defined collects user's config for finding smallest example algorithm. 
+		# If user does not define it, will return None and a default config will be given. 
+		json_config, user_defined = parser(args.path)
 
 		if not args.original:
 			json_config = template_generator(json_config, user_defined)

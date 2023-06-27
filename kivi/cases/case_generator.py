@@ -472,7 +472,7 @@ def generate_S6(num_node, non_violation=False):
 		#case_config["intents"].append("run checkS6()\n")
 		# TODO: check why never not work
 		#case_config["intents"].append("\nnever \n{\n do\n  :: init_status == 1 && d[1].replicas == d[1].specReplicas -> \n if\n :: d[1].replicas < d[1].specReplicas - " + str(p) +  " -> break\n  fi\n   :: else\nod;\n}\n")
-		case_config["intents"].append("\nactive proctype checkS6() \n{\nendCS61: if\n  		:: init_status == 1 && d[1].replicas == d[1].specReplicas -> \nendCS62:   		if\n :: d[1].replicas < d[1].specReplicas - " + str(p) +  " -> assert(false)\n    		fi\n     fi;\n}\n")
+		case_config["intents"].append("\nactive proctype checkS6() \n{\nendCS61: if\n  		:: init_status == 1 && d[1].replicas == d[1].specReplicas -> \nendCS62:   		if\n :: d[1].replicas < d[1].specReplicas - " + str(p) +  ' -> printf("[*] Replicas below expatation!\\n")\n assert(false)\n    		fi\n     fi;\n}\n')
 
 
 	return case_config
@@ -610,7 +610,7 @@ def generate_S6_model_fidelity(num_node, non_violation=False):
 		#case_config["intents"].append("run checkS6()\n")
 		# TODO: check why never not work
 		#case_config["intents"].append("\nnever \n{\n do\n  :: init_status == 1 && d[1].replicas == d[1].specReplicas -> \n if\n :: d[1].replicas < d[1].specReplicas - " + str(p) +  " -> break\n  fi\n   :: else\nod;\n}\n")
-		case_config["intents"].append("\nactive proctype checkS6() \n{\nendCS61: if\n  		:: init_status == 1 && d[1].replicas == d[1].specReplicas -> \nendCS62:   		if\n :: d[1].replicas < d[1].specReplicas - " + str(p) +  " -> assert(false)\n    		fi\n     fi;\n}\n")
+		case_config["intents"].append("\nactive proctype checkS6() \n{\nendCS61: if\n  		:: init_status == 1 && d[1].replicas == d[1].specReplicas -> \nendCS62:   		if\n :: d[1].replicas < d[1].specReplicas - " + str(p) +  ' -> printf("[*] Replicas below expatation!\\n")\n assert(false)\n    		fi\n     fi;\n}\n')
 
 	case_config["userCommand"] = []
 	# this is the id for the index of deploymentTemplates, not the deployment name

@@ -85,14 +85,8 @@ def parse_setup(json_config, f_dir, files):
 
 	return json_config
 
+# TODO: let's do describe pods and describe deployment instead. 
 def parse_describe_all(json_config, f_str):
-	for o in f_str.split("\n\nName:"):
-		lines = o.split("\n")
-		for l in lines:
-			if l.startswith("Namespace:"):
-				if "kube-system" in l:
-					break
-
 	return json_config
 
 # TODO: instead of parsing manually, parse it into a map.

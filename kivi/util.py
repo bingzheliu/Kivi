@@ -26,6 +26,7 @@ def setup_argparser(arg_parser):
     # can use subparser to parse for verification v.s. simulation. 
     mode = arg_parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('-c', '--case', type=str, help='Verify an exiting cases, entering a case name')
+    # TODO: this may need to be convert into absolute path
     mode.add_argument('-p', '--path', type=str, help='Verify from runtime configs, entering config path')
 
     verification_arg = arg_parser.add_argument_group("Verification parameters")

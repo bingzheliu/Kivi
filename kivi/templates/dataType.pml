@@ -1,7 +1,10 @@
-// TODO: refine the array sizes to save spaces. 
-// typedef queueType {
-// 	short q[MAX_QUEUE_SIZE]
-// }
+/*
+	Note: 
+		1. About resources
+			a. The unit for resource: m (for CPU) and mi (for memory). 1 core = 1000m. 
+			   Details: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes
+ 			b. The resource is calculated by sum of requested resource instead of the actual resource usage.
+*/
 
 typedef twoDArray {
 	short a[MAX_2D];
@@ -11,10 +14,10 @@ typedef nodeType {
 	short id;
 	short name;
 
-	byte cpu;
-	byte cpuLeft;
-	byte memory;
-	byte memLeft;
+	short cpu;
+	short cpuLeft;
+	short memory;
+	short memLeft;
 
 	// 0: false, 1: ready, 2: unhealthy
 	unsigned status : 3;
@@ -49,8 +52,8 @@ typedef podType {
 	unsigned status : 3;
 
 	// resource
-	byte cpu;
-	byte memory;
+	short cpu;
+	short memory;
 
 	/*----internal----*/
 	// 0: pod, 1: deployment
@@ -147,8 +150,8 @@ typedef podTemplateType {
 
 	// In fact, the requested CPU and memory will be defined for each container in the pod, but we simplified them into one resources for now, and may pre-process the container info in the wrapper functions. 
 	// https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#resources
-	byte cpuRequested;
-	byte memRequested;
+	short cpuRequested;
+	short memRequested;
 
 	// For scheduler: https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#scheduling
 	//// node affinity, https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
@@ -173,7 +176,7 @@ typedef podTemplateType {
 	topoSpreadConType topoSpreadConstraints[MAX_TOPO_CON];
 
 	byte maxCpuChange;
-	byte curCpuRequest[MAX_CPU_PATTERN];
+	short curCpuRequest[MAX_CPU_PATTERN];
 	byte timeCpuRequest[MAX_CPU_PATTERN];
 
 	/* 

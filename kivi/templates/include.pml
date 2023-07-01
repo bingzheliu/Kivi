@@ -30,6 +30,7 @@ nodeType nodes[NODE_NUM+1];
 // TODO: seperate the deploymentTye and define a new deploymentTemplate type 
 hidden podTemplateType podTemplates[POD_TEMPLATE_NUM+1];
 hidden deploymentType deploymentTemplates[DEP_TEMPLATE_NUM+1];
+hidden deschedulerProfileType deschedulerProfiles[DES_PROFILE_NUM];
 
 // short podTotal;
 

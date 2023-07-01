@@ -5,12 +5,13 @@ import json
 from util import *
 
 # Parser can parse three types of files: 
-# 1. yaml files that describe deployments, in yaml/. File must have the suffix of yaml
+# 1. yaml files that describe deployments, in yaml/. File must have the suffix of yaml. Will be saved as pod and deployment templates.
 # 2. current setup of the cluster from kubelet describe all, in setup/. File must contain keyword "describe_all"
 # 3. Other assumptions about the environment and intents, e.g. CPU change pattern, in user_input/
 
 # TBD: 
-# Parse user's intent: may need to design a front end for user to input their intents, as well as easier way for inputing the environment.
+# 1. Parse user's intent: may need to design a front end for user to input their intents, as well as easier way for inputing the environment.
+# 2. Improve parsing simplicity and robustness: can output the kubectl into json instead. 
 
 def parser(f_dir):
 	dir_list = os.listdir(f_dir)
@@ -64,7 +65,7 @@ def parse_yamls(json_config, f_dir, files):
 
 
 included_objects = ["nodes", "d", "pods"]
-status_map = {"Ready":1, "Unhealthy":2}
+status_map = {"node": {"Ready":1, "Unhealthy":2}, "pod" : {"Running" : 1, "Pending" : 2, "Terminating" : 3}}
 
 def parse_setup(json_config, f_dir, files):
 	if "setup" not in json_config:
@@ -75,9 +76,9 @@ def parse_setup(json_config, f_dir, files):
 			json_config["setup"][o] = []
 
 	for f in files:
-		if "describe_all" in f:
+		if "describe_pod" in f:
 			with open(f_dir + "/" + f, "r") as file:
-				json_config = parse_describe_all(json_config, file.read())
+				json_config = parse_describe_pods(json_config, file.read())
 
 		if "describe_node" in f:
 			with open(f_dir + "/" + f, "r") as file:
@@ -85,9 +86,26 @@ def parse_setup(json_config, f_dir, files):
 
 	return json_config
 
-# TODO: let's do describe pods and describe deployment instead. 
-def parse_describe_all(json_config, f_str):
-	return json_config
+def parse_describe_pods(json_config, f_str):
+	for p in f_str.split("\n\nName:"):
+		unrelated = False
+		for l in p.split("\n"):
+			if "Namespace:" in l:
+				if "kube-system" in l or "local-path-storage" in l:
+					unrelated = True
+					break
+		if unrelated:
+			continue
+
+		pod = {}
+
+		#process name
+		raw_name = p.split("\n")[0]
+		pod["name"] = raw_name.split("Name:")[1].strip() if "Name:" in raw_name else raw_name.strip()
+
+		#process status
+		pod["status"] = p.split("Status:")[]
+
 
 # TODO: instead of parsing manually, parse it into a map.
 def parse_describe_nodes(json_config, f_str):
@@ -121,8 +139,8 @@ def parse_describe_nodes(json_config, f_str):
 				status = status_list[-i]
 				break
 		status = status.strip().split()[0].strip()
-		if status in status_map:
-			node["status"] = status_map[status]
+		if status in status_map["node"]:
+			node["status"] = status_map["node"][status]
 		else:
 			logger.debug("Unknown type of status " + status + ", storing 0!")
 			node["status"] = 0

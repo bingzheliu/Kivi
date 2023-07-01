@@ -71,3 +71,13 @@
 #define MAINTENANCE_WAIT_TIME 60
 #define KERNEL_RECOVER_TIME 60
 #define EVENT_CPU_TIME 60
+// Default descheduler interval is 5min
+#define DESCHEDULER_WAIT_TIME 300
+
+
+/*--------- Descheduler Config -----------*/
+#define maxNoOfPodsToEvictPerNode 5000
+#define maxNoOfPodsToEvictPerNamespace 5000
+#define MAX_NUM_DESPLUGINS 6
+#define MAX_NUM_BALPLUGINS 4
+#define MAX_NUM_EVICPLUGINS 1

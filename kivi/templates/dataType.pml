@@ -238,3 +238,17 @@ typedef deploymentType {
 	// short selector;
 }
 
+typedef deschedulerProfileType {
+	// removePodsViolatingNodeAffinity: 1
+	short numDeschedulePlugins;
+	byte deschedulePlugins[MAX_NUM_DESPLUGINS];
+
+	// removeDuplicates: 1; removePodsViolatingTopologySpreadConstraint: 2;
+	short numBalancePlugins;
+	byte balancePlugins[MAX_NUM_BALPLUGINS];
+
+	// We only support the default evictor for now. If user have multiple evictor, we'll need the following structure.
+	// short numEvictorPlugins;
+	// byte evictorPlugins[MAX_NUM_EVICPLUGINS];
+}
+

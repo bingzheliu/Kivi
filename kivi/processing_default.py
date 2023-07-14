@@ -20,11 +20,12 @@ elements_required = {"nodes" : ["id", "name", "cpu", "cpuLeft", "memory", "memLe
 					"deploymentTemplates" : ["id", "name", "maxSurge", "maxUnavailable", "specReplicas"]}
 
 # according to https://github.com/kubernetes/kubernetes/blob/master/pkg/apis/apps/v1/defaults.go#L32, https://github.com/kubernetes/kubernetes/blob/master/pkg/apis/core/v1/defaults.go#L208
+# All the id are now initilized with 0, as it's not quite been used in the model, but keeping this field for future usage. 
 default_values = { 
-	"nodes" : {"score" : 0, "curScore" : 0, "curAffinity" : 0, "curTaint" : 0, "labels" : None, "maintained" : 0}, \
-	"pods" : {"status" : 0, "loc" : 0, "podTemplateId" : 0, "important" : 0, "workloadType" : 0, "workloadId" : 0, "score" : 0, "cpu" : 0, "memory" : 0, "curCpuIndex" : 0, "startTime" : 0}, \
+	"nodes" : {"id": 0, "score" : 0, "curScore" : 0, "curAffinity" : 0, "curTaint" : 0, "labels" : None, "maintained" : 0}, \
+	"pods" : {"id": 0, "status" : 0, "loc" : 0, "podTemplateId" : 0, "important" : 0, "workloadType" : 0, "workloadId" : 0, "score" : 0, "cpu" : 0, "memory" : 0, "curCpuIndex" : 0, "startTime" : 0}, \
 	# maxReplicas must be defined by users
-	"d": {"curVersion" : 0, "specReplicas" : 1, "maxSurge" : 25, "maxUnavailable" : 25, "strategy" : 1, "hpaSpec" : {"isEnabled" : 0, "numMetrics" : 0, "minReplicas" : 1}}, \
+	"d": {"id": 0, "curVersion" : 0, "status" : 0, "specReplicas" : 1, "maxSurge" : 25, "maxUnavailable" : 25, "strategy" : 1, "hpaSpec" : {"isEnabled" : 0, "numMetrics" : 0, "minReplicas" : 1}}, \
 	# https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/#internal-default-constraints
 	# The definiation is in plugin.go, variable systemDefaultConstraints 
 	# The default selector for topoSpreadConstraints should be the same as the pod labels in metadata.

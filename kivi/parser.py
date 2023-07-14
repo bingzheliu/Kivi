@@ -12,6 +12,20 @@ from util import *
 # TBD: 
 # 1. Parse user's intent: may need to design a front end for user to input their intents, as well as easier way for inputing the environment.
 # 2. Improve parsing simplicity and robustness: can output the kubectl into json instead. 
+# 3. Now we can't process if a pod is in pending when it collect the log
+# 4. Now we don't process replicaset. Instead, each deployment will generate one replicaset. 
+# 5. Now we only support one container pod.
+# 6. Improve the transformation between natural language and number. Now it happens during parsing each element, and we could process them all in one place to improve resilience to future changes.
+
+# Note:
+# 1. The metric server may have delays -- the CPU/memory usage of the pods/nodes may not be consistent with the actual usage. 
+
+
+# Left:
+# 1. connect Deployment with replicasets and pods
+# 2. translate the str into numbers for all the names
+# 3. reprocess labels -- labels need to be go with pods rather than podTemplate
+# 4. Process usercommand
 
 def parser(f_dir):
 	dir_list = os.listdir(f_dir)
@@ -64,8 +78,10 @@ def parse_yamls(json_config, f_dir, files):
 	return json_config
 
 
-included_objects = ["nodes", "d", "pods"]
+included_objects = ["nodes", "d", "pods", "podTemplates"]
 status_map = {"node": {"Ready":1, "Unhealthy":2}, "pod" : {"Running" : 1, "Pending" : 2, "Terminating" : 3}}
+kind_map = {"ReplicaSet" : 1}
+whenunsatisfiable_map = {"DoNotSchedule" : 0, "ScheduleAnyway" : 1}
 
 def parse_setup(json_config, f_dir, files):
 	if "setup" not in json_config:
@@ -76,38 +92,186 @@ def parse_setup(json_config, f_dir, files):
 			json_config["setup"][o] = []
 
 	for f in files:
-		if "describe_pod" in f:
+		if "getpod" in f:
 			with open(f_dir + "/" + f, "r") as file:
-				json_config = parse_describe_pods(json_config, file.read())
+				json_config = parse_getpod(json_config, file.read())
 
-		if "describe_node" in f:
+		if "describenode" in f:
 			with open(f_dir + "/" + f, "r") as file:
 				json_config = parse_describe_nodes(json_config, file.read())
 
+		if "getdeployment" in f:
+			with open(f_dir + "/" + f, "r") as file:
+				json_config = parse_getdeployment(json_config, file.read())
+
+	for f in files:
+		if "toppod" in f:
+			with open(f_dir + "/" + f, "r") as file:
+				json_config = parse_toppod(json_config, file.read())
+
+		if "gethpa" in f:
+			with open(f_dir + "/" + f, "r") as file:
+				json_config = parse_gethpa(json_config, file.read())
+
 	return json_config
 
-def parse_describe_pods(json_config, f_str):
-	for p in f_str.split("\n\nName:"):
-		unrelated = False
-		for l in p.split("\n"):
-			if "Namespace:" in l:
-				if "kube-system" in l or "local-path-storage" in l:
-					unrelated = True
-					break
-		if unrelated:
+def parse_toppod(json_config, f_str):
+	pods = f_str.split("\n")[1:]
+	for p in pods:
+		p_name = p.split(",")[0].strip()
+
+		for p_json in json_config["setup"]["pods"]:
+			if p_json["name"] == p_name:
+				p_json["cpu"] = cpu_converter(p.split(",")[1].strip())
+				p_json["memory"] = memory_converter(p.split(",")[2].strip())
+
+	return json_config
+
+
+def parse_gethpa(json_config, f_str):
+	# Now the HPA connects with the deployment through having the same name
+	hpas = f_str.split("\n")[1:]
+	for hpa in hpas:
+		if "Deployment" in hpa:
+			hpa_name = hpa.split(",")[0].strip()
+			for d in json_config["setup"]["d"]:
+				if d["name"] == hpa_name:
+					hpa_spec = {}
+					hpa_spec["isEnabled"] = 1
+					# We now only support one target, but can be easily changed to support several targets. 
+					hpa_spec["numMetrics"] = 1
+					# TBD: may be better to parse the describe hpa that has more information; we now just process it for CPU utlization
+					hpa_spec["metricTypes"] = [1]
+					hpa_spec["metricNames"] = [0]
+					hpa_spec["metricTargets"] = [int(hpa.split(",")[2].split("/")[1].strip()[:-1])]
+					hpa_spec["minReplicas"] = int(hpa.split(",")[3])
+					hpa_spec["maxReplicas"] = int(hpa.split(",")[4])
+					d["hpaSpec"] = deepcopy(hpa_spec)
+
+		else:
+			logger.critical("Unknown types of HPA resource:" + hpa + ". Skipping...")
+
+	return json_config
+
+def parse_podTemplate(p):
+	podTemplate = {}
+
+	if len(p["containers"]) > 1: 
+		logger.critical("Only support 1 container per pod! Storing the first one...")
+	if "requests" in p["containers"][0]["resources"]:
+		cr = p["containers"][0]["resources"]["requests"]
+		if "cpu" in cr:
+			podTemplate["cpuRequested"] = cpu_converter(cr["cpu"])
+		if "memory" in cr:
+			podTemplate["cpuRequested"] = memory_converter(cr["memory"])
+
+	# TODO: process affinity, nodeName and tolerance
+
+	# process topologySpreadConstraints
+	if "topologySpreadConstraints" in p and len(p["topologySpreadConstraints"]) > 0:
+		tps = p["topologySpreadConstraints"]
+		podTemplate["topoSpreadConstraints"] = []
+		for tp in tps:
+			tpc = {}
+			# only support "matchLabels" now
+			tpc["labels"] = tp["labelSelector"]["matchLabels"]
+			tpc["maxSkew"] = tp["maxSkew"]
+			tpc["topologyKey"] = tp["topologyKey"]
+			tpc["whenUnsatisfiable"] = whenunsatisfiable_map[tp["whenUnsatisfiable"]]
+			podTemplate["topoSpreadConstraints"].append(deepcopy(tpc))
+		podTemplate["numTopoSpreadConstraints"] = len(p["topologySpreadConstraints"])
+
+	return podTemplate
+
+# We don't compare between different template for now. 
+# Hence the config we got in the yaml and the getdeployment will be treated different.
+def parse_getdeployment(json_config, json_input):
+	json_input = json.loads(json_input)
+
+	for d in json_input["items"]:
+		if d["metadata"]["namespace"] == "kube-system" or d["metadata"]["namespace"] == "local-path-storage":
+			continue
+
+		deployment = {}
+		deployment["name"] = d["metadata"]["name"]
+
+		deployment["specReplicas"] = d["spec"]["replicas"]
+		if d["spec"]["strategy"]["type"] == "RollingUpdate":
+			deployment["maxSurge"] = int(d["spec"]["strategy"]["rollingUpdate"]["maxSurge"][:-1])
+			deployment["maxUnavailable"] = int(d["spec"]["strategy"]["rollingUpdate"]["maxUnavailable"][:-1])
+			deployment["strategy"] = 1
+		else:
+			deployment["strategy"] = 0
+
+		deployment["replicas"] = d["status"]["availableReplicas"]
+
+		podTemplate = parse_podTemplate(d["spec"]["template"]["spec"])
+		index, json_config = add_podTemplate(podTemplate, json_config)
+		deployment["podTemplateId"] = index
+
+		json_config["setup"]["d"].append(deepcopy(deployment))
+
+	return json_config
+
+# If every field of the podTemplate are the same to an existing one, we won't create a new template
+def compare_podTemplate(pt1, pt2):
+	return pt1 == pt2
+
+def add_podTemplate(podTemplate, json_config):
+	for i in range(0, len(json_config["setup"]["podTemplates"])):
+		pt = json_config["setup"]["podTemplates"][i]
+		if compare_podTemplate(podTemplate, pt):
+			return i+1, json_config
+
+	json_config["setup"]["podTemplates"].append(deepcopy(podTemplate))
+	return len(json_config["setup"]["podTemplates"]), json_config
+
+def parse_getpod(json_config, json_input):
+	json_input = json.loads(json_input)
+	for p in json_input["items"]:
+		if p["metadata"]["namespace"] == "kube-system" or p["metadata"]["namespace"] == "local-path-storage":
 			continue
 
 		pod = {}
+		pod["name"] = p["metadata"]["name"]
 
-		#process name
-		raw_name = p.split("\n")[0]
-		pod["name"] = raw_name.split("Name:")[1].strip() if "Name:" in raw_name else raw_name.strip()
+		for k in p["metadata"]["ownerReferences"]:
+			if k["kind"] in kind_map:
+				if "workloadType" in pod:
+					logger.critical("Multiple types of pod owner!")
+					logger.critical(p["metadata"]["ownerReferences"])
+					break
+				if k["kind"] in kind_map:
+					pod["workloadType"] = kind_map[k["kind"]]
+				else:
+					logger.critical("Unknown type of pod owner: " + str())
 
-		#process status
-		pod["status"] = p.split("Status:")[]
+		status = p["status"]["phase"]
+		if status in status_map["pod"]:
+			pod["status"] = status_map["pod"][status]
+		else:
+			logger.critical("Unknown type of status " + status + ", storing 0!")
+			pod["status"] = 0
+
+		# Need to convert it into number later
+		# it will be automated assign with 0 in the processing_default if it's not scheduled. 
+		if "nodeName" in p["spec"]:
+			pod["loc"] = p["spec"]["nodeName"]
+
+		podTemplate = parse_podTemplate(p["spec"])
+		index, json_config = add_podTemplate(podTemplate, json_config)
+		pod["podTemplateId"] = index
+
+		# Need to process label seperately
+		#podTemplate["labels"] = p["metadata"]["labels"]
+
+		json_config["setup"]["pods"].append(deepcopy(pod))
+
+	return json_config
 
 
-# TODO: instead of parsing manually, parse it into a map.
+# Though we have getnodes in json, it lacks many information (e.g. # of pods, allocated resources). 
+# Hence parse describe node instead. 
 def parse_describe_nodes(json_config, f_str):
 	for n in f_str.split("\n\nName:"):
 		node = {}
@@ -142,7 +306,7 @@ def parse_describe_nodes(json_config, f_str):
 		if status in status_map["node"]:
 			node["status"] = status_map["node"][status]
 		else:
-			logger.debug("Unknown type of status " + status + ", storing 0!")
+			logger.critical("Unknown type of status " + status + ", storing 0!")
 			node["status"] = 0
 
 		# process resource. we store it in terms of m (for CPU) and mi (for memory). That's how user normally define their resource requests.
@@ -175,7 +339,7 @@ def parse_describe_nodes(json_config, f_str):
 				pod_count += 1
 		node["numPod"] = pod_count
 
-		json_config["setup"]["nodes"].append(node)
+		json_config["setup"]["nodes"].append(deepcopy(node))
 
 	return json_config
 
@@ -203,13 +367,13 @@ def parse_user_input(json_config, f_dir, files):
 def parse_yaml(f_yaml, json_config):
 	if f_yaml["kind"] == "Deployment":
 		json_deploymentTemplate, json_podTemplate = parse_deployment_yaml(f_yaml)
-		json_config['setup']["podTemplates"].append(json_podTemplate)
+		json_config['setup']["podTemplates"].append(deepcopy(json_podTemplate))
 		json_deploymentTemplate['podTemplateId'] = len(json_config['setup']["podTemplates"])
-		json_config['setup']['deploymentTemplates'].append(json_deploymentTemplate)
+		json_config['setup']['deploymentTemplates'].append(deepcopy(json_deploymentTemplate))
 
 	elif f_yaml["kind"] == "Pod":
 		json_podTemplate = parse_pod_yaml(f_yaml)
-		json_config['setup']["podTemplates"].append(json_podTemplate)
+		json_config['setup']["podTemplates"].append(deepcopy(json_podTemplate))
 
 	else:
 		logger.critical("Yaml kind has not been defined! Now only support Deployment and Pod.")
@@ -249,11 +413,14 @@ def parse_pod_yaml(f_yaml):
 			json_pod_topologySpreadConstraints = {} 
 			for e in constraint:
 				if e in topologySpreadConstraints_keys:
-					json_pod_topologySpreadConstraints[e] = constraint[e]
+					if e == 'whenUnsatisfiable':
+						json_pod_topologySpreadConstraints[e] = whenunsatisfiable_map[constraint[e]]
+					else:
+						json_pod_topologySpreadConstraints[e] = constraint[e]
 
 				if e == 'labelSelector':
 					json_pod_topologySpreadConstraints['labels'] = constraint[e]["matchLabels"]
-			json_podTemplate['topoSpreadConstraints'].append(json_pod_topologySpreadConstraints)
+			json_podTemplate['topoSpreadConstraints'].append(deepcopy(json_pod_topologySpreadConstraints))
 
 		json_podTemplate['numTopoSpreadConstraints'] = len(json_podTemplate['topoSpreadConstraints'])
 

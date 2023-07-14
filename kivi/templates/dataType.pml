@@ -60,6 +60,7 @@ typedef podType {
 	// potentially can support CronJob, Job, etc. in the future. 
 	unsigned workloadType : 3;
 	// If workloadType is 0 (pod), then this is the ID for a podTemplate array (need to define such an array somewhere).
+	// Otherwise it's the array index for the deployment (or other types of owners)
 	byte workloadId;
 	byte podTemplateId;
 
@@ -94,6 +95,7 @@ typedef replicaSetType {
 typedef hpaSpecType {
 	bit isEnabled;
 	byte numMetrics;
+	// 0 means CPU, 1 means Memory
 	byte metricNames[MAX_NUM_METRICS];
 	short metricTargets[MAX_NUM_METRICS];
 	// 0 means values, including PodMetric and the valued ResourceMetric; 1 means utlization, including ResourceMetric

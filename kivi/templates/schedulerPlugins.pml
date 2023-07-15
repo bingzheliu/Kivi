@@ -152,7 +152,9 @@ inline findMatchedPod(i, j, podSpec)
 		for (p : 0 .. podSpec.topoSpreadConstraints[j].numMatchedLabel - 1) {
 			printf("[******] matching pod %d with {%d, %d}\n", k, p, podSpec.topoSpreadConstraints[j].labelKey[p])
 			if 
-				::(podTemplates[pods[k].podTemplateId].labelKeyValue[podSpec.topoSpreadConstraints[j].labelKey[p]] != podSpec.topoSpreadConstraints[j].labelValue[p]) -> goto fmpend;
+			 	// TBDL Need to double check if the pods have extra keys than the matchlabel, will it be selected.
+				::(pods[k].labelKeyValue[podSpec.topoSpreadConstraints[j].labelKey[p]] != podSpec.topoSpreadConstraints[j].labelValue[p]) -> goto fmpend;
+				// ::(podTemplates[pods[k].podTemplateId].labelKeyValue[podSpec.topoSpreadConstraints[j].labelKey[p]] != podSpec.topoSpreadConstraints[j].labelValue[p]) -> goto fmpend;
 				:: else->; 
 			fi;
 			printf("[******] matched pod %d with {%d, %d}\n", k, p, podSpec.topoSpreadConstraints[j].labelKey[p])
@@ -272,7 +274,7 @@ stopo1: 	i++;
 	}
 }
 
-inline podTopologySpreadFilter(podSpec)
+inline podTopologySpreadFilter(curPod, podSpec)
 {
 	i = 1;
 	do
@@ -312,7 +314,8 @@ inline podTopologySpreadFilter(podSpec)
 				bit flag = 0;
 				for (p : 0 .. podSpec.topoSpreadConstraints[j].numMatchedLabel - 1) {
 						if 
-							:: (podSpec.labelKeyValue[podSpec.topoSpreadConstraints[j].labelKey[p]] != podSpec.topoSpreadConstraints[j].labelValue[p]) ->
+							:: (pods[curPod].labelKeyValue[podSpec.topoSpreadConstraints[j].labelKey[p]] != podSpec.topoSpreadConstraints[j].labelValue[p]) ->
+						 // :: (podSpec.labelKeyValue[podSpec.topoSpreadConstraints[j].labelKey[p]] != podSpec.topoSpreadConstraints[j].labelValue[p]) ->
 								flag = 1;
 								break;
 							:: else->;
@@ -349,7 +352,7 @@ stopo4:		i++;
 // a few potential issue with their impl: 
 // 1) if the  enableNodeInclusionPolicyInPodTopologySpread is false, they did not process the taint. 
 // 2) when filtering nodes (calculate their pods count), the nodes need to contains all topoKeys in order to be counted, which can cause confusing problem.
-inline podTopologySpreadFiltering(podSpec)
+inline podTopologySpreadFiltering(curPod, podSpec)
 {
 	/*----- preFilter ----*/
 	twoDArray tpPairToMatchNum[MAX_LABEL];
@@ -366,7 +369,7 @@ inline podTopologySpreadFiltering(podSpec)
 	}
 
 	podTopologySpreadPreFilter(podSpec);
-	podTopologySpreadFilter(podSpec);
+	podTopologySpreadFilter(curPod, podSpec);
 
 	printfNodeScore();
 

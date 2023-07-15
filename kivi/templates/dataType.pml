@@ -46,6 +46,9 @@ typedef podType {
 	// No more than 255 nodes
 	byte loc;
 
+	// label is per pod basis
+	short labelKeyValue[MAX_LABEL];
+
 	// https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
 	// 0: idle; 1: running (the only healthy status); 
 	// 2: pending (not count for replicas); 3: being terminated (still count for replicas) 
@@ -143,9 +146,7 @@ typedef topoSpreadConType {
 // TODO: check on if the label key used in nodes can also be used in pods
 typedef podTemplateType {
 	/*--- metadata ---*/
-	// TODO: this may need to be seperate from this template as it's a runtime info
-	// now this label is for a workload; if the label is per pod, need to model it in a different way.
-	short labelKeyValue[MAX_LABEL];
+	// Nothing related 
 
 	/*--- podSpec ---*/
 	// https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#PodSpec

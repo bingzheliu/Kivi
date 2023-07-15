@@ -11,21 +11,22 @@ from util import *
 
 # TBD: 
 # 1. Parse user's intent: may need to design a front end for user to input their intents, as well as easier way for inputing the environment.
-# 2. Improve parsing simplicity and robustness: can output the kubectl into json instead. 
 # 3. Now we can't process if a pod is in pending when it collect the log
 # 4. Now we don't process replicaset. Instead, each deployment will generate one replicaset. 
 # 5. Now we only support one container pod.
 # 6. Improve the transformation between natural language and number. Now it happens during parsing each element, and we could process them all in one place to improve resilience to future changes.
+
 
 # Note:
 # 1. The metric server may have delays -- the CPU/memory usage of the pods/nodes may not be consistent with the actual usage. 
 
 
 # Left:
-# 1. connect Deployment with replicasets and pods
-# 2. translate the str into numbers for all the names
-# 3. reprocess labels -- labels need to be go with pods rather than podTemplate
+# - 1. connect Deployment with replicasets and pods
+# - 2. translate the str into numbers for all the names
+# * 3. reprocess labels -- labels need to be go with pods rather than podTemplate; need to take a loop at how deployment-level labels work
 # 4. Process usercommand
+# 5. Connect parser with model_generator
 
 def parser(f_dir):
 	dir_list = os.listdir(f_dir)
@@ -50,7 +51,10 @@ def parser(f_dir):
 	else:
 		json_config, user_defined_fss = parse_user_input(json_config, f_dir+"/user_input", os.listdir(f_dir + "/user_input"))
 
+	json_config = convert_all_to_number(json_config)
+
 	return json_config, user_defined_fss
+
 
 def parse_yamls(json_config, f_dir, files):
 	if "setup" not in json_config:
@@ -78,7 +82,7 @@ def parse_yamls(json_config, f_dir, files):
 	return json_config
 
 
-included_objects = ["nodes", "d", "pods", "podTemplates"]
+included_objects = ["nodes", "d", "pods", "podTemplates", "deploymentTemplates"]
 status_map = {"node": {"Ready":1, "Unhealthy":2}, "pod" : {"Running" : 1, "Pending" : 2, "Terminating" : 3}}
 kind_map = {"ReplicaSet" : 1}
 whenunsatisfiable_map = {"DoNotSchedule" : 0, "ScheduleAnyway" : 1}
@@ -112,6 +116,73 @@ def parse_setup(json_config, f_dir, files):
 		if "gethpa" in f:
 			with open(f_dir + "/" + f, "r") as file:
 				json_config = parse_gethpa(json_config, file.read())
+
+	json_config = link_deployment_pod(json_config)
+
+	return json_config
+
+
+def convert_all_to_number(json_config):
+	# The label process is left for model_generator, as the label is specially treated to improve model efficiency. 
+	# So if some phrase is the same for both labels and names, they won't be treated the same, which does not affect verification correctness
+
+	# process location
+	for p in json_config["setup"]["pods"]:
+		for i in range(0, len(json_config["setup"]["nodes"])):
+			n_name = json_config["setup"]["nodes"][i]["name"]
+			if n_name == p["loc"]:
+				p["loc"] = i+1
+				break
+
+	# process names
+	all_names = set()
+	for o in included_objects:
+		for e in json_config["setup"][o]:
+			if "name" in e:
+				all_names.add(e["name"])
+	all_names = list(all_names)
+	all_names = {all_names[index] : index for index in range(0, len(all_names)) }
+	for o in included_objects:
+		for e in json_config["setup"][o]:
+			if "name" in e:
+				e["name"] = all_names[e["name"]]
+
+	logger.debug("Mapping between names and number:")
+	logger.debug(all_names) 
+
+	return json_config
+
+# TBD: this can be changed to connect it through linking the deployment -> replicaset -> pods
+def link_deployment_pod(json_config):
+	for i in range(0, len(json_config["setup"]["d"])):
+		d = json_config["setup"]["d"][i]
+		count = 0
+		replicaSets = {}
+		replicaSets["deploymentId"] = i+1
+		replicaSets["podIds"] = []
+		for j in range(0, len(json_config["setup"]["pods"])):
+			p = json_config["setup"]["pods"][j]
+			if p["name"].startswith(d["name"]):
+				if "workloadId" in p:
+					logger.critical("A pod is related to two deployment!")
+					continue
+				
+				p["workloadId"] = i+1
+				count += 1
+				replicaSets["podIds"].append(j+1)
+
+		if count != d["replicas"]:
+			logger.critical("Number of pods are not equal to the replicas status in deployment!")
+
+		# We now assume replicas spec is the same as the spec in deployment
+		replicaSets["replicas"] = count
+		replicaSets["specReplicas"] = d["specReplicas"]
+		replicaSets["version"] = 0
+
+		d["curVersion"] = 0
+		d["replicaSets"] = []
+		d["replicaSets"].append(deepcopy(replicaSets))
+		d["replicaSets"].append({"deploymentId":i+1})
 
 	return json_config
 
@@ -262,8 +333,8 @@ def parse_getpod(json_config, json_input):
 		index, json_config = add_podTemplate(podTemplate, json_config)
 		pod["podTemplateId"] = index
 
-		# Need to process label seperately
-		#podTemplate["labels"] = p["metadata"]["labels"]
+		# process labels
+		pod["labels"] = deepcopy(p["metadata"]["labels"])
 
 		json_config["setup"]["pods"].append(deepcopy(pod))
 
@@ -425,7 +496,6 @@ def parse_pod_yaml(f_yaml):
 		json_podTemplate['numTopoSpreadConstraints'] = len(json_podTemplate['topoSpreadConstraints'])
 
 	return json_podTemplate
-
 
 if __name__ == '__main__':
 	json_config, user_defined_fss = parser(args.path)

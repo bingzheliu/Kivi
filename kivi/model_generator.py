@@ -9,102 +9,103 @@ from processing_default import check_for_completion_add_default, default_control
 
 index_starts_at_one = {"pods", "nodes", "d", "podTemplates", "deploymentTemplates"}
 
-def find_index(key_to_value, l, v):
-	for i in range(0, len(key_to_value)):
-		if l in key_to_value[i]:
-			for j in range(0, len(key_to_value[i][1])):
-				if v == key_to_value[i][1][j]:
-					model_logger.debug("Converted: {" + str(l) + ", " + str(v) + "} : " + str(i) + ", " +str(j))
-					return i, j
-
-def find_key(key_to_value, l):
-	for i in range(0, len(key_to_value)):
-		if l in key_to_value[i]:
-			return i
-
-
-def replacing_labels(json_config, key_to_value):
-	json_config["labelKeyValue"] = [-1 for i in range(len(key_to_value))]
-
-	model_logger.debug("Initilized labelKeyValue: ")
-	model_logger.debug(json_config["labelKeyValue"])
-
-	model_logger.debug("Original labels:")
-	model_logger.debug(json_config["labels"])
-	for l in json_config["labels"]:
-		cur_k, cur_v = find_index(key_to_value, l, json_config["labels"][l])
-		json_config["labelKeyValue"][cur_k] = cur_v
-	del json_config["labels"]
-	model_logger.debug("Replcaed labels:")
-	model_logger.debug(json_config["labelKeyValue"])
 
 # A pre-processor to process all the labels, converting each keys (including built-ins) into unique number, and all values for each key 
 # would be assign a unique numbers (but don't need to be unique across keys). For now, we assume we our json file already got this post-processing result.
 # Note that some labels can be shared across all objects (i.e. nodes, pods), some are only used for a particular object. 
 # In our context, the labelKeyValue will consider all the labels, no matter it's shared across object or not. If some labels aren't defined in some objects, we will just give it a 0.
 def process_labels(json_config):
-	key_to_value = {}
+    key_to_value = {}
 
-	# Need to process three things: 1. labels in nodes, 2. labels in podTemplates for pods, 3. topologyKey and labels in topoSpreadConstraints
-	for o in [json_config["setup"]["nodes"], json_config["setup"]["podTemplates"]]:
-		for e in o:
-			for l in e["labels"]:
-				if l not in key_to_value:
-					key_to_value[l] = set()
-				key_to_value[l].add(e["labels"][l])
+    # Need to process three things: 1. labels in nodes, 2. labels in pods, 3. topologyKey and labels in topoSpreadConstraints
+    for o in [json_config["setup"]["nodes"], json_config["setup"]["podTemplates"], json_config["setup"]["pods"]]:
+        for e in o:
+            for l in e["labels"]:
+                if l not in key_to_value:
+                    key_to_value[l] = set()
+                key_to_value[l].add(e["labels"][l])
 
-			if "numTopoSpreadConstraints" in e:
-				for i in range(0, int(e["numTopoSpreadConstraints"])):
-					topo_key = e["topoSpreadConstraints"][i]["topologyKey"]
-					if topo_key not in key_to_value:
-						key_to_value[topo_key] = set()
-					cur_topo = e["topoSpreadConstraints"][i]
-					for l in cur_topo["labels"]:
-						if l not in key_to_value:
-							key_to_value[l] = set()
-						key_to_value[l].add(cur_topo["labels"][l])
+            if "numTopoSpreadConstraints" in e:
+                for i in range(0, int(e["numTopoSpreadConstraints"])):
+                    topo_key = e["topoSpreadConstraints"][i]["topologyKey"]
+                    if topo_key not in key_to_value:
+                        key_to_value[topo_key] = set()
+                    cur_topo = e["topoSpreadConstraints"][i]
+                    for l in cur_topo["labels"]:
+                        if l not in key_to_value:
+                            key_to_value[l] = set()
+                        key_to_value[l].add(cur_topo["labels"][l])
 
-	model_logger.debug(key_to_value)
-	max_label = len(key_to_value)
-	max_value = 0
-	for k in key_to_value:
-		if len(key_to_value[k]) > max_value:
-			max_value = len(key_to_value[k])
+    model_logger.debug(key_to_value)
+    max_label = len(key_to_value)
+    max_value = 0
+    for k in key_to_value:
+        if len(key_to_value[k]) > max_value:
+            max_value = len(key_to_value[k])
 
-	#print(max_label, max_value, key_to_value)
+    #print(max_label, max_value, key_to_value)
 
-	for k in key_to_value:
-		key_to_value[k] = list(key_to_value[k])
-	key_to_value = list(key_to_value.items())
-	model_logger.debug(key_to_value)
+    for k in key_to_value:
+        key_to_value[k] = list(key_to_value[k])
+    key_to_value = list(key_to_value.items())
+    model_logger.debug(key_to_value)
 
-	for o in json_config["setup"]["nodes"]:
-		replacing_labels(o, key_to_value)
+    for o in json_config["setup"]["nodes"]:
+        replacing_labels(o, key_to_value)
 
-	for o in json_config["setup"]["podTemplates"]:
-		replacing_labels(o, key_to_value)
+    for o in json_config["setup"]["pods"]:
+        replacing_labels(o, key_to_value)
 
-		if "numTopoSpreadConstraints" in e:
-			# processing this in a differnt way, because the label keys could be the same
-			for i in range(0, int(o["numTopoSpreadConstraints"])):
-				cur_topo = o["topoSpreadConstraints"][i]
-				model_logger.debug("Original topo:", cur_topo)
-				cur_topo["topologyKey"] = find_key(key_to_value, cur_topo["topologyKey"])
-				cur_topo["numMatchedLabel"] = len(cur_topo["labels"])
-				cur_topo["labelKey"] = []
-				cur_topo["labelValue"] = []
-				for l in cur_topo["labels"]:
-					cur_k, cur_v = find_index(key_to_value, l, cur_topo["labels"][l])
-					cur_topo["labelKey"].append(cur_k)
-					cur_topo["labelValue"].append(cur_v)
-				del cur_topo["labels"]
-				model_logger.debug("Modified topo:", cur_topo)
+    for o in json_config["setup"]["podTemplates"]:
+        if "numTopoSpreadConstraints" in e:
+            # processing this in a differnt way, because the label keys could be the same
+            for i in range(0, int(o["numTopoSpreadConstraints"])):
+                cur_topo = o["topoSpreadConstraints"][i]
+                model_logger.debug("Original topo:", cur_topo)
+                cur_topo["topologyKey"] = find_key(key_to_value, cur_topo["topologyKey"])
+                cur_topo["numMatchedLabel"] = len(cur_topo["labels"])
+                cur_topo["labelKey"] = []
+                cur_topo["labelValue"] = []
+                for l in cur_topo["labels"]:
+                    cur_k, cur_v = find_index(key_to_value, l, cur_topo["labels"][l])
+                    cur_topo["labelKey"].append(cur_k)
+                    cur_topo["labelValue"].append(cur_v)
+                del cur_topo["labels"]
+                model_logger.debug("Modified topo:", cur_topo)
 
-	#print(json_config["setup"]["nodes"])
-	#print(json_config["setup"]["podTemplates"])
+    #print(json_config["setup"]["nodes"])
+    #print(json_config["setup"]["podTemplates"])
 
-	return max_label, max_value
-	
+    return max_label, max_value
+
+def find_index(key_to_value, l, v):
+    for i in range(0, len(key_to_value)):
+        if l in key_to_value[i]:
+            for j in range(0, len(key_to_value[i][1])):
+                if v == key_to_value[i][1][j]:
+                    model_logger.debug("Converted: {" + str(l) + ", " + str(v) + "} : " + str(i) + ", " +str(j))
+                    return i, j
+
+def find_key(key_to_value, l):
+    for i in range(0, len(key_to_value)):
+        if l in key_to_value[i]:
+            return i
+
+def replacing_labels(json_config, key_to_value):
+    json_config["labelKeyValue"] = [-1 for i in range(len(key_to_value))]
+
+    model_logger.debug("Initilized labelKeyValue: ")
+    model_logger.debug(json_config["labelKeyValue"])
+
+    model_logger.debug("Original labels:")
+    model_logger.debug(json_config["labels"])
+    for l in json_config["labels"]:
+        cur_k, cur_v = find_index(key_to_value, l, json_config["labels"][l])
+        json_config["labelKeyValue"][cur_k] = cur_v
+    del json_config["labels"]
+    model_logger.debug("Replcaed labels:")
+    model_logger.debug(json_config["labelKeyValue"])
+
 
 def generate_init_auto(cur_prefix, cur_json, s_init):
 	if isinstance(cur_json, int) or isinstance(cur_json, str):

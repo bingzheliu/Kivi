@@ -22,7 +22,7 @@ inline filtering()
 	taintTolerationFilter(podTemplates[pods[curPod].podTemplateId]);
 	nodeResourcesFitFilter(podTemplates[pods[curPod].podTemplateId]);
 	// this plugin needs to execute after nodeAffinity and taint as it uses their results.
-	podTopologySpreadFiltering(podTemplates[pods[curPod].podTemplateId]);
+	podTopologySpreadFiltering(curPod, podTemplates[pods[curPod].podTemplateId]);
 }
 
 inline scoring()

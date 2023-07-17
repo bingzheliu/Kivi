@@ -28,8 +28,8 @@ def verifier():
 
 		if args.original:
 			scale = args.scale		
-			case_name = case_name + "_" + scale	
-			json_config = case_generator(case_id, scale, args)
+			case_name = case_name + "_" + str(scale)
+			json_config = case_generator(case_id, scale, args.json_file_path)
 		else:
 			json_config = get_case_temeplate(case_id)
 

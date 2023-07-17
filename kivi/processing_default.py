@@ -9,13 +9,14 @@
 # TODO: putting all the default value definition into the same file (move the definiations in config.pml into this)
 
 from util import *
+import sys
 
 # A list of field in the typedef, need to be synced with dataType.pml. TODO: could auto-populate this.
 # TODO: adding the process on affinityrules, noschedulenodes, etc.
 elements_required = {"nodes" : ["id", "name", "cpu", "cpuLeft", "memory", "memLeft", "status", "numPod", "labels", "score", "curScore", "curAffinity", "curTaint", "maintained"], \
 					 "pods" : ["id", "loc", "status", "cpu", "memory", "workloadType", "workloadId", "podTemplateId", "score", "important", "curCpuIndex", "startTime"], \
 					 "d" : ["id", "name", "status", "replicaSets", "curVersion", "specReplicas", "replicas",  "maxSurge", "maxUnavailable", "strategy", "podTemplateId", "hpaSpec"], \
-					"podTemplates" : ["labels", "cpuRequested", "memRequested", "numRules", "nodeName", "numNoScheduleNode", "numPreferNoScheduleNode", "numTopoSpreadConstraints", \
+					"podTemplates" : ["cpuRequested", "memRequested", "numRules", "nodeName", "numNoScheduleNode", "numPreferNoScheduleNode", "numTopoSpreadConstraints", \
 									"topoSpreadConstraints", "maxCpuChange"],\
 					"deploymentTemplates" : ["id", "name", "maxSurge", "maxUnavailable", "specReplicas"]}
 

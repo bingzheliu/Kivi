@@ -18,23 +18,25 @@ def process_labels(json_config):
     key_to_value = {}
 
     # Need to process three things: 1. labels in nodes, 2. labels in pods, 3. topologyKey and labels in topoSpreadConstraints
-    for o in [json_config["setup"]["nodes"], json_config["setup"]["podTemplates"], json_config["setup"]["pods"]]:
+    for o in [json_config["setup"]["nodes"], json_config["setup"]["pods"]]:
         for e in o:
-            for l in e["labels"]:
-                if l not in key_to_value:
-                    key_to_value[l] = set()
-                key_to_value[l].add(e["labels"][l])
+            if "labels" in e:
+	            for l in e["labels"]:
+	                if l not in key_to_value:
+	                    key_to_value[l] = set()
+	                key_to_value[l].add(e["labels"][l])
 
-            if "numTopoSpreadConstraints" in e:
-                for i in range(0, int(e["numTopoSpreadConstraints"])):
-                    topo_key = e["topoSpreadConstraints"][i]["topologyKey"]
-                    if topo_key not in key_to_value:
-                        key_to_value[topo_key] = set()
-                    cur_topo = e["topoSpreadConstraints"][i]
-                    for l in cur_topo["labels"]:
-                        if l not in key_to_value:
-                            key_to_value[l] = set()
-                        key_to_value[l].add(cur_topo["labels"][l])
+    for e in json_config["setup"]["podTemplates"]:
+        if "numTopoSpreadConstraints" in e:
+            for i in range(0, int(e["numTopoSpreadConstraints"])):
+                topo_key = e["topoSpreadConstraints"][i]["topologyKey"]
+                if topo_key not in key_to_value:
+                    key_to_value[topo_key] = set()
+                cur_topo = e["topoSpreadConstraints"][i]
+                for l in cur_topo["labels"]:
+                    if l not in key_to_value:
+                        key_to_value[l] = set()
+                    key_to_value[l].add(cur_topo["labels"][l])
 
     model_logger.debug(key_to_value)
     max_label = len(key_to_value)
@@ -51,10 +53,12 @@ def process_labels(json_config):
     model_logger.debug(key_to_value)
 
     for o in json_config["setup"]["nodes"]:
-        replacing_labels(o, key_to_value)
+    	if "labels" in o:
+        	replacing_labels(o, key_to_value)
 
     for o in json_config["setup"]["pods"]:
-        replacing_labels(o, key_to_value)
+    	if "labels" in o:
+        	replacing_labels(o, key_to_value)
 
     for o in json_config["setup"]["podTemplates"]:
         if "numTopoSpreadConstraints" in e:

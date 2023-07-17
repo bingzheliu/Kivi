@@ -56,45 +56,22 @@ Spin options:
 ```
 
 ### Example
-Test on case S3. 
+Test on case [S3](documents/failure_cases.md#S3). 
 ```
-python3 kivi_runner.py -c s3
+python3 kivi_runner.py -o -c s3
 ```
 You can see the following minimal example demonstrating the traces that lead to the error `no feasiable node!`:
 ```
 1 failure(s) are found!
 -----Failure #1-----
 Minimal example:
-[*][Deployment]Too few replicas in replicaSet 4 need to create 1
-[*][Deployment]Adding a new pod 1 to deployment 1
-[*][Scheduler]Pod 1 is scheduled on node 1, with score 581
-[*][Kubelet]Created pod 1 on node 1, deployment 1 now have 1 replicas
-[*][CPU Change]node 1, now 51
-[*][HPA]Need to rescale, scale metric is 0, orgional is 1, now is 2.
-[*][Deployment]Too few replicas in replicaSet 4 need to create 1
-[*][Deployment]Adding a new pod 2 to deployment 1
-[*][Scheduler]Pod 2 is scheduled on node 2, with score 581
-[*][Kubelet]Created pod 2 on node 2, deployment 1 now have 2 replicas
-[*][HPA]Need to rescale, scale metric is 0, orgional is 2, now is 3.
-[*][Deployment]Too few replicas in replicaSet 4 need to create 1
-[*][Deployment]Adding a new pod 3 to deployment 1
-[*][Scheduler]Pod 3 is scheduled on node 3, with score 581
-[*][Kubelet]Created pod 3 on node 3, deployment 1 now have 3 replicas
-[*][HPA]Need to rescale, scale metric is 0, orgional is 3, now is 4.
-[*][Deployment]Too few replicas in replicaSet 4 need to create 1
-[*][Deployment]Adding a new pod 4 to deployment 1
-[*][Scheduler]Pod 4 is scheduled on node 1, with score 575
-[*][Kubelet]Created pod 4 on node 1, deployment 1 now have 4 replicas
-[*][HPA]Need to rescale, scale metric is 0, orgional is 4, now is 5.
-[*][Deployment]Too few replicas in replicaSet 4 need to create 1
-[*][Deployment]Adding a new pod 5 to deployment 1
-[*][Scheduler]Pod 5 is scheduled on node 2, with score 575
-[*][Kubelet]Created pod 5 on node 2, deployment 1 now have 5 replicas
-[*][HPA]Need to rescale, scale metric is 0, orgional is 5, now is 6.
-[*][Deployment]Too few replicas in replicaSet 4 need to create 1
-[*][Deployment]Adding a new pod 6 to deployment 1
-[*][Scheduler]No feasiable node!
+[*][CPU Change] CPU change 1 on pod 1, now 9, and node 1, now 15
+[*][HPA] Need to rescale, scale metric is 0, orgional is 5, now is 6.
+[*][Deployment] Too few replicas in replicaSet 11 need to create 1
+[*][Deployment] Adding a new pod 6 to deployment 1
+[*][Scheduler] No feasiable node!
 ```
+This shows a five-step example that lead to the issue: 1) CPU changes in a unit of 1 on pod 1; 2) HPA decides to scale up pod to 6; 3/4) deployment controller compares the specReplica and running replica, and creates 1 replica; 5) Scheduler does not found any feasiable node for this new pod. 
 
 ## Contact
 Bingzhe Liu (bzheliu at gmail.com)

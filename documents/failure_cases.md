@@ -4,7 +4,7 @@ This example is inspired by a [conflicting topology spread constraints example](
 
 ## Setup
 There are 3 nodes in this cluster. The nodes are labeled with two groups, `zone:Zone A` and `zone:Zone B`. 
-![S3](figures/s3.png). 
+<img src="figures/s3.png" width="50%" height = "50%">
 
 One deployment is applied to the cluster with a pod topology spread constraints are configured as follows. There are two constraints: the replicas should not skew more than 1 across all the nodes, and the replicas should not skew more than 1 across all the zones. If these constraints cannot meet, the replica cannot be scheduled. As shown in the above figure, these constraints are retained for 5 replicas. 
 ```

@@ -104,7 +104,7 @@ def verifier_operator(json_config, case_name, file_base, result_base_path, pml_b
 
 		if failure_type != "None":
 			failures.append((failure_type, result_log, failure_details, total_mem, elapsed_time))
-			logger.critical("Failure found at scale " + str_setup(s))
+			logger.critical("Failure found!")
 
 	return failures
 

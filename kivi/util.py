@@ -43,6 +43,8 @@ def setup_argparser(arg_parser):
     arg_parser.add_argument('-s', '--scale', type=int, default=3, help='Choose a scale if use -c and -o. Default: 3 nodes.')
     arg_parser.add_argument('-cn', "--case_non_violation", action='store_true', help='Deside if generate cases without violations if use -c. Default: False.')
 
+    other_parser = arg_parser.add_argument_group("Other runtime parameters")
+    other_parser.add_argument('-jf', '--json_file_path', type=str, help="the file path to dump the intermediate JSON file of cluster setup.")
 
 # first file logger
 logger = setup_logger('verifier_logger', logging.DEBUG)

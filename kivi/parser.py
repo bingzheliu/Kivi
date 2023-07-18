@@ -19,7 +19,8 @@ from util import *
 
 # Note:
 # 1. The metric server may have delays -- the CPU/memory usage of the pods/nodes may not be consistent with the actual usage. 
-
+# 2. About labels: the getpod does not have the labels information for pod template. So we won't store it if creating podTemplate from getpod. The getdeployment on the other hand does have labels for podTemplate. 
+#    When comparing difference between pod template, this will be considered and hence we may find one deployment have multiple pod template, which does not affect the result.
 
 # Left:
 # - 1. connect Deployment with replicasets and pods
@@ -277,6 +278,8 @@ def parse_getdeployment(json_config, json_input):
 		deployment["replicas"] = d["status"]["availableReplicas"]
 
 		podTemplate = parse_podTemplate(d["spec"]["template"]["spec"])
+		# The pod template defined in deployment has the labels
+		podTemplate["labels"] = d["spec"]["template"]["metadata"]["labels"]
 		index, json_config = add_podTemplate(podTemplate, json_config)
 		deployment["podTemplateId"] = index
 

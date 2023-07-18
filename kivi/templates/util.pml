@@ -101,16 +101,28 @@ inline printPodIds(replicaset)
 inline copyDeploymentInfoToPod(pod, curD)
 {
 	atomic{
-		// pod.status = 1;
-		pod.workloadType = 1;
-		pod.workloadId = curD;
-		pod.loc = 0;
-		pod.score = 0;
-		pod.cpu = podTemplates[d[curD].podTemplateId].cpuRequested;
-		pod.memory = podTemplates[d[curD].podTemplateId].memRequested;
-		pod.important = 0;
-		pod.podTemplateId = d[curD].podTemplateId;
-		pod.curCpuIndex = 0;
+		d_step{
+			// pod.status = 1;
+			pod.workloadType = 1;
+			pod.workloadId = curD;
+			pod.loc = 0;
+			pod.score = 0;
+			if 
+				:: podTemplates[d[curD].podTemplateId].maxCpuChange == 0 ->
+					pod.cpu = podTemplates[d[curD].podTemplateId].cpuRequested;
+				:: else->
+					pod.cpu = podTemplates[d[curD].podTemplateId].curCpuRequest[0]
+			fi;
+			// TBD: the memory may need also to have a change pattern. Assuming it's the request for now as we haven't model memory runtime behavior.
+			pod.memory = podTemplates[d[curD].podTemplateId].memRequested;
+			
+			pod.important = 0;
+			pod.podTemplateId = d[curD].podTemplateId;
+			pod.curCpuIndex = 0;
+			for(_m : 0 .. MAX_LABEL-1) {
+				pod.labelKeyValue[_m] = podTemplates[d[curD].podTemplateId].labelKeyValue[_m]
+			}
+		}
 	}
 }
 

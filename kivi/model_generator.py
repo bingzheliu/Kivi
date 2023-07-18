@@ -18,7 +18,7 @@ def process_labels(json_config):
     key_to_value = {}
 
     # Need to process three things: 1. labels in nodes, 2. labels in pods, 3. topologyKey and labels in topoSpreadConstraints
-    for o in [json_config["setup"]["nodes"], json_config["setup"]["pods"]]:
+    for o in [json_config["setup"]["nodes"], json_config["setup"]["pods"], json_config["setup"]["podTemplates"]]:
         for e in o:
             if "labels" in e:
 	            for l in e["labels"]:
@@ -52,11 +52,7 @@ def process_labels(json_config):
     key_to_value = list(key_to_value.items())
     model_logger.debug(key_to_value)
 
-    for o in json_config["setup"]["nodes"]:
-    	if "labels" in o:
-        	replacing_labels(o, key_to_value)
-
-    for o in json_config["setup"]["pods"]:
+    for o in [json_config["setup"]["nodes"], json_config["setup"]["pods"], json_config["setup"]["podTemplates"]]:
     	if "labels" in o:
         	replacing_labels(o, key_to_value)
 

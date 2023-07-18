@@ -33,6 +33,7 @@ proctype applyDeployment(short deploymentTemplateId)
 						d[i].maxSurge = deploymentTemplates[deploymentTemplateId].maxSurge
 						d[i].maxUnavailable = deploymentTemplates[deploymentTemplateId].maxUnavailable
 						d[i].strategy = deploymentTemplates[deploymentTemplateId].strategy 
+						d[i].podTemplateId = deploymentTemplates[deploymentTemplateId].podTemplateId
 						updateQueue(dcQueue, dcTail, dcIndex, i, MAX_DEP_QUEUE)	
 
 						break;

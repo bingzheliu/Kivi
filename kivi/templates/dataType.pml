@@ -146,7 +146,7 @@ typedef topoSpreadConType {
 // TODO: check on if the label key used in nodes can also be used in pods
 typedef podTemplateType {
 	/*--- metadata ---*/
-	// Nothing related 
+	short labelKeyValue[MAX_LABEL];
 
 	/*--- podSpec ---*/
 	// https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#PodSpec
@@ -178,6 +178,8 @@ typedef podTemplateType {
 	byte numTopoSpreadConstraints;
 	topoSpreadConType topoSpreadConstraints[MAX_TOPO_CON];
 
+	// If defined, the timeCpuRequest must be more than 0 to define the initial behavior of CPU
+	// curCpuRequest represent the current CPU usage of the pod; timeCpuRequest represent until when this usage will last. 
 	byte maxCpuChange;
 	short curCpuRequest[MAX_CPU_PATTERN];
 	byte timeCpuRequest[MAX_CPU_PATTERN];
@@ -197,7 +199,7 @@ typedef podTemplateType {
 typedef deploymentType {
 	// We use id as an equivalence as name
 	short id;
-	short name;
+	short name;+
 	// TODO: decide if we need status or if we need to delete it, status includes progressing, available.
 	// short statusType; 
 	bit status;
@@ -233,10 +235,15 @@ typedef deploymentType {
 	// short maxRetries;
 	// bit paused;
 
-
-	// Need to convert label and namespace from string into an ID 
-	// TODO: improve how we treat selector later
 	// short label;
+	// Omitting labels notes
+	// A deployment yaml can contains three places for labels: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#creating-a-deployment
+	// 1. metadata.labels, not fully sure how this connects with pods
+	// 2. spec.selector, which demonstrates which pods will be selected for the deployment
+	// 3. spec.temlate.metadata, which demonstrate the labels that will be created for the pods. 
+	// We are omiting 1 and 2 for now, as we don't find the usage for 1 in our current model, and 2 has been realized in a more direct/simplified way -- we directly store deployment ID in pods and also the reverse.	 
+	// We can improve how we treat selector later if needed.
+
 	// short namespace;
 	// short selector;
 }

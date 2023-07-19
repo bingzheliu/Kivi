@@ -14,10 +14,10 @@ typedef nodeType {
 	short id;
 	short name;
 
-	short cpu;
-	short cpuLeft;
-	short memory;
-	short memLeft;
+	int cpu;
+	int cpuLeft;
+	int memory;
+	int memLeft;
 
 	// 0: false, 1: ready, 2: unhealthy
 	unsigned status : 3;
@@ -43,8 +43,10 @@ typedef nodeType {
 // But for now, it's OK to assume that is created by other resources: https://kubernetes.io/docs/concepts/workloads/pods/#working-with-pods
 typedef podType {
 	short id;
+	short name;
 	// No more than 255 nodes
 	byte loc;
+
 
 	// label is per pod basis
 	short labelKeyValue[MAX_LABEL];
@@ -55,8 +57,8 @@ typedef podType {
 	unsigned status : 3;
 
 	// resource
-	short cpu;
-	short memory;
+	int cpu;
+	int memory;
 
 	/*----internal----*/
 	// 0: pod, 1: deployment
@@ -153,8 +155,8 @@ typedef podTemplateType {
 
 	// In fact, the requested CPU and memory will be defined for each container in the pod, but we simplified them into one resources for now, and may pre-process the container info in the wrapper functions. 
 	// https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#resources
-	short cpuRequested;
-	short memRequested;
+	int cpuRequested;
+	int memRequested;
 
 	// For scheduler: https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#scheduling
 	//// node affinity, https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
@@ -181,7 +183,7 @@ typedef podTemplateType {
 	// If defined, the timeCpuRequest must be more than 0 to define the initial behavior of CPU
 	// curCpuRequest represent the current CPU usage of the pod; timeCpuRequest represent until when this usage will last. 
 	byte maxCpuChange;
-	short curCpuRequest[MAX_CPU_PATTERN];
+	int curCpuRequest[MAX_CPU_PATTERN];
 	byte timeCpuRequest[MAX_CPU_PATTERN];
 
 	/* 
@@ -199,7 +201,7 @@ typedef podTemplateType {
 typedef deploymentType {
 	// We use id as an equivalence as name
 	short id;
-	short name;+
+	short name;
 	// TODO: decide if we need status or if we need to delete it, status includes progressing, available.
 	// short statusType; 
 	bit status;

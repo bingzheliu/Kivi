@@ -81,3 +81,5 @@
 #define MAX_NUM_DESPLUGINS 6
 #define MAX_NUM_BALPLUGINS 4
 #define MAX_NUM_EVICPLUGINS 1
+// TBC for descheduler test
+#define DES_PROFILE_NUM 1

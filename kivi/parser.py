@@ -25,7 +25,7 @@ from util import *
 # Left:
 # - 1. connect Deployment with replicasets and pods
 # - 2. translate the str into numbers for all the names
-# * 3. reprocess labels -- labels need to be go with pods rather than podTemplate; need to take a loop at how deployment-level labels work
+# - 3. reprocess labels -- labels need to be go with pods rather than podTemplate; need to take a loop at how deployment-level labels work
 # 4. Process usercommand
 # 5. Connect parser with model_generator
 
@@ -435,8 +435,25 @@ def cpu_converter(s):
 	else:
 		return int(s)*1000
 
+# TODO: parse various intents, and also the command for defining the bundary for smallest scale algorithm
 def parse_user_input(json_config, f_dir, files):
+	for f in files:
+		if "intent" in f:
+			with open(f_dir + "/" + f, "r") as file:
+				json_config = parse_user_intents(json_config, file.read())
+
+		if "user_command" in f:
+			with open(f_dir + "/" + f, "r") as file:
+				json_config = parse_user_command(json_config, file.read())
+
 	return json_config, None 
+
+def parse_user_intents(json_config, f_dir):
+	return json_config
+
+def parse_user_command(json_config, f_dir):
+	return json_config
+
 
 def parse_yaml(f_yaml, json_config):
 	if f_yaml["kind"] == "Deployment":

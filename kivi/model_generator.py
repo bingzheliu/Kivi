@@ -53,11 +53,12 @@ def process_labels(json_config):
     model_logger.debug(key_to_value)
 
     for o in [json_config["setup"]["nodes"], json_config["setup"]["pods"], json_config["setup"]["podTemplates"]]:
-    	if "labels" in o:
-        	replacing_labels(o, key_to_value)
+        for e in o:
+            if "labels" in e:
+                replacing_labels(e, key_to_value)
 
     for o in json_config["setup"]["podTemplates"]:
-        if "numTopoSpreadConstraints" in e:
+        if "numTopoSpreadConstraints" in o:
             # processing this in a differnt way, because the label keys could be the same
             for i in range(0, int(o["numTopoSpreadConstraints"])):
                 cur_topo = o["topoSpreadConstraints"][i]

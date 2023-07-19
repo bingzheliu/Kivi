@@ -1,0 +1,7 @@
+[
+	{
+		"object" : "all",
+		"objectType" : "pods",
+		"target" : "scheduable"
+	}
+]

@@ -52,6 +52,9 @@ def parser(f_dir):
 	else:
 		json_config, user_defined_fss = parse_user_input(json_config, f_dir+"/user_input", os.listdir(f_dir + "/user_input"))
 
+	# We need to add spare objects to the setup in order for the model to add new pods and nodes.
+	json_config = add_spare_resource(json_config)
+
 	json_config = convert_all_to_number(json_config)
 
 	return json_config, user_defined_fss
@@ -122,6 +125,18 @@ def parse_setup(json_config, f_dir, files):
 
 	return json_config
 
+# TODO: this may need to be done by verifier incrementally. 
+def add_spare_resource(json_config):
+	for d in json_config["setup"]["d"]:
+		if "hpaSpec" in d:
+			max_replicas = d["hpaSpec"]["maxReplicas"]
+			if max_replicas > d["replicas"]:
+				for i in range(0, max_replicas - d["replicas"]):
+					json_config["setup"]["pods"].append({"status" : 0})
+
+	# Will need to add user-defined numebr of pods here.
+
+	return json_config
 
 def convert_all_to_number(json_config):
 	# The label process is left for model_generator, as the label is specially treated to improve model efficiency. 
@@ -131,7 +146,7 @@ def convert_all_to_number(json_config):
 	for p in json_config["setup"]["pods"]:
 		for i in range(0, len(json_config["setup"]["nodes"])):
 			n_name = json_config["setup"]["nodes"][i]["name"]
-			if n_name == p["loc"]:
+			if "loc" in p and n_name == p["loc"]:
 				p["loc"] = i+1
 				break
 

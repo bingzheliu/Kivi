@@ -31,3 +31,12 @@ kubectl autoscale deployment php-apache --cpu-percent=50 --min=1 --max=6
 When the CPU utilization of pods go up to more than 50% requested, which may be due to request increases, the HPA can start to scale up the pods to the maximum of 6 replicas. When such 6th pod is created by the deployment controller, the scheduler need to place such pod onto the cluster; however, the pod cannot be placed on Node 1 or Node 2 as it will violate the Zone constraint, and the pod cannot be placed on Node 3 as it will violate the Node constraint. 
 
 This will result in the situation that the pod cannot be scheduled and stays in the pending phase. The service capacity can be affected if new pods cannot be added to the application.
+
+# H1
+TBD
+# H2
+TBD
+# S4
+TBD
+# S6
+TBD

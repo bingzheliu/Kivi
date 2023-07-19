@@ -77,7 +77,7 @@ Minimal example:
 This shows a five-step example that lead to the issue: 1) CPU changes in a unit of 1 on pod 1; 2) HPA decides to scale up pod to 6; 3/4) deployment controller compares the specReplica and running replica, and creates 1 replica; 5) Scheduler does not found any feasiable node for this new pod. 
 
 ### Verifying runtime logs
-We also implemented a (preliminary) parser to parse the real logs and yamls. We have collected the logs (e.g., `kubectl get deployments`) from Kubernetes clusters that reproduced the aforementioned [S3](documents/failure_cases.md#S3) failure cases, which are stored in `examples/s3` folder. To try to use the parser, run it with `-p` to enter the path of logs and yamls. 
+We also implemented a (preliminary) parser to parse the real logs and yamls. We have collected the logs (e.g., `kubectl get deployments`) from Kubernetes clusters that reproduced the aforementioned [S3](documents/failure_cases.md#S3) failure cases, which are stored in `examples/s3` folder. To verify the real clusters, run it with `-p` to enter the path of logs and yamls. 
 ```
 python3 kivi_runner.py -o -p ../examples/s3/from_five_pods
 ```

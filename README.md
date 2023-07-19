@@ -83,6 +83,11 @@ python3 kivi_runner.py -o -p ../examples/s3/from_five_pods
 ```
 You will see a similar output that demonstrate the same minimal example.  
 
+## Documentation
+Please find more documents in `documents/`, including an [overview of the system architecture](documents/sys_arch.md). 
+
+It is a work-in-progress. 
+
 ## Contact
 Bingzhe Liu (bzheliu at gmail.com)
 

@@ -180,11 +180,12 @@ typedef podTemplateType {
 	byte numTopoSpreadConstraints;
 	topoSpreadConType topoSpreadConstraints[MAX_TOPO_CON];
 
-	// If defined, the timeCpuRequest must be more than 0 to define the initial behavior of CPU
-	// curCpuRequest represent the current CPU usage of the pod; timeCpuRequest represent until when this usage will last. 
+	// This is optional. But be aware, if not defined, the initial CPU value will be set to the requested CPU, which may not be user's expectation. 
+	// If defined, the timeCpuRequest[0] must be 0 to define the initial behavior of CPU. This field will be mostly used when create pods in runtime.
+	// curCpuRequest represent the current CPU usage of the pod; timeCpuRequest represent until when this usage will start. 
 	byte maxCpuChange;
 	int curCpuRequest[MAX_CPU_PATTERN];
-	byte timeCpuRequest[MAX_CPU_PATTERN];
+	short timeCpuRequest[MAX_CPU_PATTERN];
 
 	/* 
 	   Not implemented.
@@ -199,7 +200,7 @@ typedef podTemplateType {
 }
 
 typedef deploymentType {
-	// We use id as an equivalence as name
+	// We use id as an equivalence as name.
 	short id;
 	short name;
 	// TODO: decide if we need status or if we need to delete it, status includes progressing, available.
@@ -222,6 +223,7 @@ typedef deploymentType {
 	// 0 is recreate, 1 is rollingupdates
 	short strategy;
 
+	// must be defined for any new deployment
 	byte podTemplateId;
 
 	/*-----For HPA-----*/

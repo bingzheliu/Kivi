@@ -117,8 +117,8 @@ def generate_case_json(json_config, cur_setup):
 		for j in range(0, cur_setup["nodes"][i]):
 			cur_node = deepcopy(json_config["userDefined"]["nodesTypes"][i]["template"])
 			cur_node["id"] = cur_id
-			if "name" not in cur_node:
-				cur_node["name"] = cur_id
+			#if "name" not in cur_node:
+			cur_node["name"] = cur_id
 			cur_id += 1
 
 			new_json_config["setup"]["nodes"].append(cur_node)
@@ -265,7 +265,7 @@ def generate_list_setup(json_config):
 	if json_config["userDefined"]["dScaleType"] == "proportion":
 		max_dep = get_max_base_propotions(json_config, "d")
 
-	print(max_node, max_dep)
+#	print(max_node, max_dep)
 
 	if max_node > 0 and max_dep > 0:
 		for i in range(1, max_node+1):
@@ -327,12 +327,12 @@ def get_case_temeplate(case_id):
 		
 def finding_smallest_scale(json_config, pml_base_path, sort_favor="nodes"):
 	all_setup = generate_list_setup(json_config)
-	print(all_setup)
+#	print(all_setup)
 	if sort_favor == "nodes":
 		all_setup.sort(key = sort_setup_node)
 	if sort_favor == "all":
 		all_setup.sort(key = sort_setup_all)
-	print(all_setup)
+#	print(all_setup)
 
 	count = 0
 	for s in all_setup:

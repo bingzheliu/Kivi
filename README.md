@@ -59,7 +59,7 @@ Spin options:
 ### Verifying pre-defined failure cases
 We have prepared a few [failure cases](documents/failure_cases.md) for users to understand our system. 
 
-To test on case [S3](documents/failure_cases.md#S3), you could run it with `-c` to select such case to verify. 
+To test on case [S3](documents/failure_cases.md#S3), you could run it with `-c` to select such case to verify. Other available pre-defined cases are `h1`, `h2`, `s4` and `s6`.
 ```
 python3 kivi_runner.py -o -c s3
 ```

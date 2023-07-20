@@ -199,10 +199,12 @@ def generate_H1_template(num_node):
 	pt["labels"] = {"name" : "app"}
 	pt["cpuRequested"] = 8
 	pt["memRequested"] = 8
-	pt["maxCpuChange"] = 1
+	pt["maxCpuChange"] = 2
 	pt["curCpuRequest"] = []
+	pt["curCpuRequest"].append(8)
 	pt["curCpuRequest"].append(3)
 	pt["timeCpuRequest"] = []
+	pt["timeCpuRequest"].append(0)
 	pt["timeCpuRequest"].append(60)
 
 	#pt["numTopoSpreadConstraints"] = 0
@@ -320,10 +322,12 @@ def generate_H1(num_node, non_violation=False):
 	pt["labels"] = {"name" : "app"}
 	pt["cpuRequested"] = 8
 	pt["memRequested"] = 8
-	pt["maxCpuChange"] = 1
+	pt["maxCpuChange"] = 2
 	pt["curCpuRequest"] = []
+	pt["curCpuRequest"].append(8)
 	pt["curCpuRequest"].append(3)
 	pt["timeCpuRequest"] = []
+	pt["timeCpuRequest"].append(0)
 	pt["timeCpuRequest"].append(60)
 
 	#pt["numTopoSpreadConstraints"] = 0
@@ -735,7 +739,7 @@ def generate_H2(num_node, non_violation=False):
 	dt = {}
 	dt["id"] = cur_id
 	dt["name"] = d_id
-	dt["specReplicas"] = num_node
+	#dt["specReplicas"] = num_node
 	cur_id += 1
 	case_config["setup"]["deploymentTemplates"].append(dt)
 
@@ -1185,7 +1189,7 @@ def case_generator(case_id, scale, filename=None):
 	from_template = False
 	if int(scale) == 0:
 		from_template = True
-	case_fun = {False: {"s4": generate_S4, "s3" : generate_S3, "h2": generate_H2, "s6" : generate_S6_model_fidelity, "h1" : generate_H1}, \
+	case_fun = {False: {"s4": generate_S4, "s3" : generate_S3, "h2": generate_H2, "s6" : generate_S6, "h1" : generate_H1}, \
 				True: {"h1": generate_H1_template, "s3":generate_S3_template}}
 
 	json_config = None

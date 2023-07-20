@@ -113,12 +113,15 @@ inline copyDeploymentInfoToPod(pod, curD)
 				:: else->
 					pod.cpu = podTemplates[d[curD].podTemplateId].curCpuRequest[0]
 			fi;
+			// The initial CPU value has been used. 
+			pod.curCpuIndex = 1;
+
 			// TBD: the memory may need also to have a change pattern. Assuming it's the request for now as we haven't model memory runtime behavior.
 			pod.memory = podTemplates[d[curD].podTemplateId].memRequested;
 
 			pod.important = 0;
 			pod.podTemplateId = d[curD].podTemplateId;
-			pod.curCpuIndex = 0;
+			
 			short _m = 0;
 			for(_m : 0 .. MAX_LABEL-1) {
 				pod.labelKeyValue[_m] = podTemplates[d[curD].podTemplateId].labelKeyValue[_m]

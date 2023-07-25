@@ -1,10 +1,14 @@
 // descheduler
+/*
+	Note:
+	1. According to their design doc, the order of the plugins depends on how user define them in their yaml config files.
+*/
 
 
 proctype descheduler()
 {
 	short local_last_time = 0;
-	short i = 0, j = 0;
+	short i = 0, j = 0, ii = 0, jj = 0;
 
 	// Not sure if we need to define a queue for descheduler -- it just run periodically
 endDes:	do
@@ -29,13 +33,12 @@ endDes:	do
 
 						// Go through the profiles 
 						// Run deschedule first
-						i = 0;
-						for (i : 0 .. DES_PROFILE_NUM-1) {
-							j = 0;
-							for (j : 0 .. deschedulerProfiles[i].numDeschedulePlugins ) {
+						for (ii : 0 .. DES_PROFILE_NUM-1) {
+							jj = 0;
+							for (jj : 0 .. deschedulerProfiles[ii].numDeschedulePlugins ) {
 								// TBD: some process for the evicted pods
 								if 
-									:: deschedulerProfiles[i].deschedulePlugins[j] == 1 ->
+									:: deschedulerProfiles[ii].deschedulePlugins[jj] == 1 ->
 										removePodsViolatingNodeAffinity()
 									// insert more types of plugins here
 									:: else->
@@ -45,15 +48,14 @@ endDes:	do
 						}
 
 						// Run balance later
-						i = 0;
-						for (i : 0 .. DES_PROFILE_NUM-1) {
-							j = 0;
-							for (j : 0 .. deschedulerProfiles[i].numBalancePlugins ) {
+						for (ii : 0 .. DES_PROFILE_NUM-1) {
+							jj = 0;
+							for (jj : 0 .. deschedulerProfiles[ii].numBalancePlugins ) {
 								// TBD: some process for the evicted pods
 								if 
-									:: deschedulerProfiles[i].balancePlugins[j] == 1 ->
+									:: deschedulerProfiles[ii].balancePlugins[jj] == 1 ->
 										removeDuplicates()
-									:: deschedulerProfiles[i].balancePlugins[j] == 2 ->
+									:: deschedulerProfiles[ii].balancePlugins[jj] == 2 ->
 										removePodsViolatingTopologySpreadConstraint()
 									// insert more types of plugins here
 									:: else->
@@ -62,9 +64,10 @@ endDes:	do
 							}
 						}
 
-
 des1:					i = 0;
 						j = 0;
+						ii = 0;
+						jj = 0;
 				}
 			}
 	od;

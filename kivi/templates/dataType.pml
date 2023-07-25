@@ -44,6 +44,7 @@ typedef nodeType {
 typedef podType {
 	short id;
 	short name;
+	byte namespace;
 	// No more than 255 nodes
 	byte loc;
 
@@ -203,6 +204,7 @@ typedef deploymentType {
 	// We use id as an equivalence as name.
 	short id;
 	short name;
+	byte namespace;
 	// TODO: decide if we need status or if we need to delete it, status includes progressing, available.
 	// short statusType; 
 	bit status;
@@ -252,6 +254,7 @@ typedef deploymentType {
 	// short selector;
 }
 
+//The plugins will be executed in the order of their array index
 typedef deschedulerProfileType {
 	// removePodsViolatingNodeAffinity: 1
 	short numDeschedulePlugins;
@@ -266,3 +269,12 @@ typedef deschedulerProfileType {
 	// byte evictorPlugins[MAX_NUM_EVICPLUGINS];
 }
 
+typedef nodePodsArray {
+	bit pods[POD_NUM];
+	short numPods;
+}
+
+typedef deschedulerMatchingArray {
+	nodePodsArray nodePods[NODE_NUM];
+	bit exist;
+}

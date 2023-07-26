@@ -77,6 +77,8 @@ typedef podType {
 	// used for invariants
 	bit important;
 
+	bit critical;
+
 	// CPU pattern change index
 	byte curCpuIndex;
 
@@ -267,6 +269,9 @@ typedef deschedulerProfileType {
 	// We only support the default evictor for now. If user have multiple evictor, we'll need the following structure.
 	// short numEvictorPlugins;
 	// byte evictorPlugins[MAX_NUM_EVICPLUGINS];
+
+	// default false
+	bit evictSystemCriticalPods;
 }
 
 typedef nodePodsArray {

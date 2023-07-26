@@ -3,7 +3,7 @@
 	Note:
 	1. According to their design doc, the order of the plugins depends on how user define them in their yaml config files.
 */
-
+#include "deschedulerPlugins.pml"
 
 proctype descheduler()
 {
@@ -31,6 +31,8 @@ endDes:	do
 							:: else->
 						fi;
 
+						short nodePodCount[NODE_NUM+1];
+						short namespacePodCount[NAMESPACE_NUM+1];
 						// Go through the profiles 
 						// Run deschedule first
 						for (ii : 0 .. DES_PROFILE_NUM-1) {

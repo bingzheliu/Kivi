@@ -5,9 +5,70 @@
 	2. They only consider the ready nodes.  
 */
 
-inline evict()
+
+// There are eviction plugins (besides the eviction itself), which defines the default prefilter/filter, and will be initilized in each New() in each plugin, 
+// wrapped by WrapFilterFuncs that essentially just go through filter one-by-one (filter are ANDed), and then called when run ListPodsOnANode in plugin, 
+// where the actual caller func impl is in BuildGetPodsAssignedToNodeFunc.
+
+/*
+	They filter according to the following:
+	1. In ListPodsOnANode, Scceeded and failed pods are not considered because they don't occupy any resource. So pending is considered. 
+	2. default Filter plugin: 
+		a. HaveEvictAnnotation, directly incldue the pod without checking others.
+		b. DaemonSet, mirror, static, and terminating pods are excluded. 
+		c. Check on some default constraints, including the following:
+			1) EvictFailedBarePods, true will evict the pods without owner, default is false.
+			2) EvictSystemCriticalPods, true will evict system critical pods, default is false.
+				can further set the PriorityThreshold for defining the "criticial", default is not set, omitting now. 
+			3) EvictLocalStoragePods, default false
+			4) IgnorePvcPods, default false
+			5) LabelSelector, if set, the unmatched pod will be excluded, default null.
+			More details in plugins/defaultevictor/defaults.go and https://github.com/kubernetes-sigs/descheduler#evictor-plugin-configuration-default-evictor 
+			Note that these args are configed per profile. 
+	3. In preEvictionFilter, if defaultEvictorArgs.NodeFit is ture, it essentially checks if each pod can be able to fit with any other nodes 
+
+	They have a WrapFilterFuncs to put all the above func together (In particular, in New() of the plugin). We combine all the above into filter(). 
+*/
+// filter the pod j on node i.
+inline filter(i, j)
 {
-	
+	// For 1 and 2.b, we now only modeled terminating pod, and hence only check on pod status.
+	if 
+		:: pods[j].loc == i && pods[j].status != 0 ->
+			flag = 0;
+			goto DF1;
+		:: else->;
+	fi;
+	// For 2.a, skipping for now.
+
+	// For 2.c, only model 2), but can easily append them here later. 
+	if 
+		:: pods[j].critical && deschedulerProfiles[ii].evictSystemCriticalPods == 0 ->
+			flag = 0;
+			goto DF1;
+		:: else->;
+	fi;
+	// for 3, the defaultEvictorArgs.NodeFit default is false. Omtting for now.
+
+DF1: skip
+}
+
+// Evictor is used across all the plugins in all the profiles. It is defined under descheduler/evictions
+inline evictPod(k)
+{
+	// check maxPodsToEvictPerNode and maxPodsToEvictPerNamespace(Omitting for now)
+	if 
+		:: (nodePodCount[pods[k].loc] + 1 > maxNoOfPodsToEvictPerNode) || (namespacePodCount[pods[k].namespace] + 1 > maxNoOfPodsToEvictPerNamespace) ->
+			flag = 1
+		:: else ->
+			// call into kubernetes client to evict the pod. We use the same way that deployment evict the pods. 
+			d[pods[k].workloadId].replicasInDeletion ++;
+			pods[k].status = 3;
+			updateQueue(kblQueue, kblTail, kblIndex, k, MAX_KUBELET_QUEUE)
+
+			nodePodCount[pods[k].loc] += 1
+			namespacePodCount[pods[k].namespace] +=1
+	fi;
 }
 
 inline removePodsViolatingNodeAffinity()
@@ -54,7 +115,7 @@ inline examTargetNodes(q)
 		// Code: https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/component-helpers/scheduling/corev1/helpers.go#L39
 		// The matching code: https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/component-helpers/scheduling/corev1/nodeaffinity/nodeaffinity.go#L84
 		// Because looks like they are the same as scheduler, I am just using the same logic for now. 
-		bit flag = 1;
+		flag = 1;
 		bit matched = 0;
 		for (n : 0 .. podSpec.numRules - 1) {
 			if
@@ -106,6 +167,7 @@ inline removeDuplicates()
 
 	short ownerKeyOccurence[DEP_NUM];
 	deschedulerMatchingArray duplicatePods;
+	bit flag = 0;
 
 	for (i : 1 .. NODE_NUM ) {
 		if 
@@ -119,9 +181,10 @@ inline removeDuplicates()
 		bit duplicateKeysMap[DEP_NUM];
 
 		for (j : 1 .. POD_NUM) {
+			flag = 1;
+			filter(i, j)
 			if 
-				// According to podUtil.ListPodsOnANode, succeeded and failed pods are not considered because they don't occupy any resource. So pending is considered. 
-				:: pods[j].loc == i && pods[j].status != 0 ->
+				:: flag == 1 ->
 					ownerKeyOccurence[pods[j].workloadId] = ownerKeyOccurence[pods[j].workloadId] + 1;
 					if 
 						:: duplicateKeysMap[pods[j].workloadId] == 1 ->
@@ -145,12 +208,14 @@ DRMD1:	skip;
 					:: targetNodes < 2 -> 
 						printf("[**][DeScheduler] Less than two feasible nodes for duplicates to land, skipping eviction\n")
 					:: else ->
+						short upperAvg;
+						// estimate: this should be ceil, so we just add 1; meaning if it's exact equal to N, then it would become N+1
+						// upperAvg := int(math.Ceil(float64(ownerKeyOccurence[ownerKey]) / float64(len(targetNodes))))
+						upperAvg = ownerKeyOccurence[i] / targetNodes + 1
 						for (j : 1 .. NODE_NUM ) {
 							if
-								// estimate: this should be ceil, so we just add 1; meaning if it's exact equal to N, then it would become N+1
-								// upperAvg := int(math.Ceil(float64(ownerKeyOccurence[ownerKey]) / float64(len(targetNodes))))
 								// only proceed if if len(pods)+1 > upperAvg
-								:: (duplicatePods[i].nodePods[j].numPods > 0) && ((duplicatePods[i].nodePods[j].numPods + 1) > (ownerKeyOccurence[i] / targetNodes + 1)) ->
+								:: (duplicatePods[i].nodePods[j].numPods > 0) && ((duplicatePods[i].nodePods[j].numPods + 1) > upperAvg ) ->
 									short k = 0, count = 0;
 									for (k : 1 .. POD_NUM) {
 										if 
@@ -158,7 +223,15 @@ DRMD1:	skip;
 											:: count < duplicatePods[i].nodePods[j].numPods - (ownerKeyOccurence[i] / targetNodes) ->
 												if 
 													:: duplicatePods[i].nodePods[j].pods[k] == 1 ->
-														evict(k)
+														flag = 0
+														// Imp in evictions/evictions.go/EvictPod
+														evictPod(k)
+														// if NodeLimitExceeded is true, should change to another node. 
+														if
+															:: flag == 1 ->
+																goto DRMD3;
+															:: else->;
+														fi;
 														count += 1;
 													:: else->;
 												fi;
@@ -168,6 +241,7 @@ DRMD1:	skip;
 									}
 								:: else->;
 							fi;
+DRMD3:						skip;
 						}
 				fi;
 			:: else->;

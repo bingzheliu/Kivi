@@ -7,6 +7,8 @@
 #define NODE_NUM [$NODE_NUM]
 #define POD_NUM [$POD_NUM]
 #define DEP_NUM [$DEP_NUM]
+// Will need to make it an variable if work for more namespaces.
+#define NAMESPACE_NUM 1
 #define POD_CPU_THRE 64
 #define NODE_ALLOWED_POD_NUM 80
 #define POD_TEMPLATE_NUM [$POD_TEMPLATE_NUM]

@@ -5,6 +5,11 @@ short sQueue[MAX_SCHEDULER_QUEUE];
 short sTail = 0;
 short sIndex = 0;
 
+// descheduler now enqueues 1, which is just a trigger and descheduler will check all pods/nodes now.
+short dsQueue[MAX_DESCHEDULER_QUEUE];
+short dsTail = 0;
+short dsIndex = 0;
+
 short dcQueue[MAX_DEP_QUEUE];
 short dcTail = 0;
 short dcIndex = 0;
@@ -48,6 +53,8 @@ short time = 0;
 #include "../templates/hpa.pml"
 #include "../templates/nodeController.pml"
 #include "../templates/kubelet.pml"
+
+#include "../templates/descheduler.pml"
 
 #include "../templates/event.pml"
 #include "../templates/userCommand.pml"

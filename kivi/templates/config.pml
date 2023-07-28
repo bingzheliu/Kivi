@@ -20,6 +20,7 @@
 #define MAX_NODE_CONTROLLER_QUEUE [$NODE_QUEUE]
 #define MAX_HPA_QUEUE [$DEP_QUEUE]
 #define MAX_DEP_QUEUE [$DEP_QUEUE]
+#define MAX_DESCHEDULER_QUEUE [$POD_QUEUE]
 /*----------- deployment Config ------------*/
 
 #define SlowStartInitialBatchSize 1
@@ -78,10 +79,10 @@
 
 
 /*--------- Descheduler Config -----------*/
-#define maxNoOfPodsToEvictPerNode 5000
-#define maxNoOfPodsToEvictPerNamespace 5000
-#define MAX_NUM_DESPLUGINS 6
-#define MAX_NUM_BALPLUGINS 4
+#define maxNoOfPodsToEvictPerNode [$maxNoOfPodsToEvictPerNode]
+#define maxNoOfPodsToEvictPerNamespace [$maxNoOfPodsToEvictPerNamespace]
+#define MAX_NUM_DESPLUGINS [$MAX_NUM_DESPLUGINS]
+#define MAX_NUM_BALPLUGINS [$MAX_NUM_BALPLUGINS]
 #define MAX_NUM_EVICPLUGINS 1
 // TBC for descheduler test
-#define DES_PROFILE_NUM 1
+#define DES_PROFILE_NUM [$DES_PROFILE_NUM]

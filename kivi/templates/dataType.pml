@@ -61,6 +61,13 @@ typedef podType {
 	int cpu;
 	int memory;
 
+	bit critical;
+
+	// CPU pattern change index
+	byte curCpuIndex;
+
+	short startTime;
+
 	/*----internal----*/
 	// 0: pod, 1: deployment
 	// potentially can support CronJob, Job, etc. in the future. 
@@ -76,13 +83,6 @@ typedef podType {
 
 	// used for invariants
 	bit important;
-
-	bit critical;
-
-	// CPU pattern change index
-	byte curCpuIndex;
-
-	short startTime;
 }
 
 typedef replicaSetType {
@@ -236,6 +236,9 @@ typedef deploymentType {
 	// Internal 
 	byte replicasInDeletion;
 	byte replicasInCreation;
+
+	/*-----Internal----*/
+	byte evicted;
 
 	/*-----omitting-----*/
 	// short progressDeadlineSeconds;

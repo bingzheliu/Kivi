@@ -64,6 +64,11 @@ endCH23:			 	if
 	fi;
 }
 
+proctype checkS1()
+{
+endCS11: 
+}
+
 // // Previous check for H2, and this version only look into the mismatch between minReplicas of HPA and current replicas
 // proctype checkH2()
 // {

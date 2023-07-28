@@ -59,6 +59,7 @@ inline evictPod(k)
 	// check maxPodsToEvictPerNode and maxPodsToEvictPerNamespace(Omitting for now)
 	if 
 		:: (nodePodCount[pods[k].loc] + 1 > maxNoOfPodsToEvictPerNode) || (namespacePodCount[pods[k].namespace] + 1 > maxNoOfPodsToEvictPerNamespace) ->
+			printf("[**][Descheduler] Exceeded maxNoOfPodsToEvictPerNode or maxNoOfPodsToEvictPerNamespace for pod %d\n", k)
 			flag = 1
 		:: else ->
 			// call into kubernetes client to evict the pod. We use the same way that deployment evict the pods. 
@@ -66,15 +67,15 @@ inline evictPod(k)
 			pods[k].status = 3;
 			updateQueue(kblQueue, kblTail, kblIndex, k, MAX_KUBELET_QUEUE)
 
-			nodePodCount[pods[k].loc] += 1
-			namespacePodCount[pods[k].namespace] +=1
+			nodePodCount[pods[k].loc] ++
+			namespacePodCount[pods[k].namespace] ++
 	fi;
 }
 
-inline removePodsViolatingNodeAffinity()
-{
+// inline removePodsViolatingNodeAffinity()
+// {
 
-}
+// }
 
 // find out how many nodes can fit with the pods in deployment i
 // The originial code in getTargetNodes look through the nodes via pods. Here, we assume the pods that are managed by the same workloads are identical. 
@@ -117,7 +118,7 @@ inline examTargetNodes(q)
 		// Because looks like they are the same as scheduler, I am just using the same logic for now. 
 		flag = 1;
 		bit matched = 0;
-		for (n : 0 .. podSpec.numRules - 1) {
+		for (n : 0 .. podTemplates[d[q].podTemplateId].numRules - 1) {
 			if
 				:: podTemplates[d[q].podTemplateId].affinityRules[n].isRequired == 1 ->
 					flag = 0;
@@ -136,7 +137,7 @@ inline examTargetNodes(q)
 				goto DRMD2;
 			:: else->;
 		fi;
-		matchingNodes += 1
+		matchingNodes ++
 DRMD2:	skip;
 	}
 	// Only when matchingNodes > 1, the targetNodes will increase. 
@@ -166,7 +167,7 @@ inline removeDuplicates()
 	*/
 
 	short ownerKeyOccurence[DEP_NUM];
-	deschedulerMatchingArray duplicatePods;
+	deschedulerMatchingArray duplicatePods[DEP_NUM];
 	bit flag = 0;
 
 	for (i : 1 .. NODE_NUM ) {
@@ -190,9 +191,10 @@ inline removeDuplicates()
 						:: duplicateKeysMap[pods[j].workloadId] == 1 ->
 							duplicatePods[pods[j].workloadId].nodePods[i].pods[j] = 1
 							duplicatePods[pods[j].workloadId].exist = 1
-							duplicatePods[pods[j].workloadId].nodePods[i].numPods += 1 
+							duplicatePods[pods[j].workloadId].nodePods[i].numPods ++
 						:: else ->
 							duplicateKeysMap[pods[j].workloadId] = 1;
+					fi;
 				:: else->;
 			fi;
 		}
@@ -232,7 +234,7 @@ DRMD1:	skip;
 																goto DRMD3;
 															:: else->;
 														fi;
-														count += 1;
+														count ++;
 													:: else->;
 												fi;
 											:: else->
@@ -251,12 +253,12 @@ DRMD3:						skip;
 	printf("[***][DeScheduler] removeDuplicates plugins finished!")
 }
 
-inline removePodsViolatingTopologySpreadConstraint()
-{	
+// inline removePodsViolatingTopologySpreadConstraint()
+// {	
 	
-}
+// }
 
-inline defaultEvictor()
-{
+// inline defaultEvictor()
+// {
 
-}
+// }

@@ -40,6 +40,7 @@ init{
 
 	for (i : 1 .. DEP_NUM) {
 		updateQueue(hpaQueue, hpaTail, hpaIndex, i, MAX_HPA_QUEUE);
+		updateQueue(dsQueue, dsTail, dsIndex, i, MAX_DESCHEDULER_QUEUE);
 	}
 
 	if 

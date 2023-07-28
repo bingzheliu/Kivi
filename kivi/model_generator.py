@@ -5,7 +5,7 @@
 #
 
 from util import *
-from processing_default import check_for_completion_add_default, default_controllers, event_uc_default_str, default_parameter_order
+from processing_default import check_for_completion_add_default, default_controllers, event_uc_default_str, default_parameter_order, controller_para_default, controller_config_default, descheduler_plugins_maps
 
 index_starts_at_one = {"pods", "nodes", "d", "podTemplates", "deploymentTemplates"}
 
@@ -143,14 +143,59 @@ def generate_init(json_config, s_init):
 
 	return s_init, len(json_config["pods"]), len(json_config["nodes"]), len(json_config["d"]), len(json_config["podTemplates"]), len(json_config["deploymentTemplates"])
 
-def generate_controllers(json_config, s_proc):
+def process_controller_para(s_proc, controller_para, controller_name, pml_config):
+	if "configs" in controller_para:
+		for c in controller_para["configs"]: 
+			pml_config = pml_config.replace("[$" + c + "]", str(s))
+
+	for config in controller_config_default[controller_name]:
+		if "configs" not in controller_para or ("config" in controller_para and config not in controller_para["configs"]):
+			pml_config = pml_config.replace("[$" + config + "]", str(controller_config_default[controller_name][config]))
+
+	# TODO: need to support parameters for some plugins, e.g. send it to default evictor?
+	if controller_name == "descheduler":
+		profile_num = 0
+		max_balance = 1
+		max_deschedule = 1
+		for p in controller_para["profiles"]:
+			balance_num = 0
+			deschedule_num = 0
+			pre_str = "deschedulerProfiles[" + str(profile_num) + "]."
+			for plugin in p:
+				if plugin in descheduler_plugins_maps["balance"]:
+					s_proc += (pre_str + "balancePlugins[" + str(balance_num) + "] = " + str(descheduler_plugins_maps["balance"][plugin]) + "\n")
+					balance_num += 1
+				elif plugin in descheduler_plugins_maps["deschedule"]:
+					s_proc += (pre_str + "deschedulerProfiles[" + str(profile_num) + "].deschedulePlugins[" + str(balance_num) + "] = " + descheduler_plugins_maps["deschedule"][plugin] + "\n")
+					deschedule_num += 1
+				else:
+					model_logger.critical("Unknown type of plugin in Descheduler: " + plugin)
+
+			s_proc += (pre_str + "numBalancePlugins = " + str(balance_num) + "\n")
+			s_proc += (pre_str + "numDeschedulePlugins = " + str(deschedule_num) + "\n")
+			max_balance = max_balance if max_balance > balance_num else balance_num
+			max_deschedule = max_deschedule if max_deschedule > deschedule_num else deschedule_num
+			profile_num += 1
+
+		pml_config = pml_config.replace("[$MAX_NUM_DESPLUGINS]", str(max_deschedule)) \
+							   .replace("[$MAX_NUM_BALPLUGINS]", str(max_balance)) \
+							   .replace("[$DES_PROFILE_NUM]", str(profile_num))
+
+	return s_proc, pml_config
+
+def generate_controllers(json_config, s_proc, pml_config):
 	# TODO: the json may contains the configs of these controllers that can override the default configs. Need to process them.
 	if "controllers" in json_config:
 		for c in json_config["controllers"]:
 			if c not in default_controllers:
 				s_proc += ("run " + c + "();\n")
+			if len(json_config["controllers"][c]) == 0:
+				if c in controller_para_default:
+					s_proc, pml_config = process_controller_para(s_proc, controller_para_default[c], c, pml_config)
+			else:
+				s_proc, pml_config = process_controller_para(s_proc, json_config["controllers"][c], c, pml_config)
 	
-	return s_proc
+	return s_proc, pml_config
 
 def generate_event_user_command_one(all_stat, cur_json, s_proc_after_stable):
 	cur_p = 1
@@ -303,7 +348,7 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 	s_init, pod_num, node_num, deployment_num, pt_num, dt_num = generate_init(json_config["setup"], s_init)
 
 	s_proc = ""
-	s_proc = generate_controllers(json_config, s_proc)
+	s_proc, pml_config = generate_controllers(json_config, s_proc, pml_config)
 
 	s_event_uc = ""
 	s_event_uc, s_proc_after_stable = generate_event_user_command(json_config, s_event_uc, s_proc_after_stable)

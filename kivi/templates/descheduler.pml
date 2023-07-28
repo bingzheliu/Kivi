@@ -2,6 +2,7 @@
 /*
 	Note:
 	1. According to their design doc, the order of the plugins depends on how user define them in their yaml config files.
+	2. Version: 0.27.1
 */
 #include "deschedulerPlugins.pml"
 
@@ -10,11 +11,14 @@ proctype descheduler()
 	short local_last_time = 0;
 	short i = 0, j = 0, ii = 0, jj = 0;
 
-	// Not sure if we need to define a queue for descheduler -- it just run periodically
+	printf("[**][Descheduler] Descheduler started!\n")
+
 endDes:	do
-		:: (time-local_last_time >= DESCHEDULER_WAIT_TIME || (sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail && ncIndex == ncTail))-> 
+		// Estimation: it may interleave with other periodically controller (etc. HPA) in the wrong order, but it's over estimation, meaning we can cover more ways they iterleave with each other.
+		// It's an estimation, because when all other controllers (except for periodical controller) are idle, all periodic controller can decide to start its process, while in reality they will follow the periodic time, which we don't model precisely here.
+		:: (dsIndex != dsTail) && (time-local_last_time >= DESCHEDULER_WAIT_TIME || (sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail && ncIndex == ncTail))-> 
 			atomic{
-				d_step{
+						printf("[***][Descheduler] Checking for descheduling...\n")
 						// If number of ready node is less or equal to 1, then shoudn't do anything
 						i = 1;
 						j = 0;
@@ -41,10 +45,11 @@ endDes:	do
 								// TBD: some process for the evicted pods
 								if 
 									:: deschedulerProfiles[ii].deschedulePlugins[jj] == 1 ->
-										removePodsViolatingNodeAffinity()
+									//	removePodsViolatingNodeAffinity()
+										skip
 									// insert more types of plugins here
 									:: else->
-										print("[*Warning] Unknown types of deschedule Plugins!")
+										printf("[*Warning] Unknown types of deschedule Plugins!\n")
 								fi;
 							}	
 						}
@@ -58,19 +63,20 @@ endDes:	do
 									:: deschedulerProfiles[ii].balancePlugins[jj] == 1 ->
 										removeDuplicates()
 									:: deschedulerProfiles[ii].balancePlugins[jj] == 2 ->
-										removePodsViolatingTopologySpreadConstraint()
+									//	removePodsViolatingTopologySpreadConstraint()
+										skip
 									// insert more types of plugins here
 									:: else->
-										print("[*Warning] Unknown types of deschedule Plugins!")
+										printf("[*Warning] Unknown types of deschedule Plugins!\n")
 								fi;
 							}
 						}
+						updateQueueIndex(dsIndex, MAX_DESCHEDULER_QUEUE);
 
 des1:					i = 0;
 						j = 0;
 						ii = 0;
 						jj = 0;
-				}
 			}
 	od;
 }

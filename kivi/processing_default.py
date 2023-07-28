@@ -11,6 +11,15 @@
 from util import *
 import sys, json
 
+# according to the plugins in this section: https://github.com/kubernetes-sigs/descheduler#example-policy. Only list things that we support.
+# map each plugin to balance or deschedule, and a unique number in the pml
+descheduler_plugins_maps = {"balance":{"RemoveDuplicates":1}, "deschedule":{}}
+
+
+# TODO: add default for descheduler
+controller_para_default = {}
+controller_config_default = {"descheduler" : {"maxNoOfPodsToEvictPerNode" : 5000, "maxNoOfPodsToEvictPerNamespace" : 5000}}
+
 # A list of field in the typedef, need to be synced with dataType.pml. TODO: could auto-populate this.
 # TODO: adding the process on affinityrules, noschedulenodes, etc.
 elements_required = {"nodes" : ["id", "name", "cpu", "cpuLeft", "memory", "memLeft", "status", "numPod", "labels", "score", "curScore", "curAffinity", "curTaint", "maintained"], \

@@ -29,7 +29,7 @@ inline computeReplicasForMetric(curMetricName, curMetricTarget, curMetricType)
 	short metricsTotal = 0, requestTotal = 0, totalReplicas = d[curD].replicas;
 	do
 		:: p < totalReplicas ->
-
+			// This only include the pods status is 1
 			k = d[curD].replicaSets[d[curD].curVersion].podIds[j];
 			printf("[******][HPA] curD %d, j %d, d[curD].curVersion %d, k %d, pods[k].status %d \n", curD, j, d[curD].curVersion, k, pods[k].status)
 

@@ -214,14 +214,14 @@ inline removeDuplicates()
 		}
 DRMD1:	skip;
 	}
-	short kk = 0
-	for (i : 0 .. DEP_NUM ) {
-		for (j : 0 .. NODE_NUM ) {
-			for (kk : 0 .. POD_NUM ) {
-				printf("%d %d %d: %d, %d\n", i, j, kk, duplicatePods[i].nodePods[j].numPods, duplicatePods[i].nodePods[j].pods[kk])
-			}
-		}
-	}
+	// short kk = 0
+	// for (i : 0 .. DEP_NUM ) {
+	// 	for (j : 0 .. NODE_NUM ) {
+	// 		for (kk : 0 .. POD_NUM ) {
+	// 			printf("%d %d %d: %d, %d\n", i, j, kk, duplicatePods[i].nodePods[j].numPods, duplicatePods[i].nodePods[j].pods[kk])
+	// 		}
+	// 	}
+	// }
 
 	for (i : 1 .. DEP_NUM) {
 		if 
@@ -245,7 +245,7 @@ DRMD1:	skip;
 										if 
 											// Only evict pod[upperAvg-1:], meaning only evict total - (upperAvg - 1) pods.
 											:: count < duplicatePods[i].nodePods[j].numPods - (upperAvg - 1) ->
-												printf("node%d: %d, %d\n", j, count, duplicatePods[i].nodePods[j].numPods - (upperAvg - 1))
+												// printf("node%d: %d, %d\n", j, count, duplicatePods[i].nodePods[j].numPods - (upperAvg - 1))
 												if 
 													:: duplicatePods[i].nodePods[j].pods[k] == 1 ->
 														flag = 0

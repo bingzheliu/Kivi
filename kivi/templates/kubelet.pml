@@ -4,6 +4,7 @@
 // Now this only in charge of deleting pod
 proctype kubelet() {
 	short i = 0, j = 0;
+	bit flag = 0;
 	printf("[**]kubelet controller started.\n");
 
 	// TODO: deal with the scenairo that the deletion failed. 
@@ -30,8 +31,7 @@ endK:	do
 							if 
 								:: pods[i].workloadType == 1 ->
 									j = pods[i].workloadId;
-									d[j].replicas ++;
-
+									// d[j].replicas ++;
 									// k = d[j].replicaSets[d[j].curVersion].replicas;
 									replicasetAddPod(d[j].replicaSets[d[j].curVersion], i)
 									d[j].replicasInCreation --;
@@ -42,18 +42,23 @@ endK:	do
 
 							printf("[*][Kubelet] start; %d; %d; Created pod %d on node %d, deployment %d now have %d replicas\n", i, selectedNode, i, selectedNode, pods[i].workloadId, d[pods[i].workloadId].replicas);
 
-						:: else->
+						:: pods[i].status == 3 ->
 							pods[i].curCpuIndex = 0;
-							d[pods[i].workloadId].replicas --;
+							// d[pods[i].workloadId].replicas --;
+							flag = 0
 							replicasetDeletePod(d[pods[i].workloadId].replicaSets[d[pods[i].workloadId].curVersion], i)
 							pods[i].status = 0;
 							d[pods[i].workloadId].replicasInDeletion --;
 							// podTotal = podTotal - 1;
 
-							j = pods[i].loc
-							nodes[j].numPod = nodes[j].numPod - 1;
-							nodes[j].cpuLeft = nodes[j].cpuLeft + pods[i].cpu;
-							nodes[j].memLeft = nodes[j].memLeft + pods[i].memory;
+							if 
+								:: flag == 1 ->
+									j = pods[i].loc
+									nodes[j].numPod = nodes[j].numPod - 1;
+									nodes[j].cpuLeft = nodes[j].cpuLeft + pods[i].cpu;
+									nodes[j].memLeft = nodes[j].memLeft + pods[i].memory;
+								:: else->
+							fi;
 							// TODO: move this message to Deployment
 							printf("[*][Kubelet] delete; %d; Deleted pod %d on node %d, deployment %d now have %d replicas\n", pods[i].workloadId, i, j, pods[i].workloadId, d[pods[i].workloadId].replicas);
 
@@ -66,6 +71,7 @@ endK:	do
 								:: else->;
 							fi;
 							// TODO: add a pod info clear func. Not clearing pod info for now, as we will override them later. But this may potentially cause problem if we made mistakes on overriding. 
+						:: else ->;
 					fi;
 					updateQueueIndex(kblIndex, MAX_KUBELET_QUEUE)
 					time = time + KUBELET_RUN_TIME

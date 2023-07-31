@@ -22,6 +22,7 @@ endNC:	do
 								for (j : 1 .. POD_NUM ) {
 									if 
 										:: pods[j].loc == i && pods[j].status != 0 ->
+											pods[j].status = 3
 											d[pods[j].workloadId].replicasInDeletion++;
 											updateQueue(kblQueue, kblTail, kblIndex, j, MAX_KUBELET_QUEUE)
 										:: else ->;

@@ -50,6 +50,7 @@ inline replicasetAddPod(replicaset, curPod)
 		// od;
 		replicaset.podIds[replicaset.replicas] = curPod;
 		replicaset.replicas++;
+		d[pods[curPod].workloadId].replicas++;
 		//printPodIds(replicaset)
 	}
 }
@@ -60,12 +61,6 @@ inline replicasetDeletePod(replicaset, curPod)
 		d_step{
 			short _m = 0;
 
-			printf("$$$deleting %d, %d, total %d\n", curPod, pods[curPod].status, replicaset.replicas)
-			for (_m : 0 .. replicaset.replicas) {
-				printf("index _m: %d, %d\n", _m, replicaset.podIds[_m])
-			}
-			_m = 0
-
 			do 
 				:: _m < replicaset.replicas -> 
 					if 
@@ -73,15 +68,24 @@ inline replicasetDeletePod(replicaset, curPod)
 							for(_m : _m .. replicaset.replicas-2) {
 								replicaset.podIds[_m] = replicaset.podIds[_m+1];
 							}
+							replicaset.replicas--;
+							d[pods[curPod].workloadId].replicas --;
+							flag = 1
 							break;
 						:: else->
 					fi;
 					_m++
 				:: else->;
-					printf("[*error] Problematic pod Id updates!\n")
+					// Note: this may not be very rubust way. If not found the replica, the pod may be in pending
+					if 
+						:: d[pods[curPod].workloadId].replicasInCreation > 0 ->
+							d[pods[curPod].workloadId].replicasInCreation --
+							break
+						:: else->
+							printf("[*] Problematic pod Id updates!\n")
+					fi;
 			od;			
-
-			replicaset.replicas--;
+			
 			_m = 0;
 	
 			// printPodIds(replicaset)

@@ -82,8 +82,8 @@ def generate_S1(num_node, non_violation=False):
 		cur_node["cpu"] = 64
 		cur_node["memory"] = 64
 	
-		cur_node["cpuLeft"] = 38
-		cur_node["memLeft"] = 38
+		cur_node["cpuLeft"] = 40
+		cur_node["memLeft"] = 40
 		cur_node["numPod"] = 3
 		for j in range(0,3):
 			case_config, cur_id = generate_a_pod(case_config, cur_id, i+int(num_node*3/5)+1, 8, 8, 1, deployment_to_pod)
@@ -101,8 +101,8 @@ def generate_S1(num_node, non_violation=False):
 		cur_node["cpu"] = 64
 		cur_node["memory"] = 64
 	
-		cur_node["cpuLeft"] = 30
-		cur_node["memLeft"] = 30
+		cur_node["cpuLeft"] = 32
+		cur_node["memLeft"] = 32
 		cur_node["numPod"] = 4
 		for j in range(0,4):
 			case_config, cur_id = generate_a_pod(case_config, cur_id, i+int(num_node*4/5)+1, 8, 8, 1, deployment_to_pod)

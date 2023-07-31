@@ -163,7 +163,7 @@ def generate_S1(num_node, non_violation=False):
 
 	case_config["intents"] = []
 	if not non_violation:
-		case_config["intents"].append("run checkH1()\n")
+		case_config["intents"].append("run checkS1()\n")
 
 
 	return case_config

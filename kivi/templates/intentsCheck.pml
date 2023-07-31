@@ -66,7 +66,24 @@ endCH23:			 	if
 
 proctype checkS1()
 {
-endCS11: 
+	byte count = 0;
+endCS11: if 
+			:: d[1].replicasInDeletion > 0 ->
+				if 
+					:: d[1].replicasInCreation > 0 ->
+						count ++
+						if 
+							:: count > 5 ->
+								printf("[*] Pods are being scheduled and descheduled in deployment 1!\n")
+								assert(false)
+							:: else->;
+						fi;
+						if 
+							:: d[1].replicasInDeletion == 0 ->
+								goto endCS11;
+						fi;
+				fi;
+		 fi
 }
 
 // // Previous check for H2, and this version only look into the mismatch between minReplicas of HPA and current replicas

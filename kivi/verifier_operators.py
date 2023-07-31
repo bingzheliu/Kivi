@@ -84,6 +84,10 @@ def verifier_operator(json_config, case_name, file_base, result_base_path, pml_b
 	log_level = args.verbose_level
 	failures = []
 
+	if args.loop:
+		pan_compile.append("-DNP")
+		pan_runtime.append("-l")
+
 	if not args.original:
 		all_setup, json_config_template = finding_smallest_scale(json_config, pml_base_path)
 		for s in all_setup:

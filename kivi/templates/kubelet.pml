@@ -18,7 +18,7 @@ endK:	do
 							printf("[**][Kubelet] Pod %d has already been deleted\n", i)
 
 						// create a pod
-						:: pods[i].status == 2 ->
+						:: pods[i].status == 2 && pods[i].loc != 0 ->
 							short selectedNode = pods[i].loc
 							nodes[selectedNode].numPod++;
 							nodes[selectedNode].cpuLeft = nodes[selectedNode].cpuLeft - pods[i].cpu;
@@ -71,7 +71,7 @@ endK:	do
 								:: else->;
 							fi;
 							// TODO: add a pod info clear func. Not clearing pod info for now, as we will override them later. But this may potentially cause problem if we made mistakes on overriding. 
-						:: else ->;
+						:: pods[i].status == 1 -> skip;
 					fi;
 					updateQueueIndex(kblIndex, MAX_KUBELET_QUEUE)
 					time = time + KUBELET_RUN_TIME

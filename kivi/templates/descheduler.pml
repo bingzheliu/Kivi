@@ -9,7 +9,7 @@
 proctype descheduler()
 {
 	short local_last_time = 0;
-	short i = 0, j = 0, ii = 0, jj = 0;
+	short i = 0, j = 0, ii = 0, jj = 0, k = 0;
 
 	printf("[**][Descheduler] Descheduler started!\n")
 
@@ -41,7 +41,7 @@ endDes:	do
 						// Run deschedule first
 						for (ii : 0 .. DES_PROFILE_NUM-1) {
 							jj = 0;
-							for (jj : 0 .. deschedulerProfiles[ii].numDeschedulePlugins ) {
+							for (jj : 0 .. deschedulerProfiles[ii].numDeschedulePlugins-1 ) {
 								// TBD: some process for the evicted pods
 								if 
 									:: deschedulerProfiles[ii].deschedulePlugins[jj] == 1 ->
@@ -57,7 +57,7 @@ endDes:	do
 						// Run balance later
 						for (ii : 0 .. DES_PROFILE_NUM-1) {
 							jj = 0;
-							for (jj : 0 .. deschedulerProfiles[ii].numBalancePlugins ) {
+							for (jj : 0 .. deschedulerProfiles[ii].numBalancePlugins-1 ) {
 								// TBD: some process for the evicted pods
 								if 
 									:: deschedulerProfiles[ii].balancePlugins[jj] == 1 ->
@@ -77,6 +77,7 @@ des1:					i = 0;
 						j = 0;
 						ii = 0;
 						jj = 0;
+						k = 0;
 			}
 	od;
 }

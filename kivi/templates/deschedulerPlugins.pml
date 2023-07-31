@@ -34,7 +34,7 @@ inline filter(i, j)
 {
 	// For 1 and 2.b, we now only modeled terminating pod, and hence only check on pod status.
 	if 
-		:: pods[j].loc == i && pods[j].status != 0 ->
+		:: pods[j].loc != i || pods[j].status == 0 || pods[j].status == 3 ->
 			flag = 0;
 			goto DF1;
 		:: else->;
@@ -62,6 +62,7 @@ inline evictPod(k)
 			printf("[**][Descheduler] Exceeded maxNoOfPodsToEvictPerNode or maxNoOfPodsToEvictPerNamespace for pod %d\n", k)
 			flag = 1
 		:: else ->
+			printf("[*][Descheduler] Duplicated pod %d (status %d) on node %d, pending for deletion!\n", k, pods[k].status, pods[k].loc)
 			// call into kubernetes client to evict the pod. We use the same way that deployment evict the pods. 
 			d[pods[k].workloadId].replicasInDeletion ++;
 			pods[k].status = 3;
@@ -82,7 +83,7 @@ inline evictPod(k)
 
 inline examTargetNodes(q)
 {
-	short m = 0, n = 0, k = 0, matchingNodes = 0;
+	short m = 0, n = 0, matchingNodes = 0;
 	for (m : 1 .. NODE_NUM) {
 		if 
 			// Only look into ready nodes
@@ -147,7 +148,7 @@ DRMD2:	skip;
 		:: else->
 	fi;
 
-	printf("[****][DeScheduler] Target nodes for deployment %d is %d\n", q, targetNodes)
+	printf("[****][DeScheduler] Number of target nodes for deployment %d is %d\n", q, targetNodes)
 	m = 0;
 	n = 0;
 	k = 0;
@@ -166,9 +167,19 @@ inline removeDuplicates()
 		   However, this can be heavier than other impl. In the future, one can provide choice to choose between the two implementation, having the trade-off between accuracy and performance.
 	*/
 
-	short ownerKeyOccurence[DEP_NUM];
-	deschedulerMatchingArray duplicatePods[DEP_NUM];
+	short ownerKeyOccurence[DEP_NUM+1];
+	deschedulerMatchingArray duplicatePods[DEP_NUM+1];
 	bit flag = 0;
+	for (i : 0 .. DEP_NUM ) {
+		ownerKeyOccurence[i] = 0
+		duplicatePods[i].exist = 0
+		for (j : 0 .. NODE_NUM ) {
+			duplicatePods[i].nodePods[j].numPods = 0
+			for (k : 0 .. POD_NUM ) {
+				duplicatePods[i].nodePods[j].pods[k] = 0
+			}
+		}
+	}
 
 	for (i : 1 .. NODE_NUM ) {
 		if 
@@ -179,7 +190,10 @@ inline removeDuplicates()
 		fi;
 
 		// We now assume there's only one type of workload, the deployment. Otherwise need to consider to have a unique key for each workload, and use that key here. 
-		bit duplicateKeysMap[DEP_NUM];
+		bit duplicateKeysMap[DEP_NUM+1];
+		for (j : 1 .. DEP_NUM) {
+			duplicateKeysMap[j] = 0
+		}
 
 		for (j : 1 .. POD_NUM) {
 			flag = 1;
@@ -200,6 +214,14 @@ inline removeDuplicates()
 		}
 DRMD1:	skip;
 	}
+	short kk = 0
+	for (i : 0 .. DEP_NUM ) {
+		for (j : 0 .. NODE_NUM ) {
+			for (kk : 0 .. POD_NUM ) {
+				printf("%d %d %d: %d, %d\n", i, j, kk, duplicatePods[i].nodePods[j].numPods, duplicatePods[i].nodePods[j].pods[kk])
+			}
+		}
+	}
 
 	for (i : 1 .. DEP_NUM) {
 		if 
@@ -211,18 +233,19 @@ DRMD1:	skip;
 						printf("[**][DeScheduler] Less than two feasible nodes for duplicates to land, skipping eviction\n")
 					:: else ->
 						short upperAvg;
-						// estimate: this should be ceil, so we just add 1; meaning if it's exact equal to N, then it would become N+1
+						// estimate: this should be ceil, we overestimate, to make it floor, and hence it's possible that the pods get evicted in our model, but not in the system
 						// upperAvg := int(math.Ceil(float64(ownerKeyOccurence[ownerKey]) / float64(len(targetNodes))))
-						upperAvg = ownerKeyOccurence[i] / targetNodes + 1
+						upperAvg = ownerKeyOccurence[i] / targetNodes 
 						for (j : 1 .. NODE_NUM ) {
 							if
 								// only proceed if if len(pods)+1 > upperAvg
 								:: (duplicatePods[i].nodePods[j].numPods > 0) && ((duplicatePods[i].nodePods[j].numPods + 1) > upperAvg ) ->
-									short k = 0, count = 0;
+									short count = 0;
 									for (k : 1 .. POD_NUM) {
 										if 
 											// Only evict pod[upperAvg-1:], meaning only evict total - (upperAvg - 1) pods.
-											:: count < duplicatePods[i].nodePods[j].numPods - (ownerKeyOccurence[i] / targetNodes) ->
+											:: count < duplicatePods[i].nodePods[j].numPods - (upperAvg - 1) ->
+												printf("node%d: %d, %d\n", j, count, duplicatePods[i].nodePods[j].numPods - (upperAvg - 1))
 												if 
 													:: duplicatePods[i].nodePods[j].pods[k] == 1 ->
 														flag = 0

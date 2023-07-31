@@ -35,6 +35,7 @@ endK:	do
 									// k = d[j].replicaSets[d[j].curVersion].replicas;
 									replicasetAddPod(d[j].replicaSets[d[j].curVersion], i)
 									d[j].replicasInCreation --;
+									updateQueue(dsQueue, dsTail, dsIndex, pods[i].workloadId, MAX_DESCHEDULER_QUEUE);
 
 								:: else ->;
 							fi;
@@ -42,10 +43,10 @@ endK:	do
 							printf("[*][Kubelet] start; %d; %d; Created pod %d on node %d, deployment %d now have %d replicas\n", i, selectedNode, i, selectedNode, pods[i].workloadId, d[pods[i].workloadId].replicas);
 
 						:: else->
-							pods[i].status = 0;
 							pods[i].curCpuIndex = 0;
 							d[pods[i].workloadId].replicas --;
 							replicasetDeletePod(d[pods[i].workloadId].replicaSets[d[pods[i].workloadId].curVersion], i)
+							pods[i].status = 0;
 							d[pods[i].workloadId].replicasInDeletion --;
 							// podTotal = podTotal - 1;
 
@@ -61,6 +62,7 @@ endK:	do
 									printf("[******] Enqueue in kubelet\n")
 									updateQueue(dcQueue, dcTail, dcIndex, pods[i].workloadId, MAX_DEP_QUEUE)
 									updateQueue(hpaQueue, hpaTail, hpaIndex, pods[i].workloadId, MAX_HPA_QUEUE)
+									updateQueue(dsQueue, dsTail, dsIndex, pods[i].workloadId, MAX_DESCHEDULER_QUEUE);
 								:: else->;
 							fi;
 							// TODO: add a pod info clear func. Not clearing pod info for now, as we will override them later. But this may potentially cause problem if we made mistakes on overriding. 

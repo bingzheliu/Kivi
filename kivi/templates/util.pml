@@ -50,7 +50,7 @@ inline replicasetAddPod(replicaset, curPod)
 		// od;
 		replicaset.podIds[replicaset.replicas] = curPod;
 		replicaset.replicas++;
-		printPodIds(replicaset)
+		//printPodIds(replicaset)
 	}
 }
 
@@ -59,6 +59,12 @@ inline replicasetDeletePod(replicaset, curPod)
 	atomic{
 		d_step{
 			short _m = 0;
+
+			printf("$$$deleting %d, %d, total %d\n", curPod, pods[curPod].status, replicaset.replicas)
+			for (_m : 0 .. replicaset.replicas) {
+				printf("index _m: %d, %d\n", _m, replicaset.podIds[_m])
+			}
+			_m = 0
 
 			do 
 				:: _m < replicaset.replicas -> 

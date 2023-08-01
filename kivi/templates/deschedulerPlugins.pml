@@ -56,6 +56,7 @@ DF1: skip
 inline preEvictionFilter(q)
 {
 	// for 3, the defaultEvictorArgs.NodeFit default is false. Omtting for now.
+	skip
 }
 
 // Evictor is used across all the plugins in all the profiles. It is defined under descheduler/evictions
@@ -246,7 +247,7 @@ DRMD1:	skip;
 							if
 								// only proceed if if len(pods)+1 > upperAvg
 								:: (duplicatePods[i].nodePods[j].numPods > 0) && ((duplicatePods[i].nodePods[j].numPods + 1) > upperAvg ) ->
-									short count = 0;
+									count = 0;
 									for (k : 1 .. POD_NUM) {
 										if 
 											// Only evict pod[upperAvg-1:], meaning only evict total - (upperAvg - 1) pods.
@@ -302,8 +303,8 @@ inline topologyIsBalanced()
 	for (k : 0 .. MAX_VALUE-1) {
 		if	
 			:: topologyValueToPods[k].exist == 1->
-				minDomainSize = topologyValueToPods[k].numPods < minDomainSize -> topologyValueToPods[k].numPods : minDomainSize
-				maxDomainSize = topologyValueToPods[k].numPods > maxDomainSize -> topologyValueToPods[k].numPods : maxDomainSize
+				minDomainSize = (topologyValueToPods[k].numPods < minDomainSize -> topologyValueToPods[k].numPods : minDomainSize)
+				maxDomainSize = (topologyValueToPods[k].numPods > maxDomainSize -> topologyValueToPods[k].numPods : maxDomainSize)
 				if 
 					:: maxDomainSize - minDomainSize > podTemplates[i].topoSpreadConstraints[j].maxSkew
 						flag = 0
@@ -317,13 +318,83 @@ inline topologyIsBalanced()
 	maxDomainSize = 0
 }
 
-inline balanceDomains()
+inline sortDomains(sortedDomains)
+{
+	deschedulerTopoSortArray temp;
+	for (k : 0 .. sumValues-1) {
+		for (p : 0 .. sumValues-k-1) {
+			if 
+				:: sortedDomains[p].numPods > sortedDomains[p+1].numPods->
+					temp.index = sortedDomains[p].index
+					temp.numPods = sortedDomains[p].numPods
+					sortedDomains[p].index = sortedDomains[p+1].index
+					sortedDomains[p].numPods = sortedDomains[p+1].numPods
+					sortedDomains[p+1].index = temp.index
+					sortedDomains[p+1].numPods = temp.numPods
+				:: else->
+			fi;
+		}
+	}
+}
+
+inline balanceDomains(constraint)
 {
 	short idealAvg = 0
 	// This again can be more aggressive to evict, overestimation.
 	idealAvg = sumPods / sumValues
-
 	// Omitting --> they did the filter again here. TBD: double check and see if this can make any difference.
+
+	// TBD: think about if there's potential estimation
+	// Only consider to sort the domain according to number of pods, not considering the pod priority etc.
+	p = 0
+	for (k : 0 .. MAX_VALUE-1) {
+		if 
+			:: topologyValueToPods[k].exist == 1 ->
+				sortedDomains[p].numPods = topologyValueToPods[k].numPods
+				sortedDomains[p].index = k
+				sortedDomains[p].evictedNumPods = 0
+				p++
+			:: else->
+		fi
+	}
+	sortDomains(sortedDomains)
+
+	k = 0
+	p = sumValues-1
+	do 
+		:: k < p->
+			p = (sortedDomains[p].numPods <= idealAvg -> p-1 : p)
+			if 
+				:: sortedDomains[p].numPods - sortedDomains[k].numPods <= constraint.maxSkew ->
+					k++ 
+					goto DRPVT1
+				:: else->
+			fi;
+			short cur_min = POD_NUM
+
+			min(cur_min, sortedDomains[p].numPods - idealAvg, idealAvg - sortedDomains[k].numPods)
+			// overestimate: it's math.Ceil((skew - float64(constraint.MaxSkew)) / 2). So we may move more pods.
+			min(cur_min, cur_min, ((sortedDomains[p].numPods - sortedDomains[k].numPods)-constraint.maxSkew)/2)
+			if 
+				:: cur_min <= 0 ->
+					k++
+					goto DRPVT1
+				:: else->
+			fi;
+
+			sortedDomains[p].evictedNumPods = sortedDomains[p].evictedNumPods + cur_min
+			// Omitting topologyBalanceNodeFit for now. Hence omitting filterNodesBelowIdealAvg.
+
+			sortedDomains[p].numPods = sortedDomains[p].numPods - cur_min
+			sortedDomains[k].numPods = sortedDomains[k].numPods + cur_min
+
+DRPVT1:		skip
+		:: else->
+			break
+	od;
+
+	cur_min = 0
+	idealAvg = 0
 }
 
 inline removePodsViolatingTopologySpreadConstraint()
@@ -332,7 +403,7 @@ inline removePodsViolatingTopologySpreadConstraint()
 
 	for (i : 1 .. POD_TEMPLATE_NUM ) {
 		for (j : 0 .. podTemplates[i].numTopoSpreadConstraints - 1) {
-			podsArray topologyValueToPods[MAX_VALUE+1];
+			podsArray topologyValueToPods[MAX_VALUE];
 			for (k : 0 .. MAX_VALUE-1) {
 				topologyValueToPods[k].exist = 0
 				topologyValueToPods[k].numPods = 0
@@ -349,7 +420,7 @@ inline removePodsViolatingTopologySpreadConstraint()
 					for (k : 1 .. NODE_NUM) {
 						if 
 							::nodes[i].status == 1 && nodes[i].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey] != -1 ->
-								sumValues = topologyValueToPods[nodes[i].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey]].exist == 0 -> sumValues + 1 : sumValues
+								sumValues = (topologyValueToPods[nodes[i].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey]].exist == 0 -> sumValues + 1 : sumValues)
 								topologyValueToPods[nodes[i].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey]].exist = 1
 							:: else ->
 						fi;
@@ -372,7 +443,7 @@ inline removePodsViolatingTopologySpreadConstraint()
 								}
 								if 
 									:: flag == 0 ->
-										short curVal = nodes[pods[k].loc].labelValue[podTemplates[i].topoSpreadConstraints[j].topologyKey] 
+										short curVal = nodes[pods[k].loc].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey] 
 										topologyValueToPods[curVal].pods[k] = 1
 										topologyValueToPods[curVal].numPods ++
 										sumPods++
@@ -385,28 +456,37 @@ inline removePodsViolatingTopologySpreadConstraint()
 					topologyIsBalanced()
 					if 
 						:: flag == 0 ->
-							balanceDomains()
-
-
+							deschedulerTopoSortArray sortedDomains[MAX_VALUE]
+							balanceDomains(podTemplates[i].topoSpreadConstraints[j])
 							// They run the podFilter again. Not sure if this is needed. Omitting for now
-							flag = 0
-							// Imp in evictions/evictions.go/EvictPod
-							evictPod(k)
+							for (k : 0 .. sumValues-1) {
+								count = 0;
+								for (p : 1 .. POD_NUM ) {
+									if 
+										:: topologyValueToPods[sortedDomains[k].index].pods[p] == 1 ->
+											flag = 0
+											// Imp in evictions/evictions.go/EvictPod
+											evictPod(p)
+											if
+												:: flag == 1 ->
+													count ++;
+													if 
+														:: count == sortedDomains[k].evictedNumPods ->
+															break
+														:: else->
+													fi;
+												:: else->;
+											fi;
+										:: else->
+									fi;
+								}
+							}
+
 						:: else->
 							printf("[**][DeScheduler] Skipping constraint %d in podTemplates %d, it's balanced\n", j, i)
+					fi;
 				:: else->;
 			fi;
-		}
-	}
-
-
-	for (i : 0 .. MAX_LABEL-1) {
-		topologyPairToPods[i].exist = 0
-		for (j : 0 .. MAX_VALUE-1) {
-			topologyPairToPods[i].value[j].numPods = 0
-			for ( k : 0 .. POD_NUM ) {
-				topologyPairToPods[i].value[j].pods[k] = 0
-			}
 		}
 	}
 }

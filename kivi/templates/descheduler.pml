@@ -9,7 +9,7 @@
 proctype descheduler()
 {
 	short local_last_time = 0;
-	short i = 0, j = 0, ii = 0, jj = 0, k = 0, p = 0;
+	short i = 0, j = 0, ii = 0, jj = 0, k = 0, p = 0, count = 0;
 	bit flag = 0;
 
 	printf("[**][Descheduler] Descheduler started!\n")
@@ -64,7 +64,7 @@ endDes:	do
 									:: deschedulerProfiles[ii].balancePlugins[jj] == 1 ->
 										removeDuplicates()
 									:: deschedulerProfiles[ii].balancePlugins[jj] == 2 ->
-									//	removePodsViolatingTopologySpreadConstraint()
+										removePodsViolatingTopologySpreadConstraint()
 										skip
 									// insert more types of plugins here
 									:: else->

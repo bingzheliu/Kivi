@@ -292,3 +292,9 @@ typedef deschedulerNodeDuplicateArray {
 	podsArray nodePods[NODE_NUM+1];
 	bit exist;
 }
+
+typedef deschedulerTopoSortArray {
+	short evictedNumPods;
+	short numPods;
+	short index;
+}

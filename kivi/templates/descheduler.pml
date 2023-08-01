@@ -9,7 +9,8 @@
 proctype descheduler()
 {
 	short local_last_time = 0;
-	short i = 0, j = 0, ii = 0, jj = 0, k = 0;
+	short i = 0, j = 0, ii = 0, jj = 0, k = 0, p = 0;
+	bit flag = 0;
 
 	printf("[**][Descheduler] Descheduler started!\n")
 
@@ -78,6 +79,8 @@ des1:					i = 0;
 						ii = 0;
 						jj = 0;
 						k = 0;
+						flag = 0;
+						p = 0;
 			}
 	od;
 }

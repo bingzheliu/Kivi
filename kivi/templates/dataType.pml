@@ -274,16 +274,21 @@ typedef deschedulerProfileType {
 	// short numEvictorPlugins;
 	// byte evictorPlugins[MAX_NUM_EVICPLUGINS];
 
-	// default false
+	// arg for default evictor; default false
 	bit evictSystemCriticalPods;
+
+	// arg for topoSpread; default DoNotSchedule
+	// DoNotSchedule: 0, ScheduleAnyway: 1, both: 2
+	unsigned constraintsTopologySpread : 2;
 }
 
-typedef nodePodsArray {
+typedef podsArray {
 	bit pods[POD_NUM+1];
 	short numPods;
+	bit exist;
 }
 
-typedef deschedulerMatchingArray {
-	nodePodsArray nodePods[NODE_NUM+1];
+typedef deschedulerNodeDuplicateArray {
+	podsArray nodePods[NODE_NUM+1];
 	bit exist;
 }

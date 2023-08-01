@@ -249,6 +249,7 @@ stopo1: 	i++;
 					fi;
 				}
 			}
+		:: else->;
 	fi;
 
 	// calculate min match for each topology pair

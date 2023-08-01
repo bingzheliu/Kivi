@@ -27,14 +27,15 @@
 			Note that these args are configed per profile. 
 	3. In preEvictionFilter, if defaultEvictorArgs.NodeFit is ture, it essentially checks if each pod can be able to fit with any other nodes 
 
-	They have a WrapFilterFuncs to put all the above func together (In particular, in New() of the plugin). We combine all the above into filter(). 
+	They have a WrapFilterFuncs to put some above func together (In particular, in New() of the plugin), where each plugin process it differently.
+	We combined listPodsOnANode and filter.
 */
-// filter the pod j on node i.
-inline filter(i, j)
+// filter the pod q
+inline filter(q)
 {
 	// For 1 and 2.b, we now only modeled terminating pod, and hence only check on pod status.
 	if 
-		:: pods[j].loc != i || pods[j].status == 0 || pods[j].status == 3 ->
+		:: pods[q].status == 0 || pods[q].status == 3 ->
 			flag = 0;
 			goto DF1;
 		:: else->;
@@ -43,33 +44,37 @@ inline filter(i, j)
 
 	// For 2.c, only model 2), but can easily append them here later. 
 	if 
-		:: pods[j].critical && deschedulerProfiles[ii].evictSystemCriticalPods == 0 ->
+		:: pods[q].critical && deschedulerProfiles[ii].evictSystemCriticalPods == 0 ->
 			flag = 0;
 			goto DF1;
 		:: else->;
 	fi;
-	// for 3, the defaultEvictorArgs.NodeFit default is false. Omtting for now.
 
 DF1: skip
 }
 
+inline preEvictionFilter(q)
+{
+	// for 3, the defaultEvictorArgs.NodeFit default is false. Omtting for now.
+}
+
 // Evictor is used across all the plugins in all the profiles. It is defined under descheduler/evictions
-inline evictPod(k)
+inline evictPod(q)
 {
 	// check maxPodsToEvictPerNode and maxPodsToEvictPerNamespace(Omitting for now)
 	if 
-		:: (nodePodCount[pods[k].loc] + 1 > maxNoOfPodsToEvictPerNode) || (namespacePodCount[pods[k].namespace] + 1 > maxNoOfPodsToEvictPerNamespace) ->
-			printf("[**][Descheduler] Exceeded maxNoOfPodsToEvictPerNode or maxNoOfPodsToEvictPerNamespace for pod %d\n", k)
+		:: (nodePodCount[pods[q].loc] + 1 > maxNoOfPodsToEvictPerNode) || (namespacePodCount[pods[q].namespace] + 1 > maxNoOfPodsToEvictPerNamespace) ->
+			printf("[**][Descheduler] Exceeded maxNoOfPodsToEvictPerNode or maxNoOfPodsToEvictPerNamespace for pod %d\n", q)
 			flag = 1
 		:: else ->
-			printf("[*][Descheduler] Duplicated pod %d (status %d) on node %d, pending for deletion!\n", k, pods[k].status, pods[k].loc)
+			printf("[*][Descheduler] Duplicated pod %d (status %d) on node %d, pending for deletion!\n", q, pods[q].status, pods[q].loc)
 			// call into kubernetes client to evict the pod. We use the same way that deployment evict the pods. 
-			d[pods[k].workloadId].replicasInDeletion ++;
-			pods[k].status = 3;
-			updateQueue(kblQueue, kblTail, kblIndex, k, MAX_KUBELET_QUEUE)
+			d[pods[q].workloadId].replicasInDeletion ++;
+			pods[q].status = 3;
+			updateQueue(kblQueue, kblTail, kblIndex, q, MAX_KUBELET_QUEUE)
 
-			nodePodCount[pods[k].loc] ++
-			namespacePodCount[pods[k].namespace] ++
+			nodePodCount[pods[q].loc] ++
+			namespacePodCount[pods[q].namespace] ++
 	fi;
 }
 
@@ -168,8 +173,7 @@ inline removeDuplicates()
 	*/
 
 	short ownerKeyOccurence[DEP_NUM+1];
-	deschedulerMatchingArray duplicatePods[DEP_NUM+1];
-	bit flag = 0;
+	deschedulerNodeDuplicateArray duplicatePods[DEP_NUM+1];
 	for (i : 0 .. DEP_NUM ) {
 		ownerKeyOccurence[i] = 0
 		duplicatePods[i].exist = 0
@@ -197,9 +201,11 @@ inline removeDuplicates()
 
 		for (j : 1 .. POD_NUM) {
 			flag = 1;
-			filter(i, j)
+			// This plugin combine the below two togethor
+			filter(j)
+			preEvictionFilter(j)
 			if 
-				:: flag == 1 ->
+				:: pods[j].loc == i && flag == 1 ->
 					ownerKeyOccurence[pods[j].workloadId] = ownerKeyOccurence[pods[j].workloadId] + 1;
 					if 
 						:: duplicateKeysMap[pods[j].workloadId] == 1 ->
@@ -273,13 +279,137 @@ DRMD3:						skip;
 		fi;
 	}
 
+	// Clear local variables
+	for (i : 0 .. DEP_NUM ) {
+		ownerKeyOccurence[i] = 0
+		duplicatePods[i].exist = 0
+		for (j : 0 .. NODE_NUM ) {
+			duplicatePods[i].nodePods[j].numPods = 0
+			for (k : 0 .. POD_NUM ) {
+				duplicatePods[i].nodePods[j].pods[k] = 0
+			}
+		}
+	}
+
 	printf("[***][DeScheduler] removeDuplicates plugins finished!")
 }
 
-// inline removePodsViolatingTopologySpreadConstraint()
-// {	
-	
-// }
+inline topologyIsBalanced()
+{
+	short minDomainSize = POD_NUM
+	short maxDomainSize = 0
+
+	for (k : 0 .. MAX_VALUE-1) {
+		if	
+			:: topologyValueToPods[k].exist == 1->
+				minDomainSize = topologyValueToPods[k].numPods < minDomainSize -> topologyValueToPods[k].numPods : minDomainSize
+				maxDomainSize = topologyValueToPods[k].numPods > maxDomainSize -> topologyValueToPods[k].numPods : maxDomainSize
+				if 
+					:: maxDomainSize - minDomainSize > podTemplates[i].topoSpreadConstraints[j].maxSkew
+						flag = 0
+						break
+					:: else->
+				fi;
+			:: else->;
+		fi;
+	}
+	minDomainSize = 0
+	maxDomainSize = 0
+}
+
+inline balanceDomains()
+{
+	short idealAvg = 0
+	// This again can be more aggressive to evict, overestimation.
+	idealAvg = sumPods / sumValues
+
+	// Omitting --> they did the filter again here. TBD: double check and see if this can make any difference.
+}
+
+inline removePodsViolatingTopologySpreadConstraint()
+{	
+	// Omitting namepsace -- the seperation of namespaces may be done at verifier, which we can deal with them later togethor.
+
+	for (i : 1 .. POD_TEMPLATE_NUM ) {
+		for (j : 0 .. podTemplates[i].numTopoSpreadConstraints - 1) {
+			podsArray topologyValueToPods[MAX_VALUE+1];
+			for (k : 0 .. MAX_VALUE-1) {
+				topologyValueToPods[k].exist = 0
+				topologyValueToPods[k].numPods = 0
+				for ( p : 0 .. POD_NUM ) {
+					topologyValueToPods[i].pods[p] = 0
+				}
+			}
+
+			if 
+				// need to match with the configured descheduler constraints.
+				:: deschedulerProfiles[ii].constraintsTopologySpread == 2 || deschedulerProfiles[ii].constraintsTopologySpread == podTemplates[i].topoSpreadConstraints[j].whenUnsatisfiable->
+					short sumPods = 0, sumValues = 0
+					
+					for (k : 1 .. NODE_NUM) {
+						if 
+							::nodes[i].status == 1 && nodes[i].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey] != -1 ->
+								sumValues = topologyValueToPods[nodes[i].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey]].exist == 0 -> sumValues + 1 : sumValues
+								topologyValueToPods[nodes[i].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey]].exist = 1
+							:: else ->
+						fi;
+					}
+
+					for (k : 1 .. POD_NUM) {
+						flag = 1;
+						// TBD: not sure if the pending pods (which has been scheduled by scheduler, yet not created) should be counted. Let's count it for now, which is the same as scheduler, but they may be different.
+						filter(k)
+						if 
+							:: flag == 1 && pods[k].loc != 0 && nodes[pods[k].loc].status == 1 ->
+								flag = 0
+								for (p : 0 .. podTemplates[i].topoSpreadConstraints[j].numMatchedLabel - 1) {
+									if 
+										:: (pods[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].labelKey[p]] != podTemplates[i].topoSpreadConstraints[j].labelValue[p]) ->
+											flag = 1;
+											break;
+										:: else->;
+									fi;
+								}
+								if 
+									:: flag == 0 ->
+										short curVal = nodes[pods[k].loc].labelValue[podTemplates[i].topoSpreadConstraints[j].topologyKey] 
+										topologyValueToPods[curVal].pods[k] = 1
+										topologyValueToPods[curVal].numPods ++
+										sumPods++
+									:: else->;
+								fi;
+							:: else->;
+						fi;
+					}
+					flag = 1
+					topologyIsBalanced()
+					if 
+						:: flag == 0 ->
+							balanceDomains()
+
+
+							// They run the podFilter again. Not sure if this is needed. Omitting for now
+							flag = 0
+							// Imp in evictions/evictions.go/EvictPod
+							evictPod(k)
+						:: else->
+							printf("[**][DeScheduler] Skipping constraint %d in podTemplates %d, it's balanced\n", j, i)
+				:: else->;
+			fi;
+		}
+	}
+
+
+	for (i : 0 .. MAX_LABEL-1) {
+		topologyPairToPods[i].exist = 0
+		for (j : 0 .. MAX_VALUE-1) {
+			topologyPairToPods[i].value[j].numPods = 0
+			for ( k : 0 .. POD_NUM ) {
+				topologyPairToPods[i].value[j].pods[k] = 0
+			}
+		}
+	}
+}
 
 // inline defaultEvictor()
 // {

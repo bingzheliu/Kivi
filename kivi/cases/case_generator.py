@@ -28,6 +28,54 @@ def generate_a_pod(case_config, cur_id, loc, cpu, memory, status, deployment_to_
 
 	return case_config, cur_id
 
+def generate_a_simple_deployment(case_config, cur_id, spec_replicas, pod_template_id, status, hpa=None):
+	d = {}
+	d["id"] = cur_id
+	d["name"] = cur_id
+	cur_id += 1
+	d["status"] = status
+	d["curVersion"] = 0
+	d["replicaSets"] = []
+
+	rp = {}
+	rp["id"] = cur_id
+	cur_id += 1
+	rp["deploymentId"] = 1
+	rp["replicas"] = 0
+	rp["specReplicas"] = spec_replicas
+	rp["version"] = 0
+	rp["podIds"] = []
+	d["replicaSets"].append(rp)
+
+	rp = {}
+	rp["id"] = cur_id
+	cur_id += 1
+	rp["deploymentId"] = 1
+	d["replicaSets"].append(rp)
+
+	d["specReplicas"] = spec_replicas
+	d["replicas"] = 0
+	d["podTemplateId"] = pod_template_id
+
+	if hpa is not None:
+		d["hpaSpec"] = deepcopy(hpa)
+
+	# d["hpaSpec"] = {}
+	# d["hpaSpec"]["isEnabled"] = 1
+	# d["hpaSpec"]["numMetrics"] = 1
+	# d["hpaSpec"]["metricNames"] = []
+	# d["hpaSpec"]["metricNames"].append(0)
+	# d["hpaSpec"]["metricTargets"] = []
+	# d["hpaSpec"]["metricTargets"].append(50)
+	# d["hpaSpec"]["metricTypes"] = []
+	# d["hpaSpec"]["metricTypes"].append(1)
+	# d["hpaSpec"]["minReplicas"] =  1 if num_node/5 < 1 else int(num_node/5)
+	# d["hpaSpec"]["maxReplicas"] = num_node*2+4
+
+	case_config["setup"]["d"].append(d)
+
+	return case_config, cur_id
+
 def generate_S1(num_node, non_violation=False):
 	case_config = {}
 	cur_id = 1
@@ -165,9 +213,130 @@ def generate_S1(num_node, non_violation=False):
 	if not non_violation:
 		case_config["intents"].append("run checkS1()\n")
 
-
 	return case_config
 
+# https://github.com/kubernetes-sigs/descheduler/issues/921
+# We implement the two topo spread constraints. Seems that if only keep on constraint, then the required # of pods is large to reproduce the problem
+def generate_S9(num_node, non_violation=False):
+	case_config = {}
+	cur_id = 1
+	case_config["setup"] = {}
+
+	# Generate podTemplate
+	case_config["setup"]["podTemplates"] = []
+	pt = {}
+	pt["labels"] = {"name" : "app"}
+	pt["cpuRequested"] = 8
+	pt["memRequested"] = 8
+	pt["maxCpuChange"] = 1
+	pt["curCpuRequest"] = []
+	pt["curCpuRequest"].append(8)
+	pt["timeCpuRequest"] = []
+	pt["timeCpuRequest"].append(0)
+
+	pt["topoSpreadConstraints"] = []
+	ptcon = {}
+	ptcon["maxSkew"] = 1
+	ptcon["minDomains"] = 2
+	# based on node name
+	ptcon["topologyKey"] = "hostname"
+	ptcon["whenUnsatisfiable"] = 1
+	ptcon["numMatchedLabel"] = 1
+	ptcon["labels"] = {"name" : "app"}
+
+	pt["topoSpreadConstraints"].append(deepcopy(ptcon))
+	# based on zone name
+	ptcon["topologyKey"] = "lifecycle"
+	pt["topoSpreadConstraints"].append(deepcopy(ptcon))
+	pt["numTopoSpreadConstraints"] = 2
+
+	pt["numRules"] = 2
+	pt["affinityRules"] = []
+	ptAffi = {}
+	ptAffi["isRequired"] = 0
+	ptAffi["weight"] = 4
+	numMatchedNode = int(num_node*4/5)
+	ptAffi["numMatchedNode"] = numMatchedNode
+	ptAffi["matchedNode"] = []
+	for i in range(0, numMatchedNode):
+		ptAffi["matchedNode"].append(int(num_node*1/5)+i+1)
+	pt["affinityRules"].append(deepcopy(ptAffi))
+	ptAffi = {}
+	ptAffi["isRequired"] = 0
+	ptAffi["weight"] = 5
+	numMatchedNode = int(num_node*1/5)
+	ptAffi["numMatchedNode"] = numMatchedNode
+	ptAffi["matchedNode"] = []
+	for i in range(0, numMatchedNode):
+		ptAffi["matchedNode"].append(i+1)
+	pt["affinityRules"].append(deepcopy(ptAffi))
+
+	#pt["numTopoSpreadConstraints"] = 0
+	case_config["setup"]["podTemplates"].append(pt)
+
+	## Generate Nodes and pods
+	## two types of nodes, on-demand*1, spot*4, but one spot is full of other pods in their setting
+	case_config["setup"]["nodes"] = []
+	for i in range(0, int(num_node*1/4)):
+		cur_node = {}
+		cur_node["id"] = cur_id
+		cur_node["name"] = cur_id
+		cur_id += 1
+		
+		cur_node["cpu"] = 64
+		cur_node["memory"] = 64
+	
+		cur_node["cpuLeft"] = 64
+		cur_node["memLeft"] = 64
+		cur_node["numPod"] = 0
+		cur_node["labels"] = {"lifecycle" : "on-demand"}
+
+		cur_node["status"] = 1
+		case_config["setup"]["nodes"].append(cur_node)
+
+	for i in range(0, int(num_node*4/5)):
+		cur_node = {}
+		cur_node["id"] = cur_id
+		cur_node["name"] = cur_id
+		cur_id += 1
+		
+		cur_node["cpu"] = 64
+		cur_node["memory"] = 64
+	
+		cur_node["cpuLeft"] = 64
+		cur_node["memLeft"] = 64
+		cur_node["numPod"] = 0
+		cur_node["labels"] = {"lifecycle" : "spot"}
+
+		cur_node["status"] = 1
+		case_config["setup"]["nodes"].append(cur_node)
+
+	num_pod = num_node*2
+	case_config["setup"]["pods"] = []
+	for i in range(0,num_pod):
+		case_config, cur_id = generate_a_pod(case_config, cur_id, 0, 0, 0, 0)
+
+	## Generate Deployment
+	case_config["setup"]["d"] = []
+	case_config, cur_id = generate_a_simple_deployment(case_config, cur_id, num_pod, 1, 0)
+
+	case_config["userCommand"] = []
+	case_config["userCommand"].append({"name" : "createTargetDeployment", "para" : 1})
+
+	case_config["controllers"] = {}
+	case_config["controllers"]["scheduler"] = {}
+	case_config["controllers"]["hpa"] = {}
+	case_config["controllers"]["deployment"] = {}
+	# enter descheduler plugin from here.
+	case_config["controllers"]["descheduler"] = {"profiles" : [{"RemovePodsViolatingTopologySpreadConstraint":{}}], "args": {"constraintsTopologySpread":2}}
+
+	case_config["events"] = []
+
+	case_config["intents"] = []
+	if not non_violation:
+		case_config["intents"].append("run checkS1()\n")
+
+	return case_config
 
 ## HPA + scheduler (pod spreading) + deployment controller + CPU change
 def generate_S3_template(num_node):
@@ -1354,7 +1523,7 @@ def case_generator(case_id, scale, filename=None):
 	from_template = False
 	if int(scale) == 0:
 		from_template = True
-	case_fun = {False: {"s4": generate_S4, "s3" : generate_S3, "h2": generate_H2, "s6" : generate_S6, "h1" : generate_H1, "s1" : generate_S1}, \
+	case_fun = {False: {"s4": generate_S4, "s3" : generate_S3, "h2": generate_H2, "s6" : generate_S6, "h1" : generate_H1, "s1" : generate_S1, "s9" : generate_S9}, \
 				True: {"h1": generate_H1_template, "s3":generate_S3_template}}
 
 	json_config = None
@@ -1369,7 +1538,8 @@ def case_generator(case_id, scale, filename=None):
 				json.dump(json_config, f, indent=4)
 	else:
 		if not from_template:
-			logger.critical("Unkown case ID, re-try with all lower cases.")
+			logger.critical("Unkown case ID, re-try with all lower cases. Existing cases:")
+			logger.critical(case_fun[False].keys)
 
 	return json_config
 

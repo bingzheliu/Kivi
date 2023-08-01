@@ -13,8 +13,8 @@ import sys, json
 
 # according to the plugins in this section: https://github.com/kubernetes-sigs/descheduler#example-policy. Only list things that we support.
 # map each plugin to balance or deschedule, and a unique number in the pml
-descheduler_plugins_maps = {"balance":{"RemoveDuplicates":1}, "deschedule":{}}
-
+descheduler_plugins_maps = {"balance":{"RemoveDuplicates":1, "RemovePodsViolatingTopologySpreadConstraint":2}, "deschedule":{}}
+descheduler_args_default = {"evictSystemCriticalPods" : 0, "constraintsTopologySpread" : 0}
 
 # TODO: add default for descheduler
 controller_para_default = {}

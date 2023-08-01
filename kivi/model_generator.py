@@ -5,7 +5,7 @@
 #
 
 from util import *
-from processing_default import check_for_completion_add_default, default_controllers, event_uc_default_str, default_parameter_order, controller_para_default, controller_config_default, descheduler_plugins_maps
+from processing_default import check_for_completion_add_default, default_controllers, event_uc_default_str, default_parameter_order, descheduler_args_default, controller_para_default, controller_config_default, descheduler_plugins_maps
 
 index_starts_at_one = {"pods", "nodes", "d", "podTemplates", "deploymentTemplates"}
 
@@ -176,6 +176,10 @@ def process_controller_para(s_proc, controller_para, controller_name, pml_config
 			max_balance = max_balance if max_balance > balance_num else balance_num
 			max_deschedule = max_deschedule if max_deschedule > deschedule_num else deschedule_num
 			profile_num += 1
+
+		for a in controller_para["args"]:
+			if a in descheduler_args_default:
+				s_proc += (pre_str + str(a) + " = " + str(controller_para["args"][a]) + "\n")
 
 		pml_config = pml_config.replace("[$MAX_NUM_DESPLUGINS]", str(max_deschedule)) \
 							   .replace("[$MAX_NUM_BALPLUGINS]", str(max_balance)) \

@@ -372,6 +372,7 @@ inline podTopologySpreadFiltering(curPod, podSpec)
 	podTopologySpreadPreFilter(podSpec);
 	podTopologySpreadFilter(curPod, podSpec);
 
+	printf("[***][SchedulerPlugins] Finished podTopologySpreadFiltering.\n")
 	printfNodeScore();
 
 	clearArray(tpKeyToDomainsNum, MAX_LABEL)
@@ -448,7 +449,7 @@ inline nodeAffinityScore(podSpec)
 		:: podSpec.affinityRules[j].isRequired == 0 ->
 			k = 0;
 			do
-			:: podSpec.affinityRules[j].matchedNode[k] != 0 ->
+			:: k < podSpec.affinityRules[j].numMatchedNode ->
 				if 
 				:: nodes[podSpec.affinityRules[j].matchedNode[k]].score != -1 ->
 					nodes[podSpec.affinityRules[j].matchedNode[k]].curScore = nodes[podSpec.affinityRules[j].matchedNode[k]].curScore + podSpec.affinityRules[j].weight;

@@ -7,7 +7,17 @@ from verifier_operators import verifier_operator
 from parser import parser
 from cases.case_generator import case_generator
 from small_scale_finder import template_generator, get_case_temeplate
+from model_generator import model_generator
+from result_parser import parse_spin_error_trail
 
+def simulation(json_config, file_base, pml_base_path):
+	main_filename = model_generator(json_config, pml_base_path, file_base + "/kivi/templates")
+
+	stdout, stderr = run_script([file_base + '/libs/Spin/Src/spin', pml_base_path + "/" + main_filename], True)
+	#myprint(stdout, logger.debug)
+
+	result_log, failure_details = parse_spin_error_trail(stdout.decode(), args.verbose_level)
+	myprint(result_log, logger.debug)
 
 def verifier():
 	scale = 0
@@ -46,16 +56,20 @@ def verifier():
 		with open(pml_base_path + "/" + case_id + "_template.json",'w') as f:
 			json.dump(json_config, f, indent=4)
 
-	failures = verifier_operator(json_config, case_name, file_base, result_base_path, pml_base_path)
+	if args.simulation:
+		traces = simulation(json_config, file_base, pml_base_path)
 
-	msg = str(len(failures)) + " failure(s) are found!\n"
-	for i in range(0, len(failures)):
-		msg += ("-----Failure #" + str(i+1) + "-----" + "\n")
-		#msg += ("Issue: " + failures[i][0] + "\n")
-		msg += ("Minimal example:" + "\n")
-		msg += (failures[i][1] + "\n")
+	else:
+		failures = verifier_operator(json_config, case_name, file_base, result_base_path, pml_base_path)
 
-	logger.critical(msg)
+		msg = str(len(failures)) + " failure(s) are found!\n"
+		for i in range(0, len(failures)):
+			msg += ("-----Failure #" + str(i+1) + "-----" + "\n")
+			#msg += ("Issue: " + failures[i][0] + "\n")
+			msg += ("Minimal example:" + "\n")
+			msg += (failures[i][1] + "\n")
+
+		logger.critical(msg)
 
 # temp/case_id stores the pml and json file. For cases with different scale, a seperate dir will be generate for each scale
 # temp/case_id/min_exp stores the json file for each scale that are tested. 

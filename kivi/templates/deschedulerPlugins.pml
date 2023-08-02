@@ -303,6 +303,7 @@ inline topologyIsBalanced()
 	for (k : 0 .. MAX_VALUE-1) {
 		if	
 			:: topologyValueToPods[k].exist == 1->
+				printf("[*]%d %d\n", k, topologyValueToPods[k].numPods)
 				minDomainSize = (topologyValueToPods[k].numPods < minDomainSize -> topologyValueToPods[k].numPods : minDomainSize)
 				maxDomainSize = (topologyValueToPods[k].numPods > maxDomainSize -> topologyValueToPods[k].numPods : maxDomainSize)
 				if 
@@ -419,9 +420,10 @@ inline removePodsViolatingTopologySpreadConstraint()
 					
 					for (k : 1 .. NODE_NUM) {
 						if 
-							::nodes[i].status == 1 && nodes[i].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey] != -1 ->
-								sumValues = (topologyValueToPods[nodes[i].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey]].exist == 0 -> sumValues + 1 : sumValues)
-								topologyValueToPods[nodes[i].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey]].exist = 1
+							::nodes[k].status == 1 && nodes[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey] != -1 ->
+								sumValues = (topologyValueToPods[nodes[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey]].exist == 0 -> sumValues + 1 : sumValues)
+								topologyValueToPods[nodes[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey]].exist = 1
+								
 							:: else ->
 						fi;
 					}
@@ -452,6 +454,7 @@ inline removePodsViolatingTopologySpreadConstraint()
 							:: else->;
 						fi;
 					}
+
 					flag = 1
 					topologyIsBalanced()
 					if 

@@ -2,6 +2,7 @@ import logging
 import argparse
 import os
 from copy import deepcopy
+import subprocess
 #__all__ = ["args", "sys_path", "logger", "model_logger"]
 
 sys_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -46,6 +47,9 @@ def setup_argparser(arg_parser):
 
     other_parser = arg_parser.add_argument_group("Other runtime parameters")
     other_parser.add_argument('-jf', '--json_file_path', type=str, help="the file path to dump the intermediate JSON file of cluster setup.")
+
+    simulation_arg = arg_parser.add_argument_group("Simulation parameters")
+    simulation_arg.add_argument("-si", "--simulation", action='store_true', help="Simulation mode")
 
 # first file logger
 logger = setup_logger('verifier_logger', logging.DEBUG)
@@ -96,4 +100,21 @@ def generate_dir(file_base, case_id, scale):
     my_mkdir(result_base_path + "/raw_data")
     
     return pml_base_path, result_base_path
+
+# TODO: deal with the situation where max search is too small
+def run_script(commands, print_stdout):
+	s_output = ""
+	for s in commands:
+		s_output += (s + " ")
+	logger.info("running " + s_output)
+
+	spin_script = subprocess.Popen(commands,
+	                     stdout=subprocess.PIPE, 
+	                     stderr=subprocess.PIPE)
+	stdout, stderr = spin_script.communicate()
+
+
+	myprint(stderr.decode(), logger.error)
+	
+	return stdout, stderr
 

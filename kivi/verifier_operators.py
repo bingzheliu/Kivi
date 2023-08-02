@@ -7,23 +7,6 @@ from result_parser import parse_pan_output, parse_spin_error_trail
 from cases.case_generator import case_generator
 from small_scale_finder import finding_smallest_scale, generate_case_json, str_setup
 
-# TODO: deal with the situation where max search is too small
-def run_script(commands, print_stdout):
-	s_output = ""
-	for s in commands:
-		s_output += (s + " ")
-	logger.info("running " + s_output)
-
-	spin_script = subprocess.Popen(commands,
-	                     stdout=subprocess.PIPE, 
-	                     stderr=subprocess.PIPE)
-	stdout, stderr = spin_script.communicate()
-
-
-	myprint(stderr.decode(), logger.error)
-	
-	return stdout, stderr
-
 # TODO: keep steam the output from the ./pan, and if see "max search depth too small", we could just stop the execuation and adjust the running configs for pan
 def verifier_operator_one(json_config, case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base, queue_size_default):
 	main_filename = model_generator(json_config, pml_base_path, file_base + "/kivi/templates", queue_size_default=queue_size_default)
@@ -52,7 +35,7 @@ def verifier_operator_one(json_config, case_name, log_level, pan_compile, pan_ru
 			stdout, stderr = run_script(['./pan', '-r', error_trail_name], False)
 			with open(result_base_path + "/raw_data/error_" + case_name + "_" + str(queue_size), "w") as fr:
 				fr.write(stdout.decode())
-			result_log, failure_details = parse_spin_error_trail(stdout.decode(), failure_type, log_level)
+			result_log, failure_details = parse_spin_error_trail(stdout.decode(), log_level, failure_type)
 			myprint(result_log, logger.debug)
 			fw.write(result_log)
 

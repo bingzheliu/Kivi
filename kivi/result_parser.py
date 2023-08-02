@@ -3,7 +3,7 @@
 # log_level 3: detailed output of all steps
 # log_level 4: the values of important variables
 # log_level 6: details in plugins process
-def parse_spin_error_trail(output, failure_type, log_level):
+def parse_spin_error_trail(output, log_level, failure_type=None):
 	result_log = ""
 	failure_details = ""
 	output_lines = output.splitlines()
@@ -90,7 +90,7 @@ if __name__ == '__main__':
 	# parse_pan_output(file_base, file_exec_log, file_error_trail)
 	with open(filename) as f:
 		failure_type = ""
-		result_log, failure_details = parse_spin_error_trail(f.read(), failure_type, 5)
+		result_log, failure_details = parse_spin_error_trail(f.read(), 5, failure_type)
 		print(result_log, failure_details)
 
 

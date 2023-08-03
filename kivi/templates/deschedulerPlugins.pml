@@ -68,7 +68,7 @@ inline evictPod(q)
 			printf("[**][Descheduler] Exceeded maxNoOfPodsToEvictPerNode or maxNoOfPodsToEvictPerNamespace for pod %d\n", q)
 			flag = 1
 		:: else ->
-			printf("[*][Descheduler] Duplicated pod %d (status %d) on node %d, pending for deletion!\n", q, pods[q].status, pods[q].loc)
+			printf("[*][Descheduler] Pod %d (status %d) on node %d pending for deletion!\n", q, pods[q].status, pods[q].loc)
 			// call into kubernetes client to evict the pod. We use the same way that deployment evict the pods. 
 			d[pods[q].workloadId].replicasInDeletion ++;
 			pods[q].status = 3;
@@ -255,6 +255,7 @@ DRMD1:	skip;
 												// printf("node%d: %d, %d\n", j, count, duplicatePods[i].nodePods[j].numPods - (upperAvg - 1))
 												if 
 													:: duplicatePods[i].nodePods[j].pods[k] == 1 ->
+														printf("[**][Descheduler] Duplicated Pod %d (status %d) on node %d pending for deletion!\n", k, pods[k].status, pods[k].loc)
 														flag = 0
 														// Imp in evictions/evictions.go/EvictPod
 														evictPod(k)
@@ -303,7 +304,7 @@ inline topologyIsBalanced()
 	for (k : 0 .. MAX_VALUE-1) {
 		if	
 			:: topologyValueToPods[k].exist == 1->
-				printf("[*]%d %d\n", k, topologyValueToPods[k].numPods)
+				//printf("[*]%d %d\n", k, topologyValueToPods[k].numPods)
 				minDomainSize = (topologyValueToPods[k].numPods < minDomainSize -> topologyValueToPods[k].numPods : minDomainSize)
 				maxDomainSize = (topologyValueToPods[k].numPods > maxDomainSize -> topologyValueToPods[k].numPods : maxDomainSize)
 				if 
@@ -323,7 +324,7 @@ inline sortDomains(sortedDomains)
 {
 	deschedulerTopoSortArray temp;
 	for (k : 0 .. sumValues-1) {
-		for (p : 0 .. sumValues-k-1) {
+		for (p : 0 .. sumValues-k-2) {
 			if 
 				:: sortedDomains[p].numPods > sortedDomains[p+1].numPods->
 					temp.index = sortedDomains[p].index
@@ -358,13 +359,17 @@ inline balanceDomains(constraint)
 			:: else->
 		fi
 	}
+	// for (k : 0 .. sumValues-1) {
+	// 	printf("[*]%d %d %d %d!!\n", k, sortedDomains[k].numPods, sortedDomains[k].index, sortedDomains[p].evictedNumPods)
+	// }
+	// printf("[*]%d---------\n", idealAvg)
 	sortDomains(sortedDomains)
 
 	k = 0
 	p = sumValues-1
 	do 
 		:: k < p->
-			p = (sortedDomains[p].numPods <= idealAvg -> p-1 : p)
+			p = ((sortedDomains[p].numPods <= idealAvg) -> p-1 : p)
 			if 
 				:: sortedDomains[p].numPods - sortedDomains[k].numPods <= constraint.maxSkew ->
 					k++ 
@@ -375,7 +380,7 @@ inline balanceDomains(constraint)
 
 			min(cur_min, sortedDomains[p].numPods - idealAvg, idealAvg - sortedDomains[k].numPods)
 			// overestimate: it's math.Ceil((skew - float64(constraint.MaxSkew)) / 2). So we may move more pods.
-			min(cur_min, cur_min, ((sortedDomains[p].numPods - sortedDomains[k].numPods)-constraint.maxSkew)/2)
+			min(cur_min, cur_min, ((sortedDomains[p].numPods - sortedDomains[k].numPods)-constraint.maxSkew+1)/2)
 			if 
 				:: cur_min <= 0 ->
 					k++
@@ -409,7 +414,7 @@ inline removePodsViolatingTopologySpreadConstraint()
 				topologyValueToPods[k].exist = 0
 				topologyValueToPods[k].numPods = 0
 				for ( p : 0 .. POD_NUM ) {
-					topologyValueToPods[i].pods[p] = 0
+					topologyValueToPods[k].pods[p] = 0
 				}
 			}
 
@@ -459,6 +464,14 @@ inline removePodsViolatingTopologySpreadConstraint()
 					topologyIsBalanced()
 					if 
 						:: flag == 0 ->
+							// for (k : 0 .. MAX_VALUE-1) {
+							// 	printf("[*]%d %d %d!!\n", k, topologyValueToPods[k].numPods, topologyValueToPods[k].exist)
+							// 	for ( p : 1 .. POD_NUM ) { 
+							// 		printf("[*]%d %d\n", p, topologyValueToPods[k].pods[p])
+							// 	}
+							// }
+							// printf("[*]~~~~\n")
+
 							deschedulerTopoSortArray sortedDomains[MAX_VALUE]
 							balanceDomains(podTemplates[i].topoSpreadConstraints[j])
 							// They run the podFilter again. Not sure if this is needed. Omitting for now
@@ -466,18 +479,18 @@ inline removePodsViolatingTopologySpreadConstraint()
 								count = 0;
 								for (p : 1 .. POD_NUM ) {
 									if 
+										:: count == sortedDomains[k].evictedNumPods ->
+											break
+										:: else->
+									fi;
+									if 
 										:: topologyValueToPods[sortedDomains[k].index].pods[p] == 1 ->
 											flag = 0
 											// Imp in evictions/evictions.go/EvictPod
 											evictPod(p)
 											if
-												:: flag == 1 ->
+												:: flag == 0 ->
 													count ++;
-													if 
-														:: count == sortedDomains[k].evictedNumPods ->
-															break
-														:: else->
-													fi;
 												:: else->;
 											fi;
 										:: else->

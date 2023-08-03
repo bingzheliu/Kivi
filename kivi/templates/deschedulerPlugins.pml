@@ -406,6 +406,10 @@ DRPVT1:		skip
 inline removePodsViolatingTopologySpreadConstraint()
 {	
 	// Omitting namepsace -- the seperation of namespaces may be done at verifier, which we can deal with them later togethor.
+	bit podsForEviction[POD_NUM+1];
+	for (i : 1 .. POD_NUM) {
+		podsForEviction[i] = 0;
+	}
 
 	for (i : 1 .. POD_TEMPLATE_NUM ) {
 		for (j : 0 .. podTemplates[i].numTopoSpreadConstraints - 1) {
@@ -485,14 +489,8 @@ inline removePodsViolatingTopologySpreadConstraint()
 									fi;
 									if 
 										:: topologyValueToPods[sortedDomains[k].index].pods[p] == 1 ->
-											flag = 0
-											// Imp in evictions/evictions.go/EvictPod
-											evictPod(p)
-											if
-												:: flag == 0 ->
-													count ++;
-												:: else->;
-											fi;
+											podsForEviction[p] = 1
+											count++
 										:: else->
 									fi;
 								}
@@ -504,6 +502,16 @@ inline removePodsViolatingTopologySpreadConstraint()
 				:: else->;
 			fi;
 		}
+	}
+
+	for (i : 1 .. POD_NUM) {
+		if 
+			:: podsForEviction[i] == 1 ->
+				flag = 0
+				// Imp in evictions/evictions.go/EvictPod
+				evictPod(i)
+			:: else->
+		fi;
 	}
 }
 

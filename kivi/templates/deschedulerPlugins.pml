@@ -512,6 +512,7 @@ inline removePodsViolatingTopologySpreadConstraint()
 				evictPod(i)
 			:: else->
 		fi;
+		podsForEviction[i] = 0;
 	}
 }
 

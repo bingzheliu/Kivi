@@ -52,10 +52,10 @@ def setup_argparser(arg_parser):
     simulation_arg.add_argument("-si", "--simulation", action='store_true', help="Simulation mode")
 
 # first file logger
-logger = setup_logger('verifier_logger', logging.DEBUG)
+logger = setup_logger('verifier_logger', logging.CRITICAL)
 
 # second file logger
-model_logger = setup_logger('model_logger', logging.INFO)
+model_logger = setup_logger('model_logger', logging.CRITICAL)
 
 arg_parser = argparse.ArgumentParser(prog=system_name,description='Verifier parameters.')
 setup_argparser(arg_parser)

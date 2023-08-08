@@ -5,7 +5,7 @@
 #
 
 from util import *
-from processing_default import check_for_completion_add_default, default_controllers, event_uc_default_str, default_parameter_order, descheduler_args_default, controller_para_default, controller_config_default, descheduler_plugins_maps
+from processing_default import check_for_completion_add_default, default_controllers, event_uc_default_str, default_parameter_order, descheduler_args_default, controller_para_default, descheduler_plugins_maps
 
 index_starts_at_one = {"pods", "nodes", "d", "podTemplates", "deploymentTemplates"}
 
@@ -146,11 +146,12 @@ def generate_init(json_config, s_init):
 def process_controller_para(s_proc, controller_para, controller_name, pml_config):
 	if "configs" in controller_para:
 		for c in controller_para["configs"]: 
-			pml_config = pml_config.replace("[$" + c + "]", str(s))
+			pml_config = pml_config.replace("[$" + c + "]", str(controller_para["configs"][c]))
 
-	for config in controller_config_default[controller_name]:
-		if "configs" not in controller_para or ("config" in controller_para and config not in controller_para["configs"]):
-			pml_config = pml_config.replace("[$" + config + "]", str(controller_config_default[controller_name][config]))
+	if "configs" in controller_para_default[controller_name]:
+		for config in controller_para_default[controller_name]["configs"]:
+			if "configs" not in controller_para or ("config" in controller_para and config not in controller_para["configs"]):
+				pml_config = pml_config.replace("[$" + config + "]", str(controller_para_default[controller_name]["configs"][config]))
 
 	# TODO: need to support parameters for some plugins, e.g. send it to default evictor?
 	if controller_name == "descheduler":
@@ -177,9 +178,10 @@ def process_controller_para(s_proc, controller_para, controller_name, pml_config
 			max_deschedule = max_deschedule if max_deschedule > deschedule_num else deschedule_num
 			profile_num += 1
 
-		for a in controller_para["args"]:
-			if a in descheduler_args_default:
-				s_proc += (pre_str + str(a) + " = " + str(controller_para["args"][a]) + "\n")
+		if "args" in controller_para:
+			for a in controller_para["args"]:
+				if a in descheduler_args_default:
+					s_proc += (pre_str + str(a) + " = " + str(controller_para["args"][a]) + "\n")
 
 		pml_config = pml_config.replace("[$MAX_NUM_DESPLUGINS]", str(max_deschedule)) \
 							   .replace("[$MAX_NUM_BALPLUGINS]", str(max_balance)) \
@@ -198,6 +200,11 @@ def generate_controllers(json_config, s_proc, pml_config):
 					s_proc, pml_config = process_controller_para(s_proc, controller_para_default[c], c, pml_config)
 			else:
 				s_proc, pml_config = process_controller_para(s_proc, json_config["controllers"][c], c, pml_config)
+
+	for c in controller_para_default:
+		if c not in json_config["controllers"] and "configs" in controller_para_default[c]:
+			for config in controller_para_default[c]["configs"]: 
+				pml_config = pml_config.replace("[$" + config + "]", str(controller_para_default[c]["configs"][config]))
 	
 	return s_proc, pml_config
 

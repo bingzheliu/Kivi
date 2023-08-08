@@ -11,15 +11,6 @@
 from util import *
 import sys, json
 
-# according to the plugins in this section: https://github.com/kubernetes-sigs/descheduler#example-policy. Only list things that we support.
-# map each plugin to balance or deschedule, and a unique number in the pml
-descheduler_plugins_maps = {"balance":{"RemoveDuplicates":1, "RemovePodsViolatingTopologySpreadConstraint":2}, "deschedule":{}}
-descheduler_args_default = {"evictSystemCriticalPods" : 0, "constraintsTopologySpread" : 0}
-
-# TODO: add default for descheduler
-controller_para_default = {}
-controller_config_default = {"descheduler" : {"maxNoOfPodsToEvictPerNode" : 5000, "maxNoOfPodsToEvictPerNamespace" : 5000}}
-
 # A list of field in the typedef, need to be synced with dataType.pml. TODO: could auto-populate this.
 # TODO: adding the process on affinityrules, noschedulenodes, etc.
 elements_required = {"nodes" : ["id", "name", "cpu", "cpuLeft", "memory", "memLeft", "status", "numPod", "labels", "score", "curScore", "curAffinity", "curTaint", "maintained"], \
@@ -49,8 +40,16 @@ default_values = {
 # TODO: add default for nodeAffinityPolicy, and nodeTaintsPolicy
 default_controllers = ["hpa", "scheduler", "deployment"]
 
-default_configs = {"scheduler" : {"pod_spread": {"nodeInclusionPolicyInPodTopologySpread" : 1, "minDomainsInPodTopologySpread" : 0}}}
+#default_configs = {"scheduler" : {"pod_spread": {"nodeInclusionPolicyInPodTopologySpread" : 1, "minDomainsInPodTopologySpread" : 0}}}
 
+# according to the plugins in this section: https://github.com/kubernetes-sigs/descheduler#example-policy. Only list things that we support.
+# map each plugin to balance or deschedule, and a unique number in the pml
+descheduler_plugins_maps = {"balance":{"RemoveDuplicates":1, "RemovePodsViolatingTopologySpreadConstraint":2}, "deschedule":{}}
+descheduler_args_default = {"evictSystemCriticalPods" : 0, "constraintsTopologySpread" : 0}
+
+# TODO: add default for descheduler
+controller_para_default = {"descheduler" : {"configs": {"maxNoOfPodsToEvictPerNode" : 5000, "maxNoOfPodsToEvictPerNamespace" : 5000, "MAX_NUM_DESPLUGINS" : 1,\
+											  "MAX_NUM_BALPLUGINS":1, "DES_PROFILE_NUM":1}}}
 
 default_parameter_order = {
 	"eventCpuChange" : ["targetDeployment"], "maintenance" : ["p"], "podCpuChangeWithPattern" : ["targetDeployment"]

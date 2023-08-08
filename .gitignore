@@ -11,6 +11,7 @@ test/*
 *trail
 bin/pan*
 bin/main*
+bin/eval/results
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -339,7 +339,7 @@ def generate_S9(num_node, non_violation=False):
 	return case_config
 
 ## HPA + scheduler (pod spreading) + deployment controller + CPU change
-def generate_S3_template(num_node):
+def generate_S3_template(num_node, non_violation=False):
 	case_config = {}
 	case_config["userDefined"] = {}
 
@@ -429,7 +429,11 @@ def generate_S3_template(num_node):
 	pt["topoSpreadConstraints"].append(deepcopy(ptcon))
 	# based on zone name
 	ptcon["topologyKey"] = "zone"
-	pt["topoSpreadConstraints"].append(deepcopy(ptcon))
+	if not non_violation:
+		pt["topoSpreadConstraints"].append(deepcopy(ptcon))
+		pt["numTopoSpreadConstraints"] = 2
+	else:
+		pt["numTopoSpreadConstraints"] = 1
 	case_config["setup"]["podTemplates"].append(pt)
 
 	case_config["controllers"] = {}
@@ -442,7 +446,7 @@ def generate_S3_template(num_node):
 
 	return case_config
 
-def generate_H1_template(num_node):
+def generate_H1_template(num_node, non_violation=False):
 	case_config = {}
 	case_config["userDefined"] = {}
 
@@ -555,7 +559,8 @@ def generate_H1_template(num_node):
 	case_config["events"] = []
 
 	case_config["intents"] = []
-	case_config["intents"].append("run checkH1()\n")
+	if not non_violation:
+		case_config["intents"].append("run checkH1()\n")
 
 	return case_config
 

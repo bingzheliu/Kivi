@@ -3,6 +3,7 @@ import argparse
 import os
 from copy import deepcopy
 import subprocess
+import sys
 #__all__ = ["args", "sys_path", "logger", "model_logger"]
 
 sys_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -11,10 +12,14 @@ system_name = "Kivi"
 
 formatter = logging.Formatter("[%(asctime)s;%(filename)s;%(levelname)s;%(funcName)s() ] %(message)s", "%Y-%m-%d %H:%M:%S")
 
-def setup_logger(name, level=logging.INFO):
+def setup_logger(name, level=logging.INFO, handler_type="stream", filename=None):
     """To setup as many loggers as you want"""
 
-    handler = logging.StreamHandler()        
+    if handler_type == "file" and filename is not None:
+    	handler = logging.FileHandler(filename)
+    else:
+    	handler = logging.StreamHandler(sys.stdout)   
+
     handler.setFormatter(formatter)
 
     logger = logging.getLogger(name)
@@ -47,20 +52,31 @@ def setup_argparser(arg_parser):
 
     other_parser = arg_parser.add_argument_group("Other runtime parameters")
     other_parser.add_argument('-jf', '--json_file_path', type=str, help="the file path to dump the intermediate JSON file of cluster setup.")
+    other_parser.add_argument('-lf', "--log_output_file", type=str, help="stream the output to file. Need to specify a filename. Default: output to terminal")
 
     simulation_arg = arg_parser.add_argument_group("Simulation parameters")
     simulation_arg.add_argument("-si", "--simulation", action='store_true', help="Simulation mode")
 
-# first file logger
-logger = setup_logger('verifier_logger', logging.CRITICAL)
-
-# second file logger
-model_logger = setup_logger('model_logger', logging.CRITICAL)
 
 arg_parser = argparse.ArgumentParser(prog=system_name,description='Verifier parameters.')
 setup_argparser(arg_parser)
 args = arg_parser.parse_args()
-logger.debug(args)
+
+
+
+if args.log_output_file is not None:
+	# first file logger
+	logger = setup_logger('verifier_logger', logging.CRITICAL, handler_type="file", filename=args.log_output_file)
+
+	# second file logger
+	model_logger = setup_logger('model_logger', logging.CRITICAL, handler_type="file", filename=args.log_output_file)
+
+else:
+	# first file logger
+	logger = setup_logger('verifier_logger', logging.CRITICAL)
+
+	# second file logger
+	model_logger = setup_logger('model_logger', logging.CRITICAL)
 
 
 # logger = logging.getLogger(__name__)

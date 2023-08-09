@@ -41,6 +41,8 @@ def setup_argparser(arg_parser):
     # TODO: add option to send to pan and see if we want to find all the violations
     verification_arg.add_argument('-a', '--all_violation', action='store_true', help='Find all violations (default: stop after finding one)')
     verification_arg.add_argument('-v', '--verbose_level', type=int, default=1, help="Log level for generated examples. Smaller value means less hints in the examples." )
+    verification_arg.add_argument("-r", "--random", action='store_true', help='Enable the verifier to automatically try random seed for verification. If -to is not defined, the default timeout for each random number is 10sec.')
+    verification_arg.add_argument('-to','--timeout', type=int, help='Timeout for each pan execuation.')
 
     spin_arg = arg_parser.add_argument_group("Spin options", description="Options sent to pan or spin. All options need to be quoted and seperated by comma without dash, e.g., 'm10000, n'")
     spin_arg.add_argument('-pc', '--pan_compile', type=str, default="DVECTORSZ=450000, DT_RAND, DP_RAND", help="Options for pan compiler. ")
@@ -66,17 +68,17 @@ args = arg_parser.parse_args()
 
 if args.log_output_file is not None:
 	# first file logger
-	logger = setup_logger('verifier_logger', logging.CRITICAL, handler_type="file", filename=args.log_output_file)
+	logger = setup_logger('verifier_logger', logging.INFO, handler_type="file", filename=args.log_output_file)
 
 	# second file logger
-	model_logger = setup_logger('model_logger', logging.CRITICAL, handler_type="file", filename=args.log_output_file)
+	model_logger = setup_logger('model_logger', logging.INFO, handler_type="file", filename=args.log_output_file)
 
 else:
 	# first file logger
-	logger = setup_logger('verifier_logger', logging.CRITICAL)
+	logger = setup_logger('verifier_logger', logging.INFO)
 
 	# second file logger
-	model_logger = setup_logger('model_logger', logging.CRITICAL)
+	model_logger = setup_logger('model_logger', logging.INFO)
 
 
 # logger = logging.getLogger(__name__)
@@ -118,7 +120,7 @@ def generate_dir(file_base, case_id, scale):
     return pml_base_path, result_base_path
 
 # TODO: deal with the situation where max search is too small
-def run_script(commands, print_stdout):
+def run_script(commands, print_stdout, _timeout=None):
 	s_output = ""
 	for s in commands:
 		s_output += (s + " ")
@@ -127,10 +129,22 @@ def run_script(commands, print_stdout):
 	spin_script = subprocess.Popen(commands,
 	                     stdout=subprocess.PIPE, 
 	                     stderr=subprocess.PIPE)
-	stdout, stderr = spin_script.communicate()
 
-
-	myprint(stderr.decode(), logger.error)
+	if _timeout is not None:
+		try:
+		    stdout, stderr = spin_script.communicate(timeout=_timeout)
+		except subprocess.TimeoutExpired:
+			logger.info("Timeout after "+str(_timeout)+" sec")
+			spin_script.kill()
+			stdout, stderr = spin_script.communicate()
+			myprint(stderr.decode(), logger.error)
+			return False, stdout, stderr
+	else:
+		stdout, stderr = spin_script.communicate()
+		myprint(stderr.decode(), logger.error)
 	
-	return stdout, stderr
+	return True, stdout, stderr
+
+	
+
 

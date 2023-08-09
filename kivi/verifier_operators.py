@@ -1,5 +1,5 @@
-# TODO: 1. add options (OptionParser) to the system
 import subprocess
+import random
 
 from util import *
 from model_generator import model_generator
@@ -16,14 +16,22 @@ def verifier_operator_one(json_config, case_name, log_level, pan_compile, pan_ru
 	else:
 		queue_size = 0
 
-	stdout, stderr = run_script([file_base + '/libs/Spin/Src/spin', '-a', pml_base_path + "/" + main_filename], True)
+	success, stdout, stderr = run_script([file_base + '/libs/Spin/Src/spin', '-a', pml_base_path + "/" + main_filename], True)
 	myprint(stdout, logger.debug)
 
-	stdout, stderr = run_script(['gcc'] + pan_compile, True)
+	success, stdout, stderr = run_script(['gcc'] + pan_compile, True)
 
 	result_log = ""
 	with open(result_base_path + "/" + case_name + "_" + str(queue_size), "w") as fw:
-		stdout, stderr = run_script(['./pan']+pan_runtime, False)
+		success = False
+		while not success:
+			if args.random:
+				timeout = args.timeout if args.timeout is not None else 10
+				rand = random.randint(1, 1000)
+				success, stdout, stderr = run_script(['./pan']+pan_runtime+['-RS'+str(rand)], False, timeout)
+			else:
+				success, stdout, stderr = run_script(['./pan']+pan_runtime, False)
+
 		with open(result_base_path + "/raw_data/exec_" + case_name + "_" + str(queue_size), "w") as fr:
 			fr.write(stdout.decode())
 		failure_type, failure_details, error_trail_name, total_mem, elapsed_time = parse_pan_output(stdout.decode())
@@ -32,7 +40,7 @@ def verifier_operator_one(json_config, case_name, log_level, pan_compile, pan_ru
 		myprint(failure_details)
 
 		if error_trail_name != None:
-			stdout, stderr = run_script(['./pan', '-r', error_trail_name], False)
+			success, stdout, stderr = run_script(['./pan', '-r', error_trail_name], False)
 			with open(result_base_path + "/raw_data/error_" + case_name + "_" + str(queue_size), "w") as fr:
 				fr.write(stdout.decode())
 			result_log, failure_details = parse_spin_error_trail(stdout.decode(), log_level, failure_type)
@@ -70,6 +78,13 @@ def verifier_operator(json_config, case_name, file_base, result_base_path, pml_b
 	if args.loop:
 		pan_compile.append("-DNP")
 		pan_runtime.append("-l")
+	if args.random:
+		if "-DT_RAND" not in pan_compile:
+			pan_compile.append("-DT_RAND")
+		if "-DP_RAND" not in pan_compile:
+			pan_compile.append("-DP_RAND")
+
+	print(args)
 
 	if not args.original:
 		all_setup, json_config_template = finding_smallest_scale(json_config, pml_base_path)

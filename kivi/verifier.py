@@ -13,7 +13,7 @@ from result_parser import parse_spin_error_trail
 def simulation(json_config, file_base, pml_base_path):
 	main_filename = model_generator(json_config, pml_base_path, file_base + "/kivi/templates")
 
-	stdout, stderr = run_script([file_base + '/libs/Spin/Src/spin', pml_base_path + "/" + main_filename], True)
+	success, stdout, stderr = run_script([file_base + '/libs/Spin/Src/spin', pml_base_path + "/" + main_filename], True)
 	#myprint(stdout, logger.debug)
 
 	result_log, failure_details = parse_spin_error_trail(stdout.decode(), args.verbose_level)

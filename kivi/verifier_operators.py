@@ -2,6 +2,7 @@ import subprocess
 import random
 
 from util import *
+from config import *
 from model_generator import model_generator
 from result_parser import parse_pan_output, parse_spin_error_trail
 from cases.case_generator import case_generator
@@ -87,9 +88,15 @@ def verifier_operator(json_config, case_name, file_base, result_base_path, pml_b
 	print(args)
 
 	if not args.original:
+		# Note: if the sort_favor for finding_smallest_scale is not "Nodes", will need to change the below arg.extreamly_high_confidence line to find the right break point.
 		all_setup, json_config_template = finding_smallest_scale(json_config, pml_base_path)
 		for s in all_setup:
 			new_json_config, num_node, num_pod = generate_case_json(json_config_template, s)
+			print(num_node)
+			if not args.extreamly_high_confidence and num_node > high_confidence_node:
+				logger.critical("Reach the upper bound of high confidence node. Verification finished!")
+				break
+
 			logger.critical("===========================")
 			logger.critical("Working on setup: " + str_setup(s))
 

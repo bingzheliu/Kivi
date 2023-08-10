@@ -1562,8 +1562,8 @@ def case_generator(case_id, scale, filename=None):
 	return json_config
 
 def get_case_user_defined(case_id):
-	user_defined_all = {"default" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
-									"d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion", "proportionHPA" : 2}}, \
+	user_defined_all = {"default" : {"nodes_default" : {"upperBound":15, "lowerBound":1, "ScaleType":"proportion"}, \
+									"d_default" : {"upperBound":20, "lowerBound":2, "ScaleType":"proportion", "proportionHPA" : 2}}, \
 						"h2" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
 									"d_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion", "proportionHPA" : 2}} \
 					 }

@@ -4,6 +4,7 @@ import os
 from copy import deepcopy
 import subprocess
 import sys
+from config import *
 #__all__ = ["args", "sys_path", "logger", "model_logger"]
 
 sys_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -41,8 +42,9 @@ def setup_argparser(arg_parser):
     # TODO: add option to send to pan and see if we want to find all the violations
     verification_arg.add_argument('-a', '--all_violation', action='store_true', help='Find all violations (default: stop after finding one)')
     verification_arg.add_argument('-v', '--verbose_level', type=int, default=1, help="Log level for generated examples. Smaller value means less hints in the examples." )
-    verification_arg.add_argument("-r", "--random", action='store_true', help='Enable the verifier to automatically try random seed for verification. If -to is not defined, the default timeout for each random number is 10sec.')
+    verification_arg.add_argument('-r', '--random', action='store_true', help='Enable the verifier to automatically try random seed for verification. If -to is not defined, the default timeout for each random number is 10sec.')
     verification_arg.add_argument('-to','--timeout', type=int, help='Timeout for each pan execuation.')
+    verification_arg.add_argument('-eh', '--extreamly_high_confidence', action='store_true', help='Enable extreamly high confidence mode for verification. Default: disable -- verification will stop at N(Node) = 10 with high confidence.')
 
     spin_arg = arg_parser.add_argument_group("Spin options", description="Options sent to pan or spin. All options need to be quoted and seperated by comma without dash, e.g., 'm10000, n'")
     spin_arg.add_argument('-pc', '--pan_compile', type=str, default="DVECTORSZ=450000, DT_RAND, DP_RAND", help="Options for pan compiler. ")
@@ -68,17 +70,17 @@ args = arg_parser.parse_args()
 
 if args.log_output_file is not None:
 	# first file logger
-	logger = setup_logger('verifier_logger', logging.INFO, handler_type="file", filename=args.log_output_file)
+	logger = setup_logger('verifier_logger', verifier_logging, handler_type="file", filename=args.log_output_file)
 
 	# second file logger
-	model_logger = setup_logger('model_logger', logging.INFO, handler_type="file", filename=args.log_output_file)
+	model_logger = setup_logger('model_logger', model_logging, handler_type="file", filename=args.log_output_file)
 
 else:
 	# first file logger
-	logger = setup_logger('verifier_logger', logging.INFO)
+	logger = setup_logger('verifier_logger', verifier_logging)
 
 	# second file logger
-	model_logger = setup_logger('model_logger', logging.INFO)
+	model_logger = setup_logger('model_logger', model_logging)
 
 
 # logger = logging.getLogger(__name__)

@@ -388,6 +388,8 @@ inline balanceDomains(constraint)
 				:: else->
 			fi;
 
+			printf("[***][DeScheduler] For constraint with topologyKey %d, domain %d should evict %d pods (so domain %d can potentially add %d pods)\n", constraint.topologyKey, sortedDomains[p].index, cur_min, sortedDomains[k].index, cur_min)
+
 			sortedDomains[p].evictedNumPods = sortedDomains[p].evictedNumPods + cur_min
 			// Omitting topologyBalanceNodeFit for now. Hence omitting filterNodesBelowIdealAvg.
 
@@ -491,6 +493,7 @@ inline removePodsViolatingTopologySpreadConstraint()
 										:: topologyValueToPods[sortedDomains[k].index].pods[p] == 1 ->
 											podsForEviction[p] = 1
 											count++
+											printf("[***][DeScheduler] For constraint topoKey %d, Pod %d pending for deletion\n", podTemplates[i].topoSpreadConstraints[j].topologyKey, p)
 										:: else->
 									fi;
 								}

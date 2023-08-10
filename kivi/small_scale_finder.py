@@ -5,9 +5,10 @@ import math
 import json
 from copy import deepcopy
 
+from util import *
 from cases.case_generator import case_generator, get_case_user_defined
 
-user_defined_default = {"nodes_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}, \
+user_defined_default = {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
 						"d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion", "proportionHPA" : 2}}
 
 
@@ -87,7 +88,6 @@ def template_generator(json_config, user_defined):
 				new_type["proportion"] = 0
 				type_setup.append(new_type)
 				count.append(1)
-
 
 		propotion = get_propotion(count)
 		for i in range(0, len(type_setup)):
@@ -189,7 +189,7 @@ def generate_case_json(json_config, cur_setup):
 	return new_json_config, len(new_json_config["setup"]["nodes"]), len(new_json_config["setup"]["pods"]) 
 
 def get_next_num(j):
-	if (not args.fast_find):
+	if args.fast_find:
 		if j < 4:
 			j += 1
 		else:
@@ -267,15 +267,20 @@ def generate_list_setup(json_config):
 
 #	print(max_node, max_dep)
 
+	step = 1
+	if args.fast_find:
+		step = 2
+		logger.info("Entering fast find model, scale up in a scale of 2")
+
 	if max_node > 0 and max_dep > 0:
-		for i in range(1, max_node+1):
-			for j in range(1, max_dep+1):
+		for i in range(1, max_node+1, step):
+			for j in range(1, max_dep+1, step):
 				generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, cur_base={"nodes": i, "d" : j})
 	elif max_node > 0:
-		for i in range(1, max_node+1):
+		for i in range(1, max_node+1, step):
 			generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, cur_base={"nodes": i, "d" : 0})
 	elif max_dep > 0:
-		for j in range(1, max_dep+1):
+		for j in range(1, max_dep+1, step):
 			generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, cur_base={"nodes": 0, "d" : j})
 	else:
 		generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup)

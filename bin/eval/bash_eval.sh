@@ -3,10 +3,10 @@
 path=$(cd ..;pwd)
 echo $path
 
-#case_scale=(3 5 10 20 30 50 80 100)
+case_scale=(3 5 10 20 30 50 80 100)
 case_id=(s3 s4 h1 h2 s6 s1 s9)
 count=1
-case_scale=(5)
+#case_scale=(5)
 # case_id=(s3 s4)
 
 mkdir "eval/results/"
@@ -14,6 +14,7 @@ for case in "${case_id[@]}"
 do
 	cur_per_file="eval/results/$case"
 	> $cur_per_file
+	> eval/results/output_$case
 	echo "========================="
 	echo "Working on case $case"
 	for i in "${case_scale[@]}"
@@ -37,7 +38,7 @@ do
 			if [ $1 -gt 0 ]
 			then
 				echo "Working on non-violation cases"
-				echo "python3 kivi_runner.py -f -c $case -s $i -cn >> 'eval/results/output_non_violation_$case"
+				echo "python3 kivi_runner.py -f -c $case -s $i -cn > 'eval/results/output_non_violation_$case"
 				start_time="$(gdate -u +%s.%N)"
 				python3 kivi_runner.py -f -c $case -s $i -cn >> eval/results/output_non_violation_$case
 				end_time="$(gdate -u +%s.%N)"

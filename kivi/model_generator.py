@@ -350,7 +350,6 @@ def get_max_pod_template(json_config):
 	return max_no_schedule_node, max_no_prefer_schedule_node, max_affinity_rules, max_matched_node, max_topo_con, max_cpu_pattern
 
 def process_node_affinity(json_config):
-	print(json_config["setup"]["podTemplates"])
 	for pt in json_config["setup"]["podTemplates"]:
 		if "numRules" in pt:
 			for i in range(0, int(pt["numRules"])):
@@ -369,7 +368,6 @@ def process_node_affinity(json_config):
 						pt["affinityRules"][i]["matchedNode"].append(j+1)
 				pt["affinityRules"][i]["numMatchedNode"] = len(pt["affinityRules"][i]["matchedNode"])
 				del pt["affinityRules"][i]["labels"]
-	print(json_config["setup"]["podTemplates"])
 
 def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, template_path, queue_size_default):
 	userDefinedConstraints = check_for_completion_add_default(json_config)

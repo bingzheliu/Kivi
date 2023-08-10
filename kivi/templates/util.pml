@@ -30,6 +30,28 @@ inline min(a, b, c)
 	}
 }
 
+// Note: need to add () to the variables, as they are just replaced directly by the compiler and can cause mistakes if without the ().
+// a = b/c + 0.99
+inline ceilEst(a, b, c)
+{
+	atomic{
+		a = (99*(c)+100*(b))/(100*(c))
+	}
+}
+
+// a = b/c
+inline ceil(a, b, c)
+{
+	atomic{
+		if 
+			:: (b)%(c) == 0 ->
+				a = (b)/(c)
+			:: else->
+				a = ((b)/(c)) + 1
+		fi;
+	}
+}
+
 inline replicasetAddPod(replicaset, curPod)
 {
 	atomic{

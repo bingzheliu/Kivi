@@ -240,9 +240,14 @@ DRMD1:	skip;
 						printf("[**][DeScheduler] Less than two feasible nodes for duplicates to land, skipping eviction\n")
 					:: else ->
 						short upperAvg;
-						// estimate: this should be ceil, we overestimate, to make it floor, and hence it's possible that the pods get evicted in our model, but not in the system
 						// upperAvg := int(math.Ceil(float64(ownerKeyOccurence[ownerKey]) / float64(len(targetNodes))))
-						upperAvg = ownerKeyOccurence[i] / targetNodes 
+						// estimate: this should be ceil, we approximate it by add 0.99 to the equation 
+						// upperAvg = (100*ownerKeyOccurence[i]+99*targetNodes) / (targetNodes*100)
+						// preciese: ceil(upperAvg, ownerKeyOccurence[i], targetNodes) -> test if it can be divided otherwise just add 1
+						upperAvg = 0
+						ceil(upperAvg, ownerKeyOccurence[i], targetNodes)
+						// upperAvg = (2*ownerKeyOccurence[i]+targetNodes) / (targetNodes*2)
+						// printf("[*]%d %d %d\n", upperAvg, ownerKeyOccurence[i], targetNodes)
 						for (j : 1 .. NODE_NUM ) {
 							if
 								// only proceed if if len(pods)+1 > upperAvg
@@ -293,7 +298,7 @@ DRMD3:						skip;
 		}
 	}
 
-	printf("[***][DeScheduler] removeDuplicates plugins finished!")
+	printf("[***][DeScheduler] removeDuplicates plugins finished!\n")
 }
 
 inline topologyIsBalanced()
@@ -379,14 +384,18 @@ inline balanceDomains(constraint)
 			short cur_min = POD_NUM
 
 			min(cur_min, sortedDomains[p].numPods - idealAvg, idealAvg - sortedDomains[k].numPods)
-			// overestimate: it's math.Ceil((skew - float64(constraint.MaxSkew)) / 2). So we may move more pods.
-			min(cur_min, cur_min, ((sortedDomains[p].numPods - sortedDomains[k].numPods)-constraint.maxSkew+1)/2)
+			// overestimate: it's math.Ceil((skew - float64(constraint.MaxSkew)) / 2). We added 0.99
+			short _ceil_a = 0
+			ceil(_ceil_a, sortedDomains[p].numPods - sortedDomains[k].numPods-constraint.maxSkew, 2)
+			// printf("[*]%d %d %d\n", _ceil_a, sortedDomains[p].numPods - sortedDomains[k].numPods-constraint.maxSkew, 2)
+			min(cur_min, cur_min, _ceil_a)
 			if 
 				:: cur_min <= 0 ->
 					k++
 					goto DRPVT1
 				:: else->
 			fi;
+			_ceil_a = 0
 
 			printf("[***][DeScheduler] For constraint with topologyKey %d, domain %d should evict %d pods (so domain %d can potentially add %d pods)\n", constraint.topologyKey, sortedDomains[p].index, cur_min, sortedDomains[k].index, cur_min)
 

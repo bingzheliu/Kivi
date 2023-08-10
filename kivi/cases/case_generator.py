@@ -260,19 +260,22 @@ def generate_S9(num_node, non_violation=False):
 	ptAffi["isRequired"] = 0
 	ptAffi["weight"] = 4
 	numMatchedNode = num_type2
-	ptAffi["numMatchedNode"] = numMatchedNode
-	ptAffi["matchedNode"] = []
-	for i in range(0, numMatchedNode):
-		ptAffi["matchedNode"].append(int(num_type1)+i+1)
+	# ptAffi["numMatchedNode"] = numMatchedNode
+	# ptAffi["matchedNode"] = []
+	# for i in range(0, numMatchedNode):
+	# 	ptAffi["matchedNode"].append(int(num_type1)+i+1)
+	# This can be a list of labels that the node need to match, and they are ANDed
+	ptAffi["labels"] = {"lifecycle" : "spot"}
 	pt["affinityRules"].append(deepcopy(ptAffi))
 	ptAffi = {}
 	ptAffi["isRequired"] = 0
 	ptAffi["weight"] = 5
 	numMatchedNode = num_type1
-	ptAffi["numMatchedNode"] = numMatchedNode
-	ptAffi["matchedNode"] = []
-	for i in range(0, numMatchedNode):
-		ptAffi["matchedNode"].append(i+1)
+	# ptAffi["numMatchedNode"] = numMatchedNode
+	# ptAffi["matchedNode"] = []
+	# for i in range(0, numMatchedNode):
+	# 	ptAffi["matchedNode"].append(i+1)
+	ptAffi["labels"] = {"lifecycle" : "on-demand"}
 	pt["affinityRules"].append(deepcopy(ptAffi))
 
 	#pt["numTopoSpreadConstraints"] = 0

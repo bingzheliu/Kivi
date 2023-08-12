@@ -4,10 +4,10 @@ path=$(cd ..;pwd)
 echo $path
 
 case_scale=(3 5 10 20 30 50 80 100)
-case_id=(s3 s4 h1 h2 s6 s1 s9)
+#case_id=(s3 s4 h1 h2 s6 s1 s9)
 count=1
 #case_scale=(5)
-# case_id=(s3 s4)
+case_id=(h1)
 
 mkdir "eval/results/"
 for case in "${case_id[@]}"	
@@ -74,3 +74,5 @@ do
 	done
 done
 
+cd eval
+gnuplot eval/plot.plt

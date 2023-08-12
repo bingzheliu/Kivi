@@ -51,7 +51,7 @@ def setup_argparser(arg_parser):
     spin_arg.add_argument('-pr', '--pan_runtime',  type=str, default='m1000000', help="Options for pan runtime")
     spin_arg.add_argument('-l', '--loop', action='store_true', help="Check if exists loop/oscillation.")
 
-    arg_parser.add_argument('-s', '--scale', type=int, default=3, help='Choose a scale if use -c and -o. Default: 3 nodes.')
+    arg_parser.add_argument('-s', '--scale', type=int, choices=range(3, 500), default=3, help='Choose a scale if use -c and -o. Default: 3 nodes.')
     arg_parser.add_argument('-cn', "--case_non_violation", action='store_true', help='Deside if generate cases without violations if use -c. Default: False.')
 
     other_parser = arg_parser.add_argument_group("Other runtime parameters")

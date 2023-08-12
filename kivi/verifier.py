@@ -6,7 +6,6 @@ from util import *
 from verifier_operators import verifier_operator
 from parser import parser
 from cases.case_generator import case_generator
-from small_scale_finder import template_generator, get_case_temeplate
 from model_generator import model_generator
 from result_parser import parse_spin_error_trail
 
@@ -20,7 +19,7 @@ def simulation(json_config, file_base, pml_base_path):
 	myprint(result_log, logger.debug)
 
 def verifier():
-	scale = 0
+	scale = args.scale
 	if args.path:
 		case_id = args.path.split("/")[-1]
 		case_name = case_id
@@ -36,12 +35,12 @@ def verifier():
 		case_id = args.case
 		case_name = case_id
 
-		if args.original:
-			scale = args.scale		
+		if args.original:	
 			case_name = case_name + "_" + str(scale)
-			json_config = case_generator(case_id, scale, args.json_file_path)
+			json_config = case_generator(case_id, scale, filename=args.json_file_path)
 		else:
-			json_config = get_case_temeplate(case_id)
+			# it will include a special field -- userCommand, defines the upper and lower bound.
+			json_config = case_generator(case_id, scale, from_template=True)
 
 	else:
 		logger.critical("Unknown type of verifier!")

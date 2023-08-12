@@ -6,7 +6,6 @@ import json
 from copy import deepcopy
 
 from util import *
-from cases.case_generator import case_generator, get_case_user_defined
 
 user_defined_default = {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
 						"d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion", "proportionHPA" : 2}}
@@ -42,17 +41,29 @@ def assign_template(t1, t2, field):
 
 def get_propotion(count):
 	min_count = count[0]
+	propotion = [0]*len(count)
 
 	for i in range(0, len(count)):
 		if count[i] < min_count:
 			min_count = count[i]
 
 	for i in range(0, len(count)):
-		count[i] = int(count[i]*1.0/min_count)
+		propotion[i] = int(count[i]*1.0/min_count)
 
-	return count
+	return propotion
 
-def template_generator(json_config, user_defined):
+def find_max_replicas_d(d):
+	max_replicas = 0
+	if d["specReplicas"] > max_replicas:
+		max_replicas = d["specReplicas"]
+	if d["replicas"] > max_replicas:
+		max_replicas = d["replicas"]
+	if "hpaSpec" in d and d["hpaSpec"]["maxReplicas"] > max_replicas:
+		max_replicas = d["hpaSpec"]["maxReplicas"]
+
+	return max_replicas
+
+def template_generator(json_config, user_defined=None):
 	if user_defined is None:
 		user_defined = user_defined_default
 
@@ -63,12 +74,18 @@ def template_generator(json_config, user_defined):
 	for t in ["nodes", "d"]:
 		type_setup = []
 		count = []
+		max_count_replicas = []
 		for n in json_config["setup"][t]:
 			new_flag = True
+			if t == "d":
+				cur_max = find_max_replicas_d(n)
+
 			for i in range(0, len(type_setup)):
 				if compare_template(n, type_setup[i]["template"], templates[t]):
 					count[i] += 1
 					new_flag = False
+					if t == "d":
+						max_count_replicas[i] = cur_max if cur_max > max_count_replicas[i] else max_count_replicas[i]
 					break
 
 			if new_flag:
@@ -81,8 +98,8 @@ def template_generator(json_config, user_defined):
 					new_type["template"]["numPod"] = 0
 				if t == "d":
 					new_type["template"]["status"] = 0
+					max_count_replicas.append(cur_max)
 				new_type["template"]["name"] = n["name"]
-				new_type["upperBound"] = user_defined[t+"_default"]["upperBound"]
 				new_type["lowerBound"] = user_defined[t+"_default"]["lowerBound"]
 				# propotion == 0 if nodeScaleType is free
 				new_type["proportion"] = 0
@@ -95,7 +112,10 @@ def template_generator(json_config, user_defined):
 				type_setup[i]["proportion"] = propotion[i]
 			if t == "d":
 				type_setup[i]["proportionHPA"] = user_defined[t+"_default"]["proportionHPA"]
-				
+				type_setup[i]["upperBound"] = max_count_replicas[i]
+
+			if t == "nodes":
+				type_setup[i]["upperBound"] = count[i]
 
 		json_config["userDefined"][t+"Types"] = deepcopy(type_setup)
 		json_config["userDefined"][t+"ScaleType"] = user_defined[t+"_default"]["ScaleType"]
@@ -103,6 +123,8 @@ def template_generator(json_config, user_defined):
 	json_config["setup"].pop("d")
 	json_config["setup"].pop("pods")
 	json_config["setup"].pop("nodes")
+
+	print(json_config)
 
 	return json_config
 
@@ -315,20 +337,16 @@ def str_setup(setup):
 
 	return s
 
-# Used to generate templates for pre-defined cases. 
-def get_case_temeplate(case_id):
-	#config_template_filename = pml_base_path + "/min_exp/template.json"
-	json_config = case_generator(case_id, 0)
+# # Used to generate templates for pre-defined cases. 
+# def get_case_temeplate(case_id, scale):
+# 	#config_template_filename = pml_base_path + "/min_exp/template.json"
+# 	json_config = case_generator(case_id, scale, from_template=True)
+# 	user_defined = get_case_user_defined(case_id, scale)
 
-	if json_config == None:
-		json_config = case_generator(case_id, 3)
-		user_defined = get_case_user_defined(case_id)
-		json_config = template_generator(json_config, user_defined)
+# 	# with open(config_template_filename,'w') as f:
+# 	# 	json.dump(json_config, f, indent=4)
 
-	# with open(config_template_filename,'w') as f:
-	# 	json.dump(json_config, f, indent=4)
-
-	return json_config
+# 	return json_config
 		
 def finding_smallest_scale(json_config, pml_base_path, sort_favor="nodes"):
 	all_setup = generate_list_setup(json_config)

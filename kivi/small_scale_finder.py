@@ -6,21 +6,51 @@ import json
 from copy import deepcopy
 
 from util import *
+from config import resource_difference_tolerance
 
 user_defined_default = {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
 						"d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion", "proportionHPA" : 2}}
 
+# definition of userDefined
+# {
+#   // a list of different types of nodes;
+#   // different types: total resources, left resources after deduct related pods, labels, status  	
+# 	"nodeTypes": [{"templates":..,
+#				   "lowerbound":..,         // the min number of nodes for this type
+#				   "upperBound":..,			// the max number of nodes for this type
+#				   "propotion":..,		    // the relative proprotion against other type of nodes		
+#				 },..
+#			     ]  
+#	"nodeScaleType": "propotion" or "free"  // Define scale up behavior. "propotion": scale up propotionally to each other; "free": ignore its relativeness
+#	
+#	// a list of different types of deployments;
+#	// different types: podTemplateId, hpaSpec
+# 	"dTypes": 	 [{"templates":..,			// podTemplateId, hpaSpec, status, name
+#				   "lowerbound":..,         // the min number of pods for this type
+#				   "upperBound":..,			// the max number of pods for this type
+#				   "propotion":..,		    // the relative proprotion against other type of deployments	
+#				   "proportionHPA":.., 		// ?	
+#				  },..
+#			     ]  		
+#   "dScaleType": "proportion" or "free"	?
+# }
+
+def compare_field(t1, t2, field):
+	if field in ["cpu", "memory", "memLeft", "cpuLeft"]:
+		return math.abs(t1-t2) <= resource_difference_tolerance
+
+	return t1 == t2
 
 def compare_template(t1, t2, field):
 	for f in field:
 		if f in t1:
 			if isinstance(t1[f], dict):
 				for e in t1[f]:
-					if t1[f][e] != t2[f][e]:
+					if not compare_field(t1[f][e], t2[f][e], field):
 						return False
 
 			else:
-				if f not in t2 or t1[f] != t2[f]:
+				if f not in t2 or (not compare_field(t1[f], t2[f], field)):
 					return False
 		else:
 			if f in t2:
@@ -63,13 +93,26 @@ def find_max_replicas_d(d):
 
 	return max_replicas
 
+# remove all the pod cpu and memory usage from the nodes, so that nodes show its origional resources without the deployments
+def deduct_cpu_nodes(json_config):
+	for p in json_config["setup"]["pods"]:
+		if "loc" in p and p["status"] != 0 and p["loc"] > 0:
+			n = json_config["setup"]["nodes"][p["loc"]-1]
+			n["cpuLeft"] = n["cpuLeft"]+p["cpu"]
+			n["memLeft"] = n["memLeft"]+p["memory"]
+			n["numPod"] -= 1
+
+	return json_config
+
 def template_generator(json_config, user_defined=None):
 	if user_defined is None:
 		user_defined = user_defined_default
 
 	json_config["userDefined"] = {}
 
-	templates = {"nodes":["cpu", "memory", "status", "labels"], "d":["podTemplateId", "hpaSpec"]}
+	templates = {"nodes":["cpu", "memory", "cpuLeft", "memLeft", "status", "labels"], "d":["podTemplateId", "hpaSpec"]}
+
+	json_config = deduct_cpu_nodes(json_config)
 
 	for t in ["nodes", "d"]:
 		type_setup = []
@@ -93,8 +136,8 @@ def template_generator(json_config, user_defined=None):
 				new_type["template"] = {}
 				assign_template(n, new_type["template"], templates[t])
 				if t == "nodes":
-					new_type["template"]["cpuLeft"] = n["cpu"]
-					new_type["template"]["memLeft"] = n["memory"]
+					# new_type["template"]["cpuLeft"] = n["cpu"]
+					# new_type["template"]["memLeft"] = n["memory"]
 					new_type["template"]["numPod"] = 0
 				if t == "d":
 					new_type["template"]["status"] = 0
@@ -124,7 +167,7 @@ def template_generator(json_config, user_defined=None):
 	json_config["setup"].pop("pods")
 	json_config["setup"].pop("nodes")
 
-	print(json_config)
+	print(json.dumps(json_config, indent=2))
 
 	return json_config
 
@@ -306,6 +349,9 @@ def generate_list_setup(json_config):
 			generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, cur_base={"nodes": 0, "d" : j})
 	else:
 		generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup)
+
+	logger.info("Total setup is "+str(len(all_setup)))
+	#print(all_setup)
 
 	return all_setup
 

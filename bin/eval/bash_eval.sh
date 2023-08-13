@@ -15,6 +15,7 @@ do
 	cur_per_file="eval/results/$case"
 	> $cur_per_file
 	> eval/results/output_$case
+	> eval/results/output_non_violation_$case
 	echo "========================="
 	echo "Working on case $case"
 	for i in "${case_scale[@]}"

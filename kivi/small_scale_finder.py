@@ -29,7 +29,8 @@ user_defined_default = {"nodes_default" : {"upperBound":10, "lowerBound":1, "Sca
 #				   "lowerbound":..,         // the min number of pods for this type
 #				   "upperBound":..,			// the max number of pods for this type
 #				   "propotion":..,		    // the relative proprotion against other type of deployments	
-#				   "proportionHPA":.., 		// ?	
+#				   "proportionHPA":.., 		// total_nodes*proportionHPA + setup_basic_d_number is the max_replicas for HPAspec, maxReplicas may not be the same as the specReplicas, typicially larger.
+#				   "propotionNodes":..,     // the relative proprotion against total nodes, so the upper bound of deployments per setup can be bounded by the number of nodes.
 #				  },..
 #			     ]  		
 #   "dScaleType": "proportion" or "free"	?
@@ -78,7 +79,7 @@ def get_propotion(count):
 			min_count = count[i]
 
 	for i in range(0, len(count)):
-		propotion[i] = int(count[i]*1.0/min_count)
+		propotion[i] = count[i]*1.0/min_count
 
 	return propotion
 
@@ -156,6 +157,7 @@ def template_generator(json_config, user_defined=None):
 			if t == "d":
 				type_setup[i]["proportionHPA"] = user_defined[t+"_default"]["proportionHPA"]
 				type_setup[i]["upperBound"] = max_count_replicas[i]
+				type_setup[i]["proportionNode"] = max_count_replicas[i]*1.0/len(json_config["setup"]["nodes"])
 
 			if t == "nodes":
 				type_setup[i]["upperBound"] = count[i]
@@ -163,11 +165,12 @@ def template_generator(json_config, user_defined=None):
 		json_config["userDefined"][t+"Types"] = deepcopy(type_setup)
 		json_config["userDefined"][t+"ScaleType"] = user_defined[t+"_default"]["ScaleType"]
 
+	#print(json.dumps(json_config, indent=2))
 	json_config["setup"].pop("d")
 	json_config["setup"].pop("pods")
 	json_config["setup"].pop("nodes")
 
-	print(json.dumps(json_config, indent=2))
+	#print(json.dumps(json_config, indent=2))
 
 	return json_config
 
@@ -279,9 +282,9 @@ def check_duplicate(all_setup, cur_setup):
 
 	return False
 
-def generate_list_setup_dfs(json_config, i, cur_type, cur_setup, all_setup, cur_base=None):
+def generate_list_setup_dfs(json_config, i, cur_type, cur_setup, all_setup, count, cur_base=None):
 	if cur_type == "nodes" and i == len(json_config["userDefined"]["nodesTypes"]):
-		generate_list_setup_dfs(json_config, 0, "d", cur_setup, all_setup, cur_base)
+		generate_list_setup_dfs(json_config, 0, "d", cur_setup, all_setup, count, cur_base)
 		return
 	if cur_type == "d" and i == len(json_config["userDefined"]["dTypes"]):
 		if not check_duplicate(all_setup, cur_setup):
@@ -291,20 +294,22 @@ def generate_list_setup_dfs(json_config, i, cur_type, cur_setup, all_setup, cur_
 
 	cur_json_config = json_config["userDefined"][cur_type+"Types"][i]
 	if json_config["userDefined"][cur_type+"ScaleType"] == "proportion":
-		j = cur_base[cur_type] * cur_json_config["proportion"]
+		j = math.ceil(cur_base[cur_type] * cur_json_config["proportion"])
 		if j < cur_json_config["lowerBound"]:
 			j = cur_json_config["lowerBound"]
 		if j > cur_json_config["upperBound"]:
 			j = cur_json_config["upperBound"]
 
 		cur_setup[cur_type][i] = j
-		generate_list_setup_dfs(json_config, i+1, cur_type, cur_setup, all_setup, cur_base)
+		count[cur_type] += j
+		generate_list_setup_dfs(json_config, i+1, cur_type, cur_setup, all_setup, count, cur_base)
 
 	elif json_config["userDefined"][cur_type+"ScaleType"] == "free":
 		j = cur_json_config["lowerBound"]
 		while j <= cur_json_config["upperBound"]:
 			cur_setup[cur_type][i] = j
-			generate_list_setup_dfs(json_config, i+1, cur_type, cur_setup, all_setup, cur_base)
+			count[cur_type] += j
+			generate_list_setup_dfs(json_config, i+1, cur_type, cur_setup, all_setup, count, cur_base)
 			j = get_next_num(j)
 
 	else:
@@ -314,9 +319,16 @@ def generate_list_setup_dfs(json_config, i, cur_type, cur_setup, all_setup, cur_
 def get_max_base_propotions(json_config, cur_type):
 	cur_max = 0
 	for n in json_config["userDefined"][cur_type+"Types"]:
-		cur_max = cur_max if math.ceil(n["upperBound"]*1.0 / n["proportion"]) < cur_max else math.ceil(n["upperBound"]*1.0 / n["proportion"])
+		cur_max = max(cur_max, math.ceil(n["upperBound"]*1.0 / n["proportion"]))
 
 	return cur_max
+
+def exceed_node_proportion(count, j, json_config):
+	for d in json_config["userDefined"]["dTypes"]:
+		if j * d["proportion"] > count["nodes"] * d["proportionNode"]:
+			return True
+
+	return False
 
 def generate_list_setup(json_config):
 	all_setup = []
@@ -340,18 +352,24 @@ def generate_list_setup(json_config):
 	if max_node > 0 and max_dep > 0:
 		for i in range(1, max_node+1, step):
 			for j in range(1, max_dep+1, step):
-				generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, cur_base={"nodes": i, "d" : j})
+				count = {"nodes":0, "d":0}
+				generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, count, cur_base={"nodes": i, "d" : j})
+				if exceed_node_proportion(count, j, json_config):
+					break
 	elif max_node > 0:
 		for i in range(1, max_node+1, step):
-			generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, cur_base={"nodes": i, "d" : 0})
+			count = {"nodes":0, "d":0}
+			generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, count, cur_base={"nodes": i, "d" : 0})
 	elif max_dep > 0:
 		for j in range(1, max_dep+1, step):
-			generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, cur_base={"nodes": 0, "d" : j})
+			count = {"nodes":0, "d":0}
+			generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, count, cur_base={"nodes": 0, "d" : j})
 	else:
+		count = {"nodes":0, "d":0}
 		generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup)
 
 	logger.info("Total setup is "+str(len(all_setup)))
-	#print(all_setup)
+	print(all_setup)
 
 	return all_setup
 

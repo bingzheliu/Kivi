@@ -369,7 +369,7 @@ def generate_list_setup(json_config):
 			generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, count, cur_base={"nodes": 0, "d" : j})
 	else:
 		count = {"nodes":0, "d":0}
-		generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup)
+		generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, count)
 
 	logger.info("Total setup is "+str(len(all_setup)))
 

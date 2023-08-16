@@ -260,7 +260,7 @@ DRMD1:	skip;
 												// printf("node%d: %d, %d\n", j, count, duplicatePods[i].nodePods[j].numPods - (upperAvg - 1))
 												if 
 													:: duplicatePods[i].nodePods[j].pods[k] == 1 ->
-														printf("[**][Descheduler] Duplicated Pod %d (status %d) on node %d pending for deletion!\n", k, pods[k].status, pods[k].loc)
+														printf("[*][Descheduler] Duplicated Pod %d (status %d) on node %d pending for deletion!\n", k, pods[k].status, pods[k].loc)
 														flag = 0
 														// Imp in evictions/evictions.go/EvictPod
 														evictPod(k)
@@ -502,7 +502,7 @@ inline removePodsViolatingTopologySpreadConstraint()
 										:: topologyValueToPods[sortedDomains[k].index].pods[p] == 1 ->
 											podsForEviction[p] = 1
 											count++
-											printf("[***][DeScheduler] For constraint topoKey %d, Pod %d pending for deletion\n", podTemplates[i].topoSpreadConstraints[j].topologyKey, p)
+											printf("[*][DeScheduler] For constraint topoKey %d, Pod %d pending for deletion\n", podTemplates[i].topoSpreadConstraints[j].topologyKey, p)
 										:: else->
 									fi;
 								}

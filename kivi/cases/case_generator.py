@@ -817,8 +817,8 @@ def generate_S6(num_node, non_violation=False):
 	case_config["controllers"]["hpa"] = {}
 	case_config["controllers"]["deployment"] = {}
 
-	p = 1 if num_node/5 < 1 else int(num_node/5)
-	#p = 1
+	#p = 1 if num_node/5 < 1 else int(num_node/5)
+	p = 1
 	case_config["events"] = []
 	case_config["events"].append({"name":"maintenance", "para": {"p":p}, "after_stable":True})
 
@@ -831,6 +831,7 @@ def generate_S6(num_node, non_violation=False):
 		#case_config["intents"].append("\nnever \n{\n do\n  :: init_status == 1 && d[1].replicas == d[1].specReplicas -> \n if\n :: d[1].replicas < d[1].specReplicas - " + str(p) +  " -> break\n  fi\n   :: else\nod;\n}\n")
 		case_config["intents"].append("\nactive proctype checkS6() \n{\nendCS61: if\n  		:: init_status == 1 && d[1].replicas == d[1].specReplicas -> \nendCS62:   		if\n :: d[1].replicas < d[1].specReplicas - " + str(p) +  ' -> printf("[*] Replicas below expatation!\\n")\n assert(false)\n    		fi\n     fi;\n}\n')
 
+	""
 
 	return case_config
 
@@ -1538,40 +1539,66 @@ def generate_S3(num_node, non_violation=False):
 
 	return case_config
 
+def generate_case_json(case_fun, case_id, scale, from_template=False, filename=None):
+	json_config = None
+	if args.case_non_violation:
+		json_config = case_fun[case_id](int(scale), non_violation=True)
+	else:
+		json_config = case_fun[case_id](int(scale))
+
+	if from_template:
+		user_defined = get_case_user_defined(case_id, scale)
+		json_config = template_generator(json_config, user_defined)
+
+	if filename != None:
+		with open(filename,'w') as f:
+			json.dump(json_config, f, indent=4)
+
+	return json_config
+
+
 def case_generator(case_id, scale, from_template=False, filename=None):
 	#case_fun = {False: {"s4": generate_S4, "s3" : generate_S3, "h2": generate_H2, "s6" : generate_S6, "h1" : generate_H1, "s1" : generate_S1, "s9" : generate_S9}, \
 	# These template does not support verification at scale, and has a fixed upperbound. So we do not it use it for now.
 	#True: {"h1": generate_H1_template, "s3":generate_S3_template}}
 	case_fun = {"s4": generate_S4, "s3" : generate_S3, "h2": generate_H2, "s6" : generate_S6, "h1" : generate_H1, "s1" : generate_S1, "s9" : generate_S9}
-
-	json_config = None
+	
 	if case_id in case_fun:
-		if args.case_non_violation:
-			json_config = case_fun[case_id](int(scale), non_violation=True)
-		else:
-			json_config = case_fun[case_id](int(scale))
-
-		if from_template:
-			json_config = template_generator(json_config)
-
-		if filename != None:
-			with open(filename,'w') as f:
-				json.dump(json_config, f, indent=4)
+		json_config = generate_case_json(case_id, scale, from_template, filename)
 
 	else:
-		logger.critical("Unkown case ID, re-try with all lower cases. Existing cases:")
-		logger.critical(case_fun[False].keys)
+		cases = case_id.split(",")
+		case_list = []
+		if "all" in cases:
+			case_list = case_fun.keys
+		else:
+			for c in cases:
+				if c in case_fun:
+					case_list.append(c)
+				else:
+					logger.critical("Unkown case ID, re-try with all lower cases. Existing cases:")
+					logger.critical(case_fun.keys)
+
+		for c in case_id:
+			json_config = generate_case_json(case_id, scale, from_template, filename)
 
 	return json_config
 
+user_defined_all = {"s4" : {"nodes_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}, \
+						"d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion", "proportionHPA" : 2}}}
+
 def get_case_user_defined(case_id, scale):
 	user_defined_all = {"default" : {"nodes_default" : {"upperBound":scale, "lowerBound":1, "ScaleType":"proportion"}, \
-									"d_default" : {"upperBound":scale*3, "lowerBound":2, "ScaleType":"proportion", "proportionHPA" : 2}}
+									"d_default" : {"upperBound":scale*3, "lowerBound":2, "ScaleType":"proportion", "proportionHPA" : 2}},\
+						"s6" : {"nodes_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}, \
+							    "d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion", "proportionHPA" : 2}}, \
+						"s4" : {"nodes_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}, \
+							    "d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion", "proportionHPA" : 2}}
 						# "h2" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
 						# 			"d_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion", "proportionHPA" : 2}} \
-					 }
-	if case_id not in user_defined_all:
-		return user_defined_all["default"]
-	else:
+					 	}
+	if case_id in user_defined_all:
 		return user_defined_all[case_id]
+
+	return None
 

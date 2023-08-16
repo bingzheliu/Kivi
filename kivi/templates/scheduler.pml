@@ -137,6 +137,15 @@ inline bindNode()
 	// zone_num_pod[node[node_selected].zone]++;
 }
 
+// Before actually bind the pod, scheduler cache update the nodeInfo, so it can continue to work without waiting for bind.
+// such cache info will be updated again before each scheduling in the schedule_one/schedulePod
+inline assumePod()
+{
+	nodes[selectedNode].numPod++;
+	nodes[selectedNode].cpuLeft = nodes[selectedNode].cpuLeft - pods[curPod].cpu;
+	nodes[selectedNode].memLeft = nodes[selectedNode].memLeft - pods[curPod].memory;
+}
+
 proctype scheduler()
 {
 	short i = 0, j = 0, k = 0, max = 0, p = 0;
@@ -158,6 +167,7 @@ endSch2: do
 							clearNodeScore();
 							scheduleOne();
 							checkIfUnschedulable();
+							assumePod();
 							bindNode();
 
 							// Only support HPA for deployment for now.

@@ -165,7 +165,7 @@ def template_generator(json_config, user_defined=None):
 		json_config["userDefined"][t+"Types"] = deepcopy(type_setup)
 		json_config["userDefined"][t+"ScaleType"] = user_defined[t+"_default"]["ScaleType"]
 
-	#print(json.dumps(json_config, indent=2))
+	logger.debug(json.dumps(json_config, indent=2))
 	json_config["setup"].pop("d")
 	json_config["setup"].pop("pods")
 	json_config["setup"].pop("nodes")
@@ -342,20 +342,23 @@ def generate_list_setup(json_config):
 	if json_config["userDefined"]["dScaleType"] == "proportion":
 		max_dep = get_max_base_propotions(json_config, "d")
 
-#	print(max_node, max_dep)
-
 	step = 1
 	if args.fast_find:
 		step = 2
 		logger.info("Entering fast find model, scale up in a scale of 2")
 
 	if max_node > 0 and max_dep > 0:
-		for i in range(1, max_node+1, step):
-			for j in range(1, max_dep+1, step):
+		for i in range(1, max_node+1):
+			break_flag = False
+			for j in range(1, max_dep+1):
 				count = {"nodes":0, "d":0}
 				generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, count, cur_base={"nodes": i, "d" : j})
 				if exceed_node_proportion(count, j, json_config):
 					break
+				if not args.extreamly_high_confidence and count["nodes"] > high_confidence_node:
+					break_flag = True
+			if break_flag:
+				break
 	elif max_node > 0:
 		for i in range(1, max_node+1, step):
 			count = {"nodes":0, "d":0}
@@ -369,7 +372,6 @@ def generate_list_setup(json_config):
 		generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup)
 
 	logger.info("Total setup is "+str(len(all_setup)))
-	print(all_setup)
 
 	return all_setup
 
@@ -421,14 +423,15 @@ def finding_smallest_scale(json_config, pml_base_path, sort_favor="nodes"):
 		all_setup.sort(key = sort_setup_all)
 #	print(all_setup)
 
-	count = 0
-	for s in all_setup:
-		new_json_config, num_node, num_pod = generate_case_json(json_config, s)
-		config_template_filename = pml_base_path + "/min_exp/" + str(count) + "_" + str(num_node) + "_" + str(num_pod) + ".json"
-		count += 1
+	if args.file_debug:
+		count = 0
+		for s in all_setup:
+			new_json_config, num_node, num_pod = generate_case_json(json_config, s)
+			config_template_filename = pml_base_path + "/min_exp/" + str(count) + "_" + str(num_node) + "_" + str(num_pod) + ".json"
+			count += 1
 
-		with open(config_template_filename,'w') as f:
-			json.dump(new_json_config, f, indent=4)
+			with open(config_template_filename,'w') as f:
+				json.dump(new_json_config, f, indent=4)
 
 	return all_setup, json_config
 

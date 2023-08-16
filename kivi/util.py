@@ -57,6 +57,7 @@ def setup_argparser(arg_parser):
     other_parser = arg_parser.add_argument_group("Other runtime parameters")
     other_parser.add_argument('-jf', '--json_file_path', type=str, help="the file path to dump the intermediate JSON file of cluster setup.")
     other_parser.add_argument('-lf', "--log_output_file", type=str, help="stream the output to file. Need to specify a filename. Default: output to terminal")
+    other_parser.add_argument("-fd", "--file_debug", action='store_true', help="store the intermediate files for debug purposes.")
 
     simulation_arg = arg_parser.add_argument_group("Simulation parameters")
     simulation_arg.add_argument("-si", "--simulation", action='store_true', help="Simulation mode")

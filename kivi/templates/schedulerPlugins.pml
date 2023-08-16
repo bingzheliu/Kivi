@@ -537,7 +537,7 @@ inline nodeResourceFitScore(podSpec)
 					// printf("[******] %d %d %d %d\n", nodes[i].cpuLeft, podSpec.cpuRequested, nodes[i].memLeft, podSpec.memRequested);
 					cpuScore = ((nodes[i].cpuLeft - podSpec.cpuRequested) * MAX_NODE_SCORE / nodes[i].cpuLeft) * 1;
 					memScore = ((nodes[i].memLeft - podSpec.memRequested) * MAX_NODE_SCORE / nodes[i].memLeft) * 1;
-					// printf("[******] %d %d\n", cpuScore, memScore);
+					// printf("[******] !!!! %d %d %d\n", cpuScore, memScore, nodes[i].cpuLeft - podSpec.cpuRequested);
 					nodes[i].score = nodes[i].score + ((cpuScore * 1 + memScore * 1) * NODE_RESOURCE_FIT / 2 )
 					// printf("[******] %d, %d\n", i, nodes[i].score);
 				:: STRATEGY_RESOURCE == 2 ->

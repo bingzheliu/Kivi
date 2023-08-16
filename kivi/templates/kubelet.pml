@@ -20,9 +20,6 @@ endK:	do
 						// create a pod
 						:: pods[i].status == 2 && pods[i].loc != 0 ->
 							short selectedNode = pods[i].loc
-							nodes[selectedNode].numPod++;
-							nodes[selectedNode].cpuLeft = nodes[selectedNode].cpuLeft - pods[i].cpu;
-							nodes[selectedNode].memLeft = nodes[selectedNode].memLeft - pods[i].memory;
 
 							pods[i].status = 1;
 							pods[i].startTime = time;

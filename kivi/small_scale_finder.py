@@ -11,6 +11,8 @@ from config import resource_difference_tolerance
 user_defined_default = {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
 						"d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion", "proportionHPA" : 2}}
 
+equal_templates = {"nodes":["cpu", "memory", "cpuLeft", "memLeft", "status", "labels"], "d":["podTemplateId", "hpaSpec"]}
+
 # definition of userDefined
 # {
 #   // a list of different types of nodes;
@@ -111,8 +113,6 @@ def template_generator(json_config, user_defined=None):
 
 	json_config["userDefined"] = {}
 
-	templates = {"nodes":["cpu", "memory", "cpuLeft", "memLeft", "status", "labels"], "d":["podTemplateId", "hpaSpec"]}
-
 	json_config = deduct_cpu_nodes(json_config)
 
 	for t in ["nodes", "d"]:
@@ -125,7 +125,7 @@ def template_generator(json_config, user_defined=None):
 				cur_max = find_max_replicas_d(n)
 
 			for i in range(0, len(type_setup)):
-				if compare_template(n, type_setup[i]["template"], templates[t]):
+				if compare_template(n, type_setup[i]["template"], equal_templates[t]):
 					count[i] += 1
 					new_flag = False
 					if t == "d":
@@ -135,7 +135,7 @@ def template_generator(json_config, user_defined=None):
 			if new_flag:
 				new_type = {}
 				new_type["template"] = {}
-				assign_template(n, new_type["template"], templates[t])
+				assign_template(n, new_type["template"], equal_templates[t])
 				if t == "nodes":
 					# new_type["template"]["cpuLeft"] = n["cpu"]
 					# new_type["template"]["memLeft"] = n["memory"]
@@ -170,7 +170,7 @@ def template_generator(json_config, user_defined=None):
 	json_config["setup"].pop("pods")
 	json_config["setup"].pop("nodes")
 
-	#print(json.dumps(json_config, indent=2))
+	print(json.dumps(json_config, indent=2))
 
 	return json_config
 

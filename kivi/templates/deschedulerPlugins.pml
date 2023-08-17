@@ -309,11 +309,11 @@ inline topologyIsBalanced()
 	for (k : 0 .. MAX_VALUE-1) {
 		if	
 			:: topologyValueToPods[k].exist == 1->
-				//printf("[*]%d %d\n", k, topologyValueToPods[k].numPods)
 				minDomainSize = (topologyValueToPods[k].numPods < minDomainSize -> topologyValueToPods[k].numPods : minDomainSize)
 				maxDomainSize = (topologyValueToPods[k].numPods > maxDomainSize -> topologyValueToPods[k].numPods : maxDomainSize)
+				// printf("[*]%d %d %d %d %d %d\n", k, topologyValueToPods[k].numPods, podTemplates[i].topoSpreadConstraints[j].maxSkew, minDomainSize, maxDomainSize, j)
 				if 
-					:: maxDomainSize - minDomainSize > podTemplates[i].topoSpreadConstraints[j].maxSkew
+					:: maxDomainSize - minDomainSize > podTemplates[i].topoSpreadConstraints[j].maxSkew->
 						flag = 0
 						break
 					:: else->
@@ -346,9 +346,11 @@ inline sortDomains(sortedDomains)
 
 inline balanceDomains(constraint)
 {
-	short idealAvg = 0
+	short idealAvgFloor = 0, idealAvgCeil;
 	// This again can be more aggressive to evict, overestimation.
-	idealAvg = sumPods / sumValues
+	idealAvgFloor = sumPods / sumValues
+	idealAvgCeil = 0
+	ceil(idealAvgCeil, sumPods, sumValues)
 	// Omitting --> they did the filter again here. TBD: double check and see if this can make any difference.
 
 	// TBD: think about if there's potential estimation
@@ -374,7 +376,7 @@ inline balanceDomains(constraint)
 	p = sumValues-1
 	do 
 		:: k < p->
-			p = ((sortedDomains[p].numPods <= idealAvg) -> p-1 : p)
+			p = ((sortedDomains[p].numPods <= idealAvgCeil) -> p-1 : p)
 			if 
 				:: sortedDomains[p].numPods - sortedDomains[k].numPods <= constraint.maxSkew ->
 					k++ 
@@ -383,12 +385,16 @@ inline balanceDomains(constraint)
 			fi;
 			short cur_min = POD_NUM
 
-			min(cur_min, sortedDomains[p].numPods - idealAvg, idealAvg - sortedDomains[k].numPods)
+			// aboveAvg := math.Ceil(float64(len(sortedDomains[j].pods)) - idealAvg)
+			// belowAvg := math.Ceil(idealAvg - float64(len(sortedDomains[i].pods)))
+			// smallestDiff := math.Min(aboveAvg, belowAvg)
+			min(cur_min, sortedDomains[p].numPods - idealAvgFloor, idealAvgCeil - sortedDomains[k].numPods)
 			// overestimate: it's math.Ceil((skew - float64(constraint.MaxSkew)) / 2). We added 0.99
 			short _ceil_a = 0
 			ceil(_ceil_a, sortedDomains[p].numPods - sortedDomains[k].numPods-constraint.maxSkew, 2)
 			// printf("[*]%d %d %d\n", _ceil_a, sortedDomains[p].numPods - sortedDomains[k].numPods-constraint.maxSkew, 2)
 			min(cur_min, cur_min, _ceil_a)
+			printf("%d %d %d %d\n", k, p, cur_min, idealAvgFloor, idealAvgCeil)
 			if 
 				:: cur_min <= 0 ->
 					k++
@@ -411,7 +417,8 @@ DRPVT1:		skip
 	od;
 
 	cur_min = 0
-	idealAvg = 0
+	idealAvgCeil = 0
+	idealAvgFloor = 0
 }
 
 inline removePodsViolatingTopologySpreadConstraint()

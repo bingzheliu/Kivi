@@ -86,3 +86,7 @@
 #define MAX_NUM_EVICPLUGINS 1
 // TBC for descheduler test
 #define DES_PROFILE_NUM [$DES_PROFILE_NUM]
+
+/*--------- Event Config -----------*/
+// TODO: this can be passed as a parameter by the users
+#define EVENT_CPU_COUNT 3

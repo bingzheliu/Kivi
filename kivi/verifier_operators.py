@@ -27,7 +27,7 @@ def verifier_operator_one(json_config, case_name, log_level, pan_compile, pan_ru
 		success = False
 		while not success:
 			if args.random:
-				timeout = args.timeout if args.timeout is not None else 10
+				timeout = args.timeout if args.timeout is not None else default_timeout
 				rand = random.randint(1, 1000)
 				success, stdout, stderr = run_script(['./pan']+pan_runtime+['-RS'+str(rand)], False, timeout)
 			else:

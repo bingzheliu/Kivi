@@ -60,7 +60,7 @@ proctype eventCpuChange(short targetDeployment)
 	short local_last_time = time;
 
 	do
-	:: i < 5 && ((time - local_last_time >= EVENT_CPU_TIME) || (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail)) -> 
+	:: i < EVENT_CPU_COUNT && ((time - local_last_time >= EVENT_CPU_TIME) || (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail)) -> 
 		atomic {
 			// can we only select the pod from the running list?
 

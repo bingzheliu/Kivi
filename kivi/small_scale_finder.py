@@ -325,11 +325,12 @@ def get_max_base_propotions(json_config, cur_type):
 
 def exceed_node_proportion(count, j, json_config):
 	for d in json_config["userDefined"]["dTypes"]:
-		if j * d["proportion"] > count["nodes"] * d["proportionNode"]:
+		if j * d["proportion"] >= count["nodes"] * d["proportionNode"]:
 			return True
 
 	return False
 
+# To improve, just generate the next setup...
 def generate_list_setup(json_config):
 	all_setup = []
 	cur_setup = {"nodes" : {}, "d" : {}}

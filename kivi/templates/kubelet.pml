@@ -48,9 +48,9 @@ endK:	do
 							d[pods[i].workloadId].replicasInDeletion --;
 							// podTotal = podTotal - 1;
 
+							j = pods[i].loc
 							if 
-								:: flag == 1 ->
-									j = pods[i].loc
+								:: j != 0 ->
 									nodes[j].numPod = nodes[j].numPod - 1;
 									nodes[j].cpuLeft = nodes[j].cpuLeft + pods[i].cpu;
 									nodes[j].memLeft = nodes[j].memLeft + pods[i].memory;

@@ -1559,8 +1559,7 @@ def generate_case_json(case_id, scale, from_template=False, filename=None):
 		json_config = case_fun[case_id](int(scale))
 
 	if from_template:
-		user_defined = get_case_user_defined(case_id, scale)
-		json_config = template_generator(json_config, user_defined)
+		json_config = template_generator(json_config)
 
 	if filename != None:
 		with open(filename,'w') as f:

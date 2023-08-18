@@ -3,8 +3,8 @@
 path=$(cd ..;pwd)
 echo $path
 
-case_scale=(3 5 10 20 30 50 80 100)
-case_id=(s3 s4 h1 h2 s6 s1 s9)
+case_scale=(3 4 5 6 10 20 30 50 80 100)
+case_id=(s4 s1 s9 s6 s3 h2 h1)
 count=3
 #case_scale=(5)
 #case_id=(s4)

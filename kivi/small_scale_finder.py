@@ -9,7 +9,7 @@ from util import *
 from config import resource_difference_tolerance
 
 user_defined_default = {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
-						"d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion", "proportionHPA" : 2}}
+						"d_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion", "proportionHPA" : 2}}
 
 equal_templates = {"nodes":["cpu", "memory", "cpuLeft", "memLeft", "status", "labels"], "d":["podTemplateId", "hpaSpec"]}
 
@@ -306,7 +306,9 @@ def generate_list_setup_dfs(json_config, i, cur_type, cur_setup, all_setup, coun
 
 	elif json_config["userDefined"][cur_type+"ScaleType"] == "free":
 		j = cur_json_config["lowerBound"]
-		while j <= cur_json_config["upperBound"]:
+		while (j <= cur_json_config["upperBound"]):
+			if (cur_type == "d" and j > (count["nodes"] * cur_json_config["proportionNode"])):
+				break
 			cur_setup[cur_type][i] = j
 			count[cur_type] += j
 			generate_list_setup_dfs(json_config, i+1, cur_type, cur_setup, all_setup, count, cur_base)
@@ -373,6 +375,7 @@ def generate_list_setup(json_config):
 		generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, count)
 
 	logger.info("Total setup is "+str(len(all_setup)))
+	print(all_setup)
 
 	return all_setup
 

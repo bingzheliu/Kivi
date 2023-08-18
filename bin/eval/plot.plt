@@ -35,4 +35,20 @@ plot 'results/s3_cn' using 1:2  with lp linewidth 6 linecolor 1 linetype 7 title
 	 'results/h1_cn' using 1:2  with lp linewidth 6 linecolor 6 linetype 8 title 'h1', \
 	 'results/h2_cn' using 1:2  with lp linewidth 6 linecolor 7 linetype 2 title 'h2'
 
+reset
+load './style_small.gnu'
+set termoption dash
+set xlabel 'Node Scale'
+set ylabel 'Deployment Scale'
+
+set view map
+set dgrid3d
+set output './results/heatmap_s9.eps'
+splot "results/heatmap_s9" using 1:2:3 with pm3d
+
+set view map
+set dgrid3d
+set output './results/heatmap_s9_cn.eps'
+splot "results/heatmap_s9_cn" using 1:2:(1-$3) with pm3d
+
 exit

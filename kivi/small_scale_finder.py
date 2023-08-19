@@ -259,12 +259,13 @@ def generate_case_json(json_config, cur_setup):
 
 	return new_json_config, len(new_json_config["setup"]["nodes"]), len(new_json_config["setup"]["pods"]) 
 
+# Need to smartly set the boundary, otherwise it can take longer time. Now 7 is extracted the maxium number of pods that cause the problem
 def get_next_num(j):
 	if args.fast_find:
-		if j < 4:
+		if j < 7:
 			j += 1
 		else:
-			j = j*2
+			j = j+2
 	else:
 		j += 1
 
@@ -354,13 +355,16 @@ def generate_list_setup(json_config):
 	if max_node > 0 and max_dep > 0:
 		for i in range(1, max_node+1):
 			break_flag = False
-			for j in range(1, max_dep+1, step):
+			j = 1
+			while j <= max_dep:
 				count = {"nodes":0, "d":0}
 				generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, count, cur_base={"nodes": i, "d" : j})
 				if exceed_node_proportion(count, j, json_config):
 					break
 				if not args.extreamly_high_confidence and count["nodes"] > high_confidence_node:
 					break_flag = True
+				j = get_next_num(j)
+
 			if break_flag:
 				break
 	elif max_node > 0:

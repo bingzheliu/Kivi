@@ -63,7 +63,7 @@ def verifier_operator_adjust_queue(json_config, case_name, log_level, pan_compil
 	queue_size = 10
 	failure_type, result_log, failure_details, total_mem, elapsed_time = verifier_operator_one(deepcopy(json_config), case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base, None)
 
-	while queue_size < 200:
+	while queue_size < 500:
 		if len(failure_details.split("\n")) > 1 and "Queue is full!" in failure_details.split("\n")[1]:
 			logger.critical("trying queue size "+str(queue_size))
 			failure_type, result_log, failure_details, total_mem, elapsed_time = verifier_operator_one(deepcopy(json_config), case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base, queue_size)
@@ -71,8 +71,10 @@ def verifier_operator_adjust_queue(json_config, case_name, log_level, pan_compil
 		else:
 			break
 
-	if queue_size > 200:
-		failure_type, result_log, failure_details, total_mem, elapsed_time = verifier_operator_one(deepcopy(json_config), case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base, None)
+	if queue_size > 500:
+		logger.critical("Queue size exceed limit!")
+		return "None", result_log, failure_details, total_mem, elapsed_time
+		#failure_type, result_log, failure_details, total_mem, elapsed_time = verifier_operator_one(deepcopy(json_config), case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base, None)
 
 	return failure_type, result_log, failure_details, total_mem, elapsed_time
 

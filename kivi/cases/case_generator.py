@@ -83,6 +83,9 @@ def generate_S1(num_node, non_violation=False):
 	case_config = {}
 	cur_id = 1
 	case_config["setup"] = {}
+	num_type1 = math.ceil(num_node*3/5)
+	num_type2 = math.ceil(num_node/5)
+	num_type3 = max(0, num_node - num_type1 - num_type2)
 
 	# Generate podTemplate
 	case_config["setup"]["podTemplates"] = []
@@ -106,7 +109,7 @@ def generate_S1(num_node, non_violation=False):
 	deployment_to_pod[1] = []
 	case_config["setup"]["pods"] = []
 	num_pod = 0
-	for i in range(0, int(num_node*3/5)):
+	for i in range(0, num_type1):
 		cur_node = {}
 		cur_node["id"] = cur_id
 		cur_node["name"] = cur_id
@@ -128,7 +131,7 @@ def generate_S1(num_node, non_violation=False):
 		cur_node["status"] = 1
 		case_config["setup"]["nodes"].append(cur_node)
 
-	for i in range(0, int(num_node/5)):
+	for i in range(0, num_type2):
 		cur_node = {}
 		cur_node["id"] = cur_id
 		cur_node["name"] = cur_id
@@ -141,13 +144,13 @@ def generate_S1(num_node, non_violation=False):
 		cur_node["memLeft"] = 40
 		cur_node["numPod"] = 3
 		for j in range(0,3):
-			case_config, cur_id = generate_a_pod(case_config, cur_id, i+int(num_node*3/5)+1, 8, 8, 1, deployment_to_pod)
+			case_config, cur_id = generate_a_pod(case_config, cur_id, i+num_type1+1, 8, 8, 1, deployment_to_pod)
 		num_pod += 3
 
 		cur_node["status"] = 1
 		case_config["setup"]["nodes"].append(cur_node)
 
-	for i in range(0, int(num_node/5)):
+	for i in range(0, num_type3):
 		cur_node = {}
 		cur_node["id"] = cur_id
 		cur_node["name"] = cur_id
@@ -160,7 +163,7 @@ def generate_S1(num_node, non_violation=False):
 		cur_node["memLeft"] = 32
 		cur_node["numPod"] = 4
 		for j in range(0,4):
-			case_config, cur_id = generate_a_pod(case_config, cur_id, i+int(num_node*4/5)+1, 8, 8, 1, deployment_to_pod)
+			case_config, cur_id = generate_a_pod(case_config, cur_id, i+num_type1+num_type2+1, 8, 8, 1, deployment_to_pod)
 		num_pod += 4
 
 		cur_node["status"] = 1
@@ -1562,7 +1565,7 @@ def generate_case_json(case_id, scale, from_template=False, filename=None):
 		user_defined = get_case_user_defined(case_id, scale)
 		json_config = template_generator(json_config, user_defined)
 
-	if filename != None:
+	if filename != None and args.file_debug > 2:
 		with open(filename,'w') as f:
 			json.dump(json_config, f, indent=4)
 

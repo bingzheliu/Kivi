@@ -69,16 +69,16 @@ proctype checkS1()
 	byte count = 0;
 endCS11: if 
 			:: d[1].replicasInDeletion > 0 ->
-				if 
+endCS12:		if 
 					:: d[1].replicasInCreation > 0 ->
 						count ++
-						if 
+endCS13:				if 
 							:: count > 5 ->
 								printf("[*] Pods are being scheduled and descheduled in deployment 1!\n")
 								assert(false)
 							:: else->;
 						fi;
-						if 
+endCS14:				if 
 							:: d[1].replicasInDeletion == 0 ->
 								goto endCS11;
 						fi;

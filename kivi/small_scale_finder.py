@@ -351,7 +351,7 @@ def generate_list_setup(json_config):
 	if max_node > 0 and max_dep > 0:
 		for i in range(1, max_node+1):
 			break_flag = False
-			for j in range(1, max_dep+1):
+			for j in range(1, max_dep+1, step):
 				count = {"nodes":0, "d":0}
 				generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, count, cur_base={"nodes": i, "d" : j})
 				if exceed_node_proportion(count, j, json_config):
@@ -424,7 +424,7 @@ def finding_smallest_scale(json_config, pml_base_path, sort_favor="nodes"):
 		all_setup.sort(key = sort_setup_all)
 #	print(all_setup)
 
-	if args.file_debug:
+	if args.file_debug > 2:
 		count = 0
 		for s in all_setup:
 			new_json_config, num_node, num_pod = generate_case_json(json_config, s)

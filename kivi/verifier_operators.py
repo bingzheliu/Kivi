@@ -23,30 +23,39 @@ def verifier_operator_one(json_config, case_name, log_level, pan_compile, pan_ru
 	success, stdout, stderr = run_script(['gcc'] + pan_compile, True)
 
 	result_log = ""
-	with open(result_base_path + "/" + case_name + "_" + str(queue_size), "w") as fw:
-		success = False
-		while not success:
-			if args.random:
-				timeout = args.timeout if args.timeout is not None else default_timeout
-				rand = random.randint(1, 1000)
-				success, stdout, stderr = run_script(['./pan']+pan_runtime+['-RS'+str(rand)], False, timeout)
-			else:
-				success, stdout, stderr = run_script(['./pan']+pan_runtime, False)
 
+	success = False
+	while not success:
+		if args.random:
+			timeout = args.timeout if args.timeout is not None else default_timeout
+			rand = random.randint(1, 1000)
+			success, stdout, stderr = run_script(['./pan']+pan_runtime+['-RS'+str(rand)], False, timeout)
+		else:
+			success, stdout, stderr = run_script(['./pan']+pan_runtime, False)
+
+	if args.file_debug > 0:
 		with open(result_base_path + "/raw_data/exec_" + case_name + "_" + str(queue_size), "w") as fr:
 			fr.write(stdout.decode())
-		failure_type, failure_details, error_trail_name, total_mem, elapsed_time = parse_pan_output(stdout.decode())
-		fw.write(str(failure_type) + " " + str(total_mem) + " " + str(elapsed_time) + '\n')
-		logger.critical(str(failure_type) + " " + str(total_mem) + " " + str(elapsed_time))
-		myprint(failure_details)
 
-		if error_trail_name != None:
-			success, stdout, stderr = run_script(['./pan', '-r', error_trail_name], False)
+	failure_type, failure_details, error_trail_name, total_mem, elapsed_time = parse_pan_output(stdout.decode())
+
+	if args.file_debug > 0:
+		with open(result_base_path + "/" + case_name + "_" + str(queue_size), "w") as fw:
+			fw.write(str(failure_type) + " " + str(total_mem) + " " + str(elapsed_time) + '\n')
+
+	logger.critical(str(failure_type) + " " + str(total_mem) + " " + str(elapsed_time))
+	myprint(failure_details)
+
+	if error_trail_name != None:
+		success, stdout, stderr = run_script(['./pan', '-r', error_trail_name], False)
+		if args.file_debug > 0:
 			with open(result_base_path + "/raw_data/error_" + case_name + "_" + str(queue_size), "w") as fr:
 				fr.write(stdout.decode())
-			result_log, failure_details = parse_spin_error_trail(stdout.decode(), log_level, failure_type)
-			myprint(result_log, logger.debug)
-			fw.write(result_log)
+		result_log, failure_details = parse_spin_error_trail(stdout.decode(), log_level, failure_type)
+		myprint(result_log, logger.debug)
+		if args.file_debug > 0:
+			with open(result_base_path + "/" + case_name + "_" + str(queue_size), "w") as fw:
+				fw.write(result_log)
 
 	return failure_type, result_log, failure_details, total_mem, elapsed_time
 

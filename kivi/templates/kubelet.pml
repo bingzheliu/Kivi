@@ -69,6 +69,8 @@ endK:	do
 							fi;
 							// TODO: add a pod info clear func. Not clearing pod info for now, as we will override them later. But this may potentially cause problem if we made mistakes on overriding. 
 						:: pods[i].status == 1 -> skip;
+						:: else ->
+							printf("[**][Kubelet] Unknown pod status %d with pod Id %d and location %d\n", pods[i].status, i, pods[i].loc)
 					fi;
 					updateQueueIndex(kblIndex, MAX_KUBELET_QUEUE)
 					time = time + KUBELET_RUN_TIME

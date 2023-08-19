@@ -1317,7 +1317,7 @@ def generate_S3_woCPU(num_node, non_violation=False):
 	rp["deploymentId"] = 1
 	d["replicaSets"].append(rp)
 
-	d["specReplicas"] = 0
+	d["specReplicas"] = 1
 	d["replicas"] = 0
 
 	d["podTemplateId"] = 1
@@ -1365,13 +1365,13 @@ def generate_S3_woCPU(num_node, non_violation=False):
 	case_config["setup"]["podTemplates"].append(pt)
 
 	## Generate Deployment template
-	case_config["setup"]["deploymentTemplates"] = []
-	dt = {}
-	dt["id"] = cur_id
-	dt["name"] = d_id
-	dt["specReplicas"] = 1
-	cur_id += 1
-	case_config["setup"]["deploymentTemplates"].append(dt)
+	# case_config["setup"]["deploymentTemplates"] = []
+	# dt = {}
+	# dt["id"] = cur_id
+	# dt["name"] = d_id
+	# dt["specReplicas"] = 1
+	# cur_id += 1
+	# case_config["setup"]["deploymentTemplates"].append(dt)
 
 	case_config["controllers"] = {}
 	case_config["controllers"]["scheduler"] = {}
@@ -1382,8 +1382,13 @@ def generate_S3_woCPU(num_node, non_violation=False):
 	# case_config["events"].append({"name":"eventCpuChange", "after_stable": True, "para" : {"targetDeployment" : 1}})
 
 	case_config["userCommand"] = []
-	# this is the id for the index of deploymentTemplates, not the deployment name
-	case_config["userCommand"].append({"name" : "applyDeployment", "para" : 1, "priority" : 0, "after_stable":True})
+	# # this is the id for the index of deploymentTemplates, not the deployment name
+	# case_config["userCommand"].append({"name" : "applyDeployment", "para" : 1, "priority" : 0, "after_stable":True})
+	cur_json_uc = {}
+	cur_json_uc["name"] = "createTargetDeployment"
+	cur_json_uc["para"] = 1
+	cur_json_uc["priority"] = 100
+	case_config["userCommand"].append(cur_json_uc)
 
 	return case_config
 

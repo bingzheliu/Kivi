@@ -38,6 +38,9 @@ equal_templates = {"nodes":["cpu", "memory", "cpuLeft", "memLeft", "status", "la
 #   "dScaleType": "proportion" or "free"	?
 # }
 
+# TODO
+# 1. may need to process deploymentTemplates deploymentTemplates.
+# 2. merge the applyDeployment related events
 def compare_field(t1, t2, field):
 	if field in ["cpu", "memory", "memLeft", "cpuLeft"]:
 		return math.abs(t1-t2) <= resource_difference_tolerance

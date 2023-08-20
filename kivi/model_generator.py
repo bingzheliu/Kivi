@@ -404,9 +404,9 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 
 	max_no_schedule_node, max_no_prefer_schedule_node, max_affinity_rules, max_matched_node, max_topo_con, max_cpu_pattern = get_max_pod_template(json_config)
 
-	dep_queue = deployment_num*2
-	pod_queue = pod_num*2
-	node_queue = node_num*2
+	dep_queue = deployment_num+2
+	pod_queue = pod_num+2
+	node_queue = node_num+2
 	#print(dep_queue, pod_queue, node_queue)
 	if queue_size_default is not None:
 		dep_queue = dep_queue if dep_queue > queue_size_default else queue_size_default

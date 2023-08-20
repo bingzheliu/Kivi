@@ -218,6 +218,30 @@ inline updatePodCpuUsageOnNode(pod_selected, cpu_change)
 	}
 }
 
+inline checkDuplicate(queue, tail, index, item, max_queue_size)
+{
+	short _index = 0;
+	_index = index
+	
+	do 
+		:: _index == tail -> break
+		:: else ->
+			if 
+				:: queue[_index] == item -> 
+					_flag = 1
+					break
+				:: else->
+			fi
+
+			if
+				:: _index == max_queue_size-1->
+					_index = 0
+				:: else->
+					_index ++
+			fi
+	od
+}
+
 // update the queue without adding duplicated items
 // Initially, all items in the queue is 0
 // The queue is a rotation queue. and can only store the event of MAX_QUEUE_SIZE
@@ -244,8 +268,12 @@ inline updateQueue(queue, tail, index, item, max_queue_size)
 				:: else->
 					_m = tail - 1
 			fi;
+
+			bit _flag = 0;
+			_flag = 0;
+			checkDuplicate(queue, tail, index, item, max_queue_size)
 			if
-				:: index == tail || queue[_m] != item ->
+				:: index == tail || _flag != 1 ->
 					queue[tail] = item
 					if
 						:: tail == max_queue_size-1->
@@ -265,6 +293,7 @@ inline updateQueue(queue, tail, index, item, max_queue_size)
 				:: else->
 			fi
 			 _m = 0;
+			 _flag = 0;
 	
 
 			printQueue(queue, tail)

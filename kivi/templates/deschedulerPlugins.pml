@@ -146,6 +146,7 @@ inline examTargetNodes(q)
 		fi;
 		matchingNodes ++
 DRMD2:	skip;
+		matched = 0;
 	}
 	// Only when matchingNodes > 1, the targetNodes will increase. 
 	if 
@@ -284,6 +285,8 @@ DRMD3:						skip;
 				fi;
 			:: else->;
 		fi;
+		targetNodes = 0
+		upperAvg = 0
 	}
 
 	// Clear local variables
@@ -297,8 +300,8 @@ DRMD3:						skip;
 			}
 		}
 	}
-
 	printf("[***][DeScheduler] removeDuplicates plugins finished!\n")
+
 }
 
 inline topologyIsBalanced()
@@ -346,7 +349,7 @@ inline sortDomains(sortedDomains)
 
 inline balanceDomains(constraint)
 {
-	short idealAvgFloor = 0, idealAvgCeil;
+	short idealAvgFloor, idealAvgCeil;
 	// This again can be more aggressive to evict, overestimation.
 	idealAvgFloor = sumPods / sumValues
 	idealAvgCeil = 0
@@ -419,6 +422,7 @@ DRPVT1:		skip
 	cur_min = 0
 	idealAvgCeil = 0
 	idealAvgFloor = 0
+	_ceil_a = 0
 }
 
 inline removePodsViolatingTopologySpreadConstraint()
@@ -444,7 +448,8 @@ inline removePodsViolatingTopologySpreadConstraint()
 				// need to match with the configured descheduler constraints.
 				:: deschedulerProfiles[ii].constraintsTopologySpread == 2 || deschedulerProfiles[ii].constraintsTopologySpread == podTemplates[i].topoSpreadConstraints[j].whenUnsatisfiable->
 					short sumPods = 0, sumValues = 0
-					
+					sumPods = 0;
+					sumValues = 0;
 					for (k : 1 .. NODE_NUM) {
 						if 
 							::nodes[k].status == 1 && nodes[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey] != -1 ->
@@ -520,6 +525,8 @@ inline removePodsViolatingTopologySpreadConstraint()
 					fi;
 				:: else->;
 			fi;
+			sumPods = 0;
+			sumValues = 0;
 		}
 	}
 

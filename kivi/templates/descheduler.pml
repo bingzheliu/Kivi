@@ -79,8 +79,9 @@ des1:					i = 0;
 						ii = 0;
 						jj = 0;
 						k = 0;
-						flag = 0;
 						p = 0;
+						count = 0;
+						flag = 0;
 			}
 	od;
 }

@@ -38,7 +38,8 @@ endK:	do
 							fi;
 
 							printf("[*][Kubelet] start; %d; %d; Created pod %d on node %d, deployment %d now have %d replicas\n", i, selectedNode, i, selectedNode, pods[i].workloadId, d[pods[i].workloadId].replicas);
-
+							selectedNode = 0;
+							
 						:: pods[i].status == 3 ->
 							pods[i].curCpuIndex = 0;
 							// d[pods[i].workloadId].replicas --;
@@ -77,6 +78,7 @@ endK:	do
 
 					i = 0;
 					j = 0;
+					flag = 0;
 				}	
 			}
 	od;

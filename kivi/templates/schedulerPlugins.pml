@@ -117,6 +117,7 @@ inline nodeAffinityFilter(podSpec)
 
 	printf("[***][SchedulerPlugins] Finished nodeAffinityFilter.\n")
 	printfNodeScore();
+	flag = 0
 }
 
 inline taintTolerationFilter(podSpec)
@@ -313,6 +314,7 @@ inline podTopologySpreadFilter(curPod, podSpec)
 				short selfMatchNum = 0;
 				p = 0;
 				bit flag = 0;
+				flag = 0;
 				for (p : 0 .. podSpec.topoSpreadConstraints[j].numMatchedLabel - 1) {
 						if 
 							:: (pods[curPod].labelKeyValue[podSpec.topoSpreadConstraints[j].labelKey[p]] != podSpec.topoSpreadConstraints[j].labelValue[p]) ->
@@ -566,7 +568,7 @@ inline podTopologySpreadPreScore(podSpec)
 	// original is requireAllTopologies := len(pod.Spec.TopologySpreadConstraints) > 0 || !pl.systemDefaulted, in scoring.go
 	// However, we have filled in the system default in pre-processing, so we check on a varibale passed by the pre-processor and see if user has defined any constraints. 
 	bit requireAllTopologies = userDefinedConstraints;
-
+	requireAllTopologies = userDefinedConstraints;
 	// The initPreScoreState function
 	//// building default config has been done by the model generator
 	i = 1;
@@ -635,7 +637,8 @@ ptsp1:	skip;
 		
 		j = 0;
 		for (j : 0 .. podSpec.numTopoSpreadConstraints-1) {
-			short curValue = nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey];
+			short curValue = 0;
+			curValue = nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey];
 			if 
 			 	:: (podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 0) || (curValue == -1)->
 				 goto ptsp4;
@@ -648,7 +651,8 @@ ptsp1:	skip;
 			fi;
 
 			// We count all the pods, including terminating pods, as we don't model the terminating state for now. 
-			short count = 0;
+			short count;
+			count = 0;
 			findMatchedPod(i, j, podSpec);
 			printf("[*****][SchedulerPlugins] Matched pod for {node %d, topologyKey %d} is %d\n", i, podSpec.topoSpreadConstraints[j].topologyKey, count)
 			topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] = topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] + count;
@@ -658,6 +662,7 @@ ptsp4: 		skip;
 		}
 ptsp3:	skip;
 	}
+	requireAllTopologies = 0
 }
 
 // Note: minDomains is not used in soft constraints acoording to the docs: 
@@ -681,7 +686,8 @@ inline podTopologySpreadScore(podSpec)
 
 			// scoreForCount(cnt int64, maxSkew int32, tpWeight float64): float64(cnt)*tpWeight + float64(maxSkew-1),
 			// which means that, if a topo has more domains, the more the matched pods, the more the scores
-			short curValue = nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey];
+			short curValue;
+			curValue = nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey];
 			// [estimate] they did a round on the score, while we are all floored. 
 			printf("[******][SchedulerPlugins] topoKey %d, curValue %d\n", podSpec.topoSpreadConstraints[j].topologyKey, curValue)
 			if

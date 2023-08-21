@@ -82,7 +82,7 @@ inline replicasetDeletePod(replicaset, curPod)
 	atomic{
 		d_step{
 			short _m = 0;
-
+			_m = 0;
 			do 
 				:: _m < replicaset.replicas -> 
 					if 
@@ -222,7 +222,7 @@ inline checkDuplicate(queue, tail, index, item, max_queue_size)
 {
 	short _index = 0;
 	_index = index
-	
+
 	do 
 		:: _index == tail -> break
 		:: else ->
@@ -240,6 +240,7 @@ inline checkDuplicate(queue, tail, index, item, max_queue_size)
 					_index ++
 			fi
 	od
+	_index = 0
 }
 
 // update the queue without adding duplicated items

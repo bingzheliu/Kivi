@@ -7,6 +7,7 @@
 from util import *
 from config import *
 from processing_default import check_for_completion_add_default, default_controllers, event_uc_default_str, default_parameter_order, descheduler_args_default, controller_para_default, descheduler_plugins_maps
+import json
 
 index_starts_at_one = {"pods", "nodes", "d", "podTemplates", "deploymentTemplates"}
 
@@ -370,10 +371,39 @@ def process_node_affinity(json_config):
 				pt["affinityRules"][i]["numMatchedNode"] = len(pt["affinityRules"][i]["matchedNode"])
 				del pt["affinityRules"][i]["labels"]
 
+stable_variables = {"nodes" : ["id", "name", "labelKeyValue", "score", "curScore", "curAffinity", "curTaint"]} 
+
+def process_stable_variables(json_config):
+	print(json.dumps(json_config, indent=2))
+	stable_array = {}
+	for e in json_config["setup"]:
+		if e in stable_variables:
+			stable_array[e+"Stable"] = []
+			for n in json_config["setup"][e]:
+				new_type = {}
+				for a in n:
+					if a in stable_variables[e]:
+						new_type[a] = deepcopy(n[a])
+				
+				for a in stable_variables[e]:
+					del n[a]
+
+				stable_array[e+"Stable"].append(deepcopy(new_type))
+
+	for e in stable_array:
+		json_config["setup"][e] = deepcopy(stable_array[e])
+
+	print(json.dumps(json_config, indent=2))
+
+	return json_config
+
+
 def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, template_path, queue_size_default):
 	userDefinedConstraints = check_for_completion_add_default(json_config)
 	process_node_affinity(json_config)
 	max_label, max_value = process_labels(json_config)
+
+	json_config = process_stable_variables(json_config)
 
 	s_proc_after_stable = ""
 

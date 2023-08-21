@@ -43,10 +43,10 @@ init{
 		updateQueue(dsQueue, dsTail, dsIndex, i, MAX_DESCHEDULER_QUEUE);
 	}
 
-	if 
-		:: (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail) ->
-			[$PROC_AFTER_STABLE]
-			skip
-	fi;
+endINIT:	if 
+				:: (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail) ->
+					[$PROC_AFTER_STABLE]
+					skip
+			fi;
 
 }

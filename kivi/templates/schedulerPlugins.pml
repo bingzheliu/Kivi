@@ -34,10 +34,10 @@ inline helperFilter()
 	do
 	:: i < NODE_NUM+1 ->
 		if
-		:: nodes[i].score == 1 ->
-			nodes[i].score = 0;
-		:: nodes[i].score == 0 ->
-			nodes[i].score = -1;
+		:: nodesStable[i].score == 1 ->
+			nodesStable[i].score = 0;
+		:: nodesStable[i].score == 0 ->
+			nodesStable[i].score = -1;
 		:: else->;
 		fi;
 		i++;
@@ -58,7 +58,7 @@ inline nodeNameFilter(podSpec)
 	do
 	:: i < NODE_NUM+1 ->
 		if
-		:: ((podSpec.nodeName == 0) || (nodes[i].name == podSpec.nodeName)) && (nodes[i].score != -1) -> nodes[i].score = 1;
+		:: ((podSpec.nodeName == 0) || (nodesStable[i].name == podSpec.nodeName)) && (nodesStable[i].score != -1) -> nodesStable[i].score = 1;
 		:: else->;
 		fi;
 		i++;
@@ -89,9 +89,9 @@ inline nodeAffinityFilter(podSpec)
 			flag = 0;
 			for (k : 0 .. podSpec.affinityRules[j].numMatchedNode - 1) {
 				if 
-				:: nodes[podSpec.affinityRules[j].matchedNode[k]].score != -1 ->
-					nodes[podSpec.affinityRules[j].matchedNode[k]].score = 1;
-					nodes[podSpec.affinityRules[j].matchedNode[k]].curAffinity = 1;
+				:: nodesStable[podSpec.affinityRules[j].matchedNode[k]].score != -1 ->
+					nodesStable[podSpec.affinityRules[j].matchedNode[k]].score = 1;
+					nodesStable[podSpec.affinityRules[j].matchedNode[k]].curAffinity = 1;
 				:: else->;
 				fi;
 			}
@@ -104,9 +104,9 @@ inline nodeAffinityFilter(podSpec)
 			j = 1;
 			for (j : 1 .. NODE_NUM) {
 				if
-					:: nodes[j].score != -1 -> 
-						nodes[j].score = 1;
-						nodes[j].curAffinity = 1;
+					:: nodesStable[j].score != -1 -> 
+						nodesStable[j].score = 1;
+						nodesStable[j].curAffinity = 1;
 					:: else->;
 				fi;
 			}
@@ -125,8 +125,8 @@ inline taintTolerationFilter(podSpec)
 	j = 0;
 	do
 	:: j < podSpec.numNoScheduleNode ->
-	   nodes[podSpec.noScheduleNode[j]].score = -1;
-	   nodes[podSpec.noScheduleNode[j]].curTaint = 1;
+	   nodesStable[podSpec.noScheduleNode[j]].score = -1;
+	   nodesStable[podSpec.noScheduleNode[j]].curTaint = 1;
 	   j++;
 	:: else -> break;
 	od;
@@ -172,7 +172,7 @@ inline podTopologySpreadPreFilter(podSpec)
 	do
 		:: i < NODE_NUM + 1 ->
 			if 
-				:: enableNodeInclusionPolicyInPodTopologySpread == 0 && nodes[i].curAffinity != 1 -> 
+				:: enableNodeInclusionPolicyInPodTopologySpread == 0 && nodesStable[i].curAffinity != 1 -> 
 					goto stopo1;
 				:: else->;
 			fi;
@@ -188,7 +188,7 @@ inline podTopologySpreadPreFilter(podSpec)
 					fi;
 
 					if
-						:: nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey] == -1 ->
+						:: nodesStable[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey] == -1 ->
 							goto stopo1;
 						:: else->;
 					fi;
@@ -206,7 +206,7 @@ stopo2:				j++;
 					fi;
 					// impl matchNodeInclusionPolicies in common.go
 					if 
-						:: (enableNodeInclusionPolicyInPodTopologySpread == 1) &&  ((podSpec.topoSpreadConstraints[j].nodeAffinityPolicy == 1 && nodes[i].curAffinity != 1) || (podSpec.topoSpreadConstraints[j].nodeTaintsPolicy == 1 && nodes[i].curTaint == 1)) ->
+						:: (enableNodeInclusionPolicyInPodTopologySpread == 1) &&  ((podSpec.topoSpreadConstraints[j].nodeAffinityPolicy == 1 && nodesStable[i].curAffinity != 1) || (podSpec.topoSpreadConstraints[j].nodeTaintsPolicy == 1 && nodesStable[i].curTaint == 1)) ->
 							goto stopo1;
 						:: else->;
 					fi;
@@ -219,12 +219,12 @@ stopo2:				j++;
 					short key = podSpec.topoSpreadConstraints[j].topologyKey;
 
 					if 
-						:: count >= 0 && tpPairToMatchNum[key].a[nodes[i].labelKeyValue[key]] == -1 -> 
-							tpPairToMatchNum[key].a[nodes[i].labelKeyValue[key]] = count;
+						:: count >= 0 && tpPairToMatchNum[key].a[nodesStable[i].labelKeyValue[key]] == -1 -> 
+							tpPairToMatchNum[key].a[nodesStable[i].labelKeyValue[key]] = count;
 						:: else ->
-							tpPairToMatchNum[key].a[nodes[i].labelKeyValue[key]] = tpPairToMatchNum[key].a[nodes[i].labelKeyValue[key]] + count;
+							tpPairToMatchNum[key].a[nodesStable[i].labelKeyValue[key]] = tpPairToMatchNum[key].a[nodesStable[i].labelKeyValue[key]] + count;
 					fi;
-					printf("[****][SchedulerPlugins] Matched pod for {%d, %d} is %d\n", key, nodes[i].labelKeyValue[key], count)
+					printf("[****][SchedulerPlugins] Matched pod for {%d, %d} is %d\n", key, nodesStable[i].labelKeyValue[key], count)
 					count = 0;
 					key = 0;
 stopo5:				j++;
@@ -282,7 +282,7 @@ inline podTopologySpreadFilter(curPod, podSpec)
 	do
 		:: i < NODE_NUM + 1 ->
 			if 
-				:: nodes[i].score == -1 ->
+				:: nodesStable[i].score == -1 ->
 					goto stopo4;
 				:: else->;
 			fi;
@@ -296,8 +296,8 @@ inline podTopologySpreadFilter(curPod, podSpec)
 
 				short key = podSpec.topoSpreadConstraints[j].topologyKey;
 				if 
-					:: nodes[i].labelKeyValue[key] == -1 ->
-						nodes[i].score = -1;
+					:: nodesStable[i].labelKeyValue[key] == -1 ->
+						nodesStable[i].score = -1;
 						goto stopo4;
 					:: else->;
 				fi;
@@ -330,12 +330,12 @@ inline podTopologySpreadFilter(curPod, podSpec)
 					:: else->;
 				fi;
 
-				printf("[****][SchedulerPlugins] PodTopoSpread: on node %d, total num %d, selfMatchNum %d, minMatchNum %d\n", i, tpPairToMatchNum[key].a[nodes[i].labelKeyValue[key]], selfMatchNum, minMatchNum)
+				printf("[****][SchedulerPlugins] PodTopoSpread: on node %d, total num %d, selfMatchNum %d, minMatchNum %d\n", i, tpPairToMatchNum[key].a[nodesStable[i].labelKeyValue[key]], selfMatchNum, minMatchNum)
 
 				if 
-					:: tpPairToMatchNum[key].a[nodes[i].labelKeyValue[key]] + selfMatchNum - minMatchNum >  podSpec.topoSpreadConstraints[j].maxSkew ->
+					:: tpPairToMatchNum[key].a[nodesStable[i].labelKeyValue[key]] + selfMatchNum - minMatchNum >  podSpec.topoSpreadConstraints[j].maxSkew ->
 						printf("[***][SchedulerPlugins] Node %d not passing topoSpreadConstraints %d\n", i, j)
-						nodes[i].score = -1;
+						nodesStable[i].score = -1;
 					:: else->;
 				fi;
 				selfMatchNum = 0;
@@ -379,6 +379,15 @@ inline podTopologySpreadFiltering(curPod, podSpec)
 
 	clearArray(tpKeyToDomainsNum, MAX_LABEL)
 	clearArray(tpKeyToCriticalPaths, MAX_LABEL)
+
+	i = 0;
+	for (i : 0 .. MAX_LABEL-1) {
+		j = 0;
+		tpKeyToDomainsNum[i] = 0;
+		for (j : 0 .. MAX_VALUE-1) {
+			tpPairToMatchNum[i].a[j] = 0;
+		}
+	}
 }
 
 
@@ -393,8 +402,8 @@ inline defaultNormalizeScoreAndWeight(reverse, weight)
 	do
 	:: i < NODE_NUM+1 ->
 		if
-		:: nodes[i].score != -1 && nodes[i].curScore > max -> 
-			max = nodes[i].curScore;
+		:: nodesStable[i].score != -1 && nodesStable[i].curScore > max -> 
+			max = nodesStable[i].curScore;
 		:: else->;
 		fi;
 		i++;
@@ -407,10 +416,10 @@ inline defaultNormalizeScoreAndWeight(reverse, weight)
 		do
 		:: i < NODE_NUM+1 ->
 			if 
-				:: nodes[i].score != -1 -> 
-					 nodes[i].curScore = MAX_NODE_SCORE;
-					 nodes[i].score = nodes[i].score + (nodes[i].curScore * weight);
-					 nodes[i].curScore = 0;
+				:: nodesStable[i].score != -1 -> 
+					 nodesStable[i].curScore = MAX_NODE_SCORE;
+					 nodesStable[i].score = nodesStable[i].score + (nodesStable[i].curScore * weight);
+					 nodesStable[i].curScore = 0;
 				:: else->;
 			fi;
 			i++;
@@ -426,15 +435,15 @@ inline defaultNormalizeScoreAndWeight(reverse, weight)
 	do
 	:: i < NODE_NUM+1 ->
 		if
-		:: nodes[i].score != -1 -> 
-			nodes[i].curScore = (nodes[i].curScore * MAX_NODE_SCORE / max);
+		:: nodesStable[i].score != -1 -> 
+			nodesStable[i].curScore = (nodesStable[i].curScore * MAX_NODE_SCORE / max);
 			if
 			:: reverse == 1 ->
-				nodes[i].curScore = MAX_NODE_SCORE - nodes[i].curScore;
+				nodesStable[i].curScore = MAX_NODE_SCORE - nodesStable[i].curScore;
 			:: else->;
 			fi;
-			nodes[i].score = nodes[i].score + (nodes[i].curScore * weight);
-			nodes[i].curScore = 0;
+			nodesStable[i].score = nodesStable[i].score + (nodesStable[i].curScore * weight);
+			nodesStable[i].curScore = 0;
 		:: else->;
 		fi;
 		i++;
@@ -453,8 +462,8 @@ inline nodeAffinityScore(podSpec)
 			do
 			:: k < podSpec.affinityRules[j].numMatchedNode ->
 				if 
-				:: nodes[podSpec.affinityRules[j].matchedNode[k]].score != -1 ->
-					nodes[podSpec.affinityRules[j].matchedNode[k]].curScore = nodes[podSpec.affinityRules[j].matchedNode[k]].curScore + podSpec.affinityRules[j].weight;
+				:: nodesStable[podSpec.affinityRules[j].matchedNode[k]].score != -1 ->
+					nodesStable[podSpec.affinityRules[j].matchedNode[k]].curScore = nodesStable[podSpec.affinityRules[j].matchedNode[k]].curScore + podSpec.affinityRules[j].weight;
 				:: else->;
 				fi;
 				k++;
@@ -480,8 +489,8 @@ inline taintTolerationScore(podSpec)
 	:: j < podSpec.numPreferNoScheduleNode ->
 		k = podSpec.preferNoScheduleNode[j];
 		if 
-		:: nodes[k].score != -1 ->
-			nodes[k].curScore++;
+		:: nodesStable[k].score != -1 ->
+			nodesStable[k].curScore++;
 		:: else->;
 	  	fi;
 	   j++;
@@ -515,7 +524,7 @@ inline nodeResourcesFitFilter(podSpec)
 	::	i < NODE_NUM+1 ->
 		if
 		::  (podSpec.cpuRequested > nodes[i].cpuLeft) || (podSpec.memRequested > nodes[i].memLeft) || (nodes[i].numPod + 1) > NODE_ALLOWED_POD_NUM -> 
-			nodes[i].score = -1;
+			nodesStable[i].score = -1;
 		:: else->;
 		fi;
 		i++;
@@ -533,19 +542,19 @@ inline nodeResourceFitScore(podSpec)
 	do 
 	::	i < NODE_NUM+1 ->
 		if
-		:: nodes[i].score != -1 ->
+		:: nodesStable[i].score != -1 ->
 			if 
 				:: STRATEGY_RESOURCE == 1 ->
 					// printf("[******] %d %d %d %d\n", nodes[i].cpuLeft, podSpec.cpuRequested, nodes[i].memLeft, podSpec.memRequested);
 					cpuScore = ((nodes[i].cpuLeft - podSpec.cpuRequested) * MAX_NODE_SCORE / nodes[i].cpuLeft) * 1;
 					memScore = ((nodes[i].memLeft - podSpec.memRequested) * MAX_NODE_SCORE / nodes[i].memLeft) * 1;
 					// printf("[******] !!!! %d %d %d\n", cpuScore, memScore, nodes[i].cpuLeft - podSpec.cpuRequested);
-					nodes[i].score = nodes[i].score + ((cpuScore * 1 + memScore * 1) * NODE_RESOURCE_FIT / 2 )
+					nodesStable[i].score = nodesStable[i].score + ((cpuScore * 1 + memScore * 1) * NODE_RESOURCE_FIT / 2 )
 					// printf("[******] %d, %d\n", i, nodes[i].score);
 				:: STRATEGY_RESOURCE == 2 ->
 					cpuScore = ((podSpec.cpuRequested) * MAX_NODE_SCORE / nodes[i].cpuLeft) * 1;
 					memScore = ((podSpec.memRequested) * MAX_NODE_SCORE / nodes[i].memLeft) * 1;
-					nodes[i].score = nodes[i].score + ((cpuScore * 1 + memScore * 1) * NODE_RESOURCE_FIT / 2 )
+					nodesStable[i].score = nodesStable[i].score + ((cpuScore * 1 + memScore * 1) * NODE_RESOURCE_FIT / 2 )
 				:: else -> 
 					printf("[*Warning][SchedulerPlugins] No/Wrong scheduling strategy defined!\n");
 					assert(false);
@@ -575,14 +584,14 @@ inline podTopologySpreadPreScore(podSpec)
 	for (i : 1 .. NODE_NUM) {
 		// in this iteration, they iterate only on filtered node
 		if 
-			:: nodes[i].score == -1 -> goto ptsp1;
+			:: nodesStable[i].score == -1 -> goto ptsp1;
 			:: else->;
 		fi;
 
 		j = 0;
 		for (j : 0 .. podSpec.numTopoSpreadConstraints-1) {
 			if 
-				:: (requireAllTopologies == 1) && (podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 1) && (nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey] == -1) -> 
+				:: (requireAllTopologies == 1) && (podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 1) && (nodesStable[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey] == -1) -> 
 					ignoredNode[i] = 1; 
 					goto ptsp1;
 				:: else->;
@@ -593,7 +602,7 @@ inline podTopologySpreadPreScore(podSpec)
 		// In summary, only the pods on top of filtered node + nodes match with all topoKey (exclude default constraints) will be counted. 
 		j = 0;
 		for (j : 0 .. podSpec.numTopoSpreadConstraints-1) {
-			short curValue = nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey];
+			short curValue = nodesStable[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey];
 			// count how many distinct domains for each topoKey
 			if 
 				:: curValue == -1 -> goto ptsp2;
@@ -622,14 +631,14 @@ ptsp1:	skip;
 	for (i : 1 .. NODE_NUM) {
 		// in this iteration, they iterate on all nodes
 		if 
-			:: enableNodeInclusionPolicyInPodTopologySpread == 0 && nodes[i].curAffinity != 1 -> goto ptsp3;
+			:: enableNodeInclusionPolicyInPodTopologySpread == 0 && nodesStable[i].curAffinity != 1 -> goto ptsp3;
 			:: else->;
 		fi;
 
 		j = 0;
 		for (j : 0 .. podSpec.numTopoSpreadConstraints-1) {
 			if
-				:: ((requireAllTopologies == 1) && (podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 1) && (nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey] == -1)) -> 
+				:: ((requireAllTopologies == 1) && (podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 1) && (nodesStable[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey] == -1)) -> 
 					goto ptsp3;
 				:: else->;
 			fi;
@@ -638,14 +647,14 @@ ptsp1:	skip;
 		j = 0;
 		for (j : 0 .. podSpec.numTopoSpreadConstraints-1) {
 			short curValue = 0;
-			curValue = nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey];
+			curValue = nodesStable[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey];
 			if 
 			 	:: (podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 0) || (curValue == -1)->
 				 goto ptsp4;
 			 	:: else->;
 			fi;
 			if 
-				:: (enableNodeInclusionPolicyInPodTopologySpread == 1 && nodes[i].curAffinity != 1) || (topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] == -1) -> 
+				:: (enableNodeInclusionPolicyInPodTopologySpread == 1 && nodesStable[i].curAffinity != 1) || (topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] == -1) -> 
 				 goto ptsp4;
 				:: else->;
 			fi;
@@ -672,7 +681,7 @@ inline podTopologySpreadScore(podSpec)
 	i = 1;
 	for (i : 1 .. NODE_NUM) {
 		if 
-			:: (ignoredNode[i] == 1) || (nodes[i].score == -1) -> goto ptss1;
+			:: (ignoredNode[i] == 1) || (nodesStable[i].score == -1) -> goto ptss1;
 			:: else->;
 		fi;
 
@@ -687,13 +696,13 @@ inline podTopologySpreadScore(podSpec)
 			// scoreForCount(cnt int64, maxSkew int32, tpWeight float64): float64(cnt)*tpWeight + float64(maxSkew-1),
 			// which means that, if a topo has more domains, the more the matched pods, the more the scores
 			short curValue;
-			curValue = nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey];
+			curValue = nodesStable[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey];
 			// [estimate] they did a round on the score, while we are all floored. 
 			printf("[******][SchedulerPlugins] topoKey %d, curValue %d\n", podSpec.topoSpreadConstraints[j].topologyKey, curValue)
 			if
 				:: curValue != -1 ->
-			nodes[i].curScore = nodes[i].curScore + topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] * topologyNormalizingWeight[j] + (podSpec.topoSpreadConstraints[j].maxSkew - 1)
-			printf("[******][SchedulerPlugins] Current Constraints on key %d. Node %d, curScore %d.\n", podSpec.topoSpreadConstraints[j].topologyKey, i, nodes[i].curScore)
+			nodesStable[i].curScore = nodesStable[i].curScore + topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] * topologyNormalizingWeight[j] + (podSpec.topoSpreadConstraints[j].maxSkew - 1)
+			printf("[******][SchedulerPlugins] Current Constraints on key %d. Node %d, curScore %d.\n", podSpec.topoSpreadConstraints[j].topologyKey, i, nodesStable[i].curScore)
 			printf("[******][SchedulerPlugins] TopopairToCount %d, weight %d, maxSkew %d \n", topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue], topologyNormalizingWeight[j], podSpec.topoSpreadConstraints[j].maxSkew)
 				:: else->;
 			fi;
@@ -712,31 +721,31 @@ inline podTopologySpreadNormalizeScore()
 	i = 1;
 	for (i : 1 .. NODE_NUM) {
 		if 
-			:: (nodes[i].score == -1) || (ignoredNode[i] == 1) ->
-				nodes[i].curScore = -1; 
+			:: (nodesStable[i].score == -1) || (ignoredNode[i] == 1) ->
+				nodesStable[i].curScore = -1; 
 				goto ptsns1 ;
 			:: else->;
 		fi;
-		minScore = (nodes[i].score != -1 && nodes[i].curScore < minScore ->  nodes[i].curScore : minScore)
-		maxScore = (nodes[i].score != -1 && nodes[i].curScore > maxScore ->  nodes[i].curScore : maxScore)
+		minScore = (nodesStable[i].score != -1 && nodesStable[i].curScore < minScore ->  nodesStable[i].curScore : minScore)
+		maxScore = (nodesStable[i].score != -1 && nodesStable[i].curScore > maxScore ->  nodesStable[i].curScore : maxScore)
 
 ptsns1: skip;
 	}
 
 	for (i : 1 .. NODE_NUM) {
 		if
-			:: nodes[i].score == -1 || nodes[i].curScore == -1 -> 
+			:: nodesStable[i].score == -1 || nodesStable[i].curScore == -1 -> 
 				goto ptsns2;
 			:: else->;
 		fi;
 		if 
 			:: maxScore == 0 ->
-				nodes[i].curScore = MAX_NODE_SCORE;
-				nodes[i].score = nodes[i].score + NODE_PODTOPO_SPREAD_WEIGHT*nodes[i].curScore
+				nodesStable[i].curScore = MAX_NODE_SCORE;
+				nodesStable[i].score = nodesStable[i].score + NODE_PODTOPO_SPREAD_WEIGHT*nodesStable[i].curScore
 			:: else->
-				nodes[i].score = nodes[i].score + NODE_PODTOPO_SPREAD_WEIGHT*(MAX_NODE_SCORE * (maxScore + minScore - nodes[i].curScore) / maxScore)
+				nodesStable[i].score = nodesStable[i].score + NODE_PODTOPO_SPREAD_WEIGHT*(MAX_NODE_SCORE * (maxScore + minScore - nodesStable[i].curScore) / maxScore)
 		fi;
-ptsns2: nodes[i].curScore = 0;
+ptsns2: nodesStable[i].curScore = 0;
 	}
 
 	minScore = 0;
@@ -768,6 +777,13 @@ inline podTopologySpreadScoring(podSpec)
 	clearArray(ignoredNode, NODE_NUM+1)
 	clearArray(topologyNormalizingWeight, MAX_LABEL)
 	clearArray(topoSize, MAX_LABEL)
+	i = 0;
+	for (i : 0 .. MAX_LABEL-1) {
+		j = 0;
+		for (j : 0 .. MAX_VALUE-1) {
+			topologyPairToPodCounts[i].a[j] = 0;
+		}
+	}
 }
 
 /* May not implement for now, as it is suggested not to use it in large cluster. 

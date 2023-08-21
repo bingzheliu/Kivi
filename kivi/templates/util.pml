@@ -170,7 +170,7 @@ inline printfNodeScore()
 
 		short _m = 1;
 		for (_m : 1 .. NODE_NUM) {
-		   printf("[*****]Node %d, score: %d, curScore: %d\n", _m, nodes[_m].score, nodes[_m].curScore)
+		   printf("[*****]Node %d, score: %d, curScore: %d\n", _m, nodesStable[_m].score, nodesStable[_m].curScore)
 		}
 		_m = 0;
 	}

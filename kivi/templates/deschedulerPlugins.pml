@@ -112,7 +112,7 @@ inline examTargetNodes(q)
 		// check on node selector and affinity
 		// If node selector is defined, then it should equal to the current node. 
 		if 
-			:: podTemplates[d[q].podTemplateId].nodeName != 0 && podTemplates[d[q].podTemplateId].nodeName != nodes[m].name ->
+			:: podTemplates[d[q].podTemplateId].nodeName != 0 && podTemplates[d[q].podTemplateId].nodeName != nodesStable[m].name ->
 				goto DRMD2;
 			:: else->;
 		fi;
@@ -452,9 +452,9 @@ inline removePodsViolatingTopologySpreadConstraint()
 					sumValues = 0;
 					for (k : 1 .. NODE_NUM) {
 						if 
-							::nodes[k].status == 1 && nodes[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey] != -1 ->
-								sumValues = (topologyValueToPods[nodes[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey]].exist == 0 -> sumValues + 1 : sumValues)
-								topologyValueToPods[nodes[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey]].exist = 1
+							::nodes[k].status == 1 && nodesStable[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey] != -1 ->
+								sumValues = (topologyValueToPods[nodesStable[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey]].exist == 0 -> sumValues + 1 : sumValues)
+								topologyValueToPods[nodesStable[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey]].exist = 1
 								
 							:: else ->
 						fi;
@@ -477,7 +477,7 @@ inline removePodsViolatingTopologySpreadConstraint()
 								}
 								if 
 									:: flag == 0 ->
-										short curVal = nodes[pods[k].loc].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey] 
+										short curVal = nodesStable[pods[k].loc].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey] 
 										topologyValueToPods[curVal].pods[k] = 1
 										topologyValueToPods[curVal].numPods ++
 										sumPods++

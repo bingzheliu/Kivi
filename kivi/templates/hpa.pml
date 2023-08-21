@@ -268,7 +268,7 @@ endHPA:	do
 							time = time+HPA_RUN_TIME;
 					fi;
 					local_last_time = time;
-					printf("[****]time %d, local_last_time %d\n", time, local_last_time)
+					// printf("[****]time %d, local_last_time %d\n", time, local_last_time)
 
 					i = 0;
 					j = 0;
@@ -281,6 +281,7 @@ endHPA:	do
 					replicas = 0;
 					timestamp = 0;
 					metric = 0;
+					printf("[****]time %d, local_last_time %d\n", time, local_last_time)
 				}
 			}
 	od;

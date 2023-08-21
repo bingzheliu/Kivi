@@ -11,9 +11,6 @@ typedef twoDArray {
 }
 
 typedef nodeType {
-	short id;
-	short name;
-
 	short cpu;
 	short cpuLeft;
 	short memory;
@@ -22,6 +19,13 @@ typedef nodeType {
 	// 0: false, 1: ready, 2: unhealthy
 	unsigned status : 3;
 	byte numPod;
+
+	bit maintained;
+}
+
+typedef nodeTypeStable {
+	short id;
+	short name;
 
 	// index is the key, and each index store its value, only 1 value for 1 key
 	short labelKeyValue[MAX_LABEL];
@@ -35,8 +39,6 @@ typedef nodeType {
 	bit curAffinity;
 	// 1: current node can taint the current pod and can't be scheduled
 	bit curTaint;
-
-	bit maintained;
 }
 
 // TODO: We made an assumption here that pods are managed by the deployment. But it's not always this case. So may need to sepreate more for the pod v.s. deployment.
@@ -47,7 +49,6 @@ typedef podType {
 	byte namespace;
 	// No more than 255 nodes
 	byte loc;
-
 
 	// label is per pod basis
 	short labelKeyValue[MAX_LABEL];
@@ -239,7 +240,7 @@ typedef deploymentType {
 	byte replicasInCreation;
 
 	/*-----Internal----*/
-	byte evicted;
+	// byte evicted;
 
 	/*-----omitting-----*/
 	// short progressDeadlineSeconds;

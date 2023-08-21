@@ -353,7 +353,7 @@ def generate_S9(num_node, non_violation=False):
 
 	case_config["intents"] = []
 	
-	case_config["intents"].append("run checkEvictionCycle(1)\n")
+	case_config["intents"].append("run checkS1()\n")
 
 	return case_config
 

@@ -24,7 +24,7 @@ typedef nodeType {
 	byte numPod;
 
 	// index is the key, and each index store its value, only 1 value for 1 key
-	short labelKeyValue[MAX_LABEL];
+	byte labelKeyValue[MAX_LABEL];
 
 	/*----internal---*/
 	// used by scheduler
@@ -50,7 +50,7 @@ typedef podType {
 
 
 	// label is per pod basis
-	short labelKeyValue[MAX_LABEL];
+	byte labelKeyValue[MAX_LABEL];
 
 	// https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
 	// 0: idle; 1: running (the only healthy status); 
@@ -152,7 +152,7 @@ typedef topoSpreadConType {
 // TODO: check on if the label key used in nodes can also be used in pods
 typedef podTemplateType {
 	/*--- metadata ---*/
-	short labelKeyValue[MAX_LABEL];
+	byte labelKeyValue[MAX_LABEL];
 
 	/*--- podSpec ---*/
 	// https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#PodSpec

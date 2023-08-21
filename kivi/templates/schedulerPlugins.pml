@@ -188,7 +188,7 @@ inline podTopologySpreadPreFilter(podSpec)
 					fi;
 
 					if
-						:: nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey] == -1 ->
+						:: nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey] == UNDEFINED_VALUE ->
 							goto stopo1;
 						:: else->;
 					fi;
@@ -219,7 +219,7 @@ stopo2:				j++;
 					short key = podSpec.topoSpreadConstraints[j].topologyKey;
 
 					if 
-						:: count >= 0 && tpPairToMatchNum[key].a[nodes[i].labelKeyValue[key]] == -1 -> 
+						:: count >= 0 && tpPairToMatchNum[key].a[nodes[i].labelKeyValue[key]] == UNDEFINED_VALUE -> 
 							tpPairToMatchNum[key].a[nodes[i].labelKeyValue[key]] = count;
 						:: else ->
 							tpPairToMatchNum[key].a[nodes[i].labelKeyValue[key]] = tpPairToMatchNum[key].a[nodes[i].labelKeyValue[key]] + count;
@@ -242,7 +242,7 @@ stopo1: 	i++;
 			i = 0;
 			for (i : 0 .. MAX_LABEL-1) {
 				j = 0;
-				for (j : 0 .. MAX_VALUE-1) {
+				for (j : 1 .. MAX_VALUE) {
 					if 
 						:: tpPairToMatchNum[i].a[j] != -1 ->
 							tpKeyToDomainsNum[i] ++; 
@@ -258,7 +258,7 @@ stopo1: 	i++;
 	for (i : 0 .. MAX_LABEL-1) {
 		j = 0;
 		short curMin = POD_NUM;
-		for (j : 0 .. MAX_VALUE-1) {
+		for (j : 1 .. MAX_VALUE) {
 			if 
 				// simplify the "update" function. The update function can be called by updateWithPod, which we don't model. So the tpVal should always not exists. 
 				// It essentially finding the min number (and second min number). 
@@ -296,7 +296,7 @@ inline podTopologySpreadFilter(curPod, podSpec)
 
 				short key = podSpec.topoSpreadConstraints[j].topologyKey;
 				if 
-					:: nodes[i].labelKeyValue[key] == -1 ->
+					:: nodes[i].labelKeyValue[key] == UNDEFINED_VALUE ->
 						nodes[i].score = -1;
 						goto stopo4;
 					:: else->;
@@ -366,7 +366,7 @@ inline podTopologySpreadFiltering(curPod, podSpec)
 	for (i : 0 .. MAX_LABEL-1) {
 		j = 0;
 		tpKeyToDomainsNum[i] = 0;
-		for (j : 0 .. MAX_VALUE-1) {
+		for (j : 1 .. MAX_VALUE) {
 			tpPairToMatchNum[i].a[j] = -1;
 		}
 	}
@@ -582,7 +582,7 @@ inline podTopologySpreadPreScore(podSpec)
 		j = 0;
 		for (j : 0 .. podSpec.numTopoSpreadConstraints-1) {
 			if 
-				:: (requireAllTopologies == 1) && (podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 1) && (nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey] == -1) -> 
+				:: (requireAllTopologies == 1) && (podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 1) && (nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey] == UNDEFINED_VALUE) -> 
 					ignoredNode[i] = 1; 
 					goto ptsp1;
 				:: else->;
@@ -596,7 +596,7 @@ inline podTopologySpreadPreScore(podSpec)
 			short curValue = nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey];
 			// count how many distinct domains for each topoKey
 			if 
-				:: curValue == -1 -> goto ptsp2;
+				:: curValue == UNDEFINED_VALUE -> goto ptsp2;
 				:: else->;
 			fi;
 			if 
@@ -629,7 +629,7 @@ ptsp1:	skip;
 		j = 0;
 		for (j : 0 .. podSpec.numTopoSpreadConstraints-1) {
 			if
-				:: ((requireAllTopologies == 1) && (podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 1) && (nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey] == -1)) -> 
+				:: ((requireAllTopologies == 1) && (podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 1) && (nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey] == UNDEFINED_VALUE)) -> 
 					goto ptsp3;
 				:: else->;
 			fi;
@@ -640,7 +640,7 @@ ptsp1:	skip;
 			short curValue = 0;
 			curValue = nodes[i].labelKeyValue[podSpec.topoSpreadConstraints[j].topologyKey];
 			if 
-			 	:: (podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 0) || (curValue == -1)->
+			 	:: (podSpec.topoSpreadConstraints[j].whenUnsatisfiable == 0) || (curValue == UNDEFINED_VALUE)->
 				 goto ptsp4;
 			 	:: else->;
 			fi;
@@ -691,7 +691,7 @@ inline podTopologySpreadScore(podSpec)
 			// [estimate] they did a round on the score, while we are all floored. 
 			printf("[******][SchedulerPlugins] topoKey %d, curValue %d\n", podSpec.topoSpreadConstraints[j].topologyKey, curValue)
 			if
-				:: curValue != -1 ->
+				:: curValue != UNDEFINED_VALUE ->
 			nodes[i].curScore = nodes[i].curScore + topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue] * topologyNormalizingWeight[j] + (podSpec.topoSpreadConstraints[j].maxSkew - 1)
 			printf("[******][SchedulerPlugins] Current Constraints on key %d. Node %d, curScore %d.\n", podSpec.topoSpreadConstraints[j].topologyKey, i, nodes[i].curScore)
 			printf("[******][SchedulerPlugins] TopopairToCount %d, weight %d, maxSkew %d \n", topologyPairToPodCounts[podSpec.topoSpreadConstraints[j].topologyKey].a[curValue], topologyNormalizingWeight[j], podSpec.topoSpreadConstraints[j].maxSkew)
@@ -753,7 +753,7 @@ inline podTopologySpreadScoring(podSpec)
 	i = 0;
 	for (i : 0 .. MAX_LABEL-1) {
 		j = 0;
-		for (j : 0 .. MAX_VALUE-1) {
+		for (j : 1 .. MAX_VALUE) {
 			topologyPairToPodCounts[i].a[j] = -1;
 		}
 	}

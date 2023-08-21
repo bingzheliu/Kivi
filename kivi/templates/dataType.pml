@@ -7,7 +7,7 @@
 */
 
 typedef twoDArray {
-	short a[MAX_2D];
+	short a[MAX_2D+1];
 }
 
 typedef nodeType {

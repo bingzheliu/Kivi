@@ -309,7 +309,7 @@ inline topologyIsBalanced()
 	short minDomainSize = POD_NUM
 	short maxDomainSize = 0
 
-	for (k : 0 .. MAX_VALUE-1) {
+	for (k : 1 .. MAX_VALUE) {
 		if	
 			:: topologyValueToPods[k].exist == 1->
 				minDomainSize = (topologyValueToPods[k].numPods < minDomainSize -> topologyValueToPods[k].numPods : minDomainSize)
@@ -359,7 +359,7 @@ inline balanceDomains(constraint)
 	// TBD: think about if there's potential estimation
 	// Only consider to sort the domain according to number of pods, not considering the pod priority etc.
 	p = 0
-	for (k : 0 .. MAX_VALUE-1) {
+	for (k : 1 .. MAX_VALUE) {
 		if 
 			:: topologyValueToPods[k].exist == 1 ->
 				sortedDomains[p].numPods = topologyValueToPods[k].numPods
@@ -435,8 +435,8 @@ inline removePodsViolatingTopologySpreadConstraint()
 
 	for (i : 1 .. POD_TEMPLATE_NUM ) {
 		for (j : 0 .. podTemplates[i].numTopoSpreadConstraints - 1) {
-			podsArray topologyValueToPods[MAX_VALUE];
-			for (k : 0 .. MAX_VALUE-1) {
+			podsArray topologyValueToPods[MAX_VALUE+1];
+			for (k : 1 .. MAX_VALUE) {
 				topologyValueToPods[k].exist = 0
 				topologyValueToPods[k].numPods = 0
 				for ( p : 0 .. POD_NUM ) {
@@ -452,7 +452,7 @@ inline removePodsViolatingTopologySpreadConstraint()
 					sumValues = 0;
 					for (k : 1 .. NODE_NUM) {
 						if 
-							::nodes[k].status == 1 && nodes[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey] != -1 ->
+							::nodes[k].status == 1 && nodes[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey] != UNDEFINED_VALUE ->
 								sumValues = (topologyValueToPods[nodes[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey]].exist == 0 -> sumValues + 1 : sumValues)
 								topologyValueToPods[nodes[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey]].exist = 1
 								
@@ -491,7 +491,7 @@ inline removePodsViolatingTopologySpreadConstraint()
 					topologyIsBalanced()
 					if 
 						:: flag == 0 ->
-							// for (k : 0 .. MAX_VALUE-1) {
+							// for (k : 1 .. MAX_VALUE) {
 							// 	printf("[*]%d %d %d!!\n", k, topologyValueToPods[k].numPods, topologyValueToPods[k].exist)
 							// 	for ( p : 1 .. POD_NUM ) { 
 							// 		printf("[*]%d %d\n", p, topologyValueToPods[k].pods[p])
@@ -499,7 +499,7 @@ inline removePodsViolatingTopologySpreadConstraint()
 							// }
 							// printf("[*]~~~~\n")
 
-							deschedulerTopoSortArray sortedDomains[MAX_VALUE]
+							deschedulerTopoSortArray sortedDomains[MAX_VALUE+1]
 							balanceDomains(podTemplates[i].topoSpreadConstraints[j])
 							// They run the podFilter again. Not sure if this is needed. Omitting for now
 							for (k : 0 .. sumValues-1) {

@@ -78,15 +78,16 @@ def process_labels(json_config):
     #print(json_config["setup"]["nodes"])
     #print(json_config["setup"]["podTemplates"])
 
-    return max_label, max_value
+    # max_value + 1 because we start the value from 1
+    return max_label, max_value+1
 
 def find_index(key_to_value, l, v):
     for i in range(0, len(key_to_value)):
         if l in key_to_value[i]:
             for j in range(0, len(key_to_value[i][1])):
                 if v == key_to_value[i][1][j]:
-                    model_logger.debug("Converted: {" + str(l) + ", " + str(v) + "} : " + str(i) + ", " +str(j))
-                    return i, j
+                    model_logger.debug("Converted: {" + str(l) + ", " + str(v) + "} : " + str(i) + ", " +str(j+1))
+                    return i, j+1
 
 def find_key(key_to_value, l):
     for i in range(0, len(key_to_value)):
@@ -94,7 +95,7 @@ def find_key(key_to_value, l):
             return i
 
 def replacing_labels(json_config, key_to_value):
-    json_config["labelKeyValue"] = [-1 for i in range(len(key_to_value))]
+    json_config["labelKeyValue"] = [0 for i in range(len(key_to_value))]
 
     model_logger.debug("Initilized labelKeyValue: ")
     model_logger.debug(json_config["labelKeyValue"])

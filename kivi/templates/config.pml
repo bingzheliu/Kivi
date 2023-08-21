@@ -90,3 +90,6 @@
 /*--------- Event Config -----------*/
 // TODO: this can be passed as a parameter by the users
 #define EVENT_CPU_COUNT 3
+
+/*--------- Intent Config -----------*/
+#define LOOP_TIMES [$LOOP_TIMES]

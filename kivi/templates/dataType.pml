@@ -14,10 +14,10 @@ typedef nodeType {
 	short id;
 	short name;
 
-	int cpu;
-	int cpuLeft;
-	int memory;
-	int memLeft;
+	short cpu;
+	short cpuLeft;
+	short memory;
+	short memLeft;
 
 	// 0: false, 1: ready, 2: unhealthy
 	unsigned status : 3;
@@ -58,8 +58,8 @@ typedef podType {
 	unsigned status : 3;
 
 	// resource
-	int cpu;
-	int memory;
+	short cpu;
+	short memory;
 
 	bit critical;
 
@@ -110,7 +110,7 @@ typedef hpaSpecType {
 	// 0 means values, including PodMetric and the valued ResourceMetric; 1 means utlization, including ResourceMetric
 	byte metricTypes[MAX_NUM_METRICS];
 
-	short minReplicas;
+	byte minReplicas;
 	short maxReplicas;
 }
 
@@ -159,8 +159,8 @@ typedef podTemplateType {
 
 	// In fact, the requested CPU and memory will be defined for each container in the pod, but we simplified them into one resources for now, and may pre-process the container info in the wrapper functions. 
 	// https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#resources
-	int cpuRequested;
-	int memRequested;
+	short cpuRequested;
+	short memRequested;
 
 	// For scheduler: https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#scheduling
 	//// node affinity, https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
@@ -177,7 +177,7 @@ typedef podTemplateType {
 	*/
 	byte numNoScheduleNode;
 	byte noScheduleNode[MAX_NO_SCHEDULE_NODE];
-	short numPreferNoScheduleNode;
+	byte numPreferNoScheduleNode;
 	byte preferNoScheduleNode[MAX_PEFER_NO_CHEDULE_NODE];
 
 	//// Pod Spreading Policy
@@ -188,7 +188,7 @@ typedef podTemplateType {
 	// If defined, the timeCpuRequest[0] must be 0 to define the initial behavior of CPU. This field will be mostly used when create pods in runtime.
 	// curCpuRequest represent the current CPU usage of the pod; timeCpuRequest represent until when this usage will start. 
 	byte maxCpuChange;
-	int curCpuRequest[MAX_CPU_PATTERN];
+	short curCpuRequest[MAX_CPU_PATTERN];
 	short timeCpuRequest[MAX_CPU_PATTERN];
 
 	/* 
@@ -220,13 +220,13 @@ typedef deploymentType {
 
 	/*-----For rollout or recreate-----*/
 	// default is 25%
-	short maxSurge;
+	byte maxSurge;
 	// default is 25%
-	short maxUnavailable;
+	byte maxUnavailable;
 
 	// https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
 	// 0 is recreate, 1 is rollingupdates
-	short strategy;
+	bit strategy;
 
 	// must be defined for any new deployment
 	byte podTemplateId;
@@ -263,11 +263,11 @@ typedef deploymentType {
 //The plugins will be executed in the order of their array index
 typedef deschedulerProfileType {
 	// removePodsViolatingNodeAffinity: 1
-	short numDeschedulePlugins;
+	byte numDeschedulePlugins;
 	byte deschedulePlugins[MAX_NUM_DESPLUGINS];
 
 	// removeDuplicates: 1; removePodsViolatingTopologySpreadConstraint: 2;
-	short numBalancePlugins;
+	byte numBalancePlugins;
 	byte balancePlugins[MAX_NUM_BALPLUGINS];
 
 	// We only support the default evictor for now. If user have multiple evictor, we'll need the following structure.
@@ -284,7 +284,7 @@ typedef deschedulerProfileType {
 
 typedef podsArray {
 	bit pods[POD_NUM+1];
-	short numPods;
+	byte numPods;
 	bit exist;
 }
 
@@ -294,7 +294,7 @@ typedef deschedulerNodeDuplicateArray {
 }
 
 typedef deschedulerTopoSortArray {
-	short evictedNumPods;
-	short numPods;
-	short index;
+	byte evictedNumPods;
+	byte numPods;
+	byte index;
 }

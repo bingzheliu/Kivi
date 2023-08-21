@@ -88,7 +88,7 @@ endKP:	do
 					updateQueue(ncQueue, ncTail, ncIndex, i, MAX_NODE_CONTROLLER_QUEUE)
 					
 					if 
-						:: times > 5 ->
+						:: times >= LOOP_TIMES ->
 							assert(false)
 						:: else->;
 					fi;

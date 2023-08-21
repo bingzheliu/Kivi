@@ -73,7 +73,7 @@ endCS12:		if
 					:: d[1].replicasInCreation > 0 ->
 						count ++
 endCS13:				if 
-							:: count > 5 ->
+							:: count >= LOOP_TIMES ->
 								printf("[*] Pods are being scheduled and descheduled in deployment 1!\n")
 								assert(false)
 							:: else->;
@@ -84,6 +84,39 @@ endCS14:				if
 						fi;
 				fi;
 		 fi
+}
+
+proctype checkEvictionCycle(short i)
+{
+	byte count = 0;
+	short last_in_deletion, last_in_creation;
+	last_in_deletion = 0
+	last_in_creation = 0
+endCS11: if 
+			:: d[i].replicasInDeletion > last_in_deletion ->
+				last_in_deletion = d[i].replicasInDeletion;
+endCS12:		if 
+					:: d[i].replicasInCreation > last_in_creation ->
+					    last_in_creation = d[i].replicasInCreation
+					    printf("[*] Pods are being scheduled and descheduled in deployment 1, %d %d!\n", last_in_deletion, last_in_creation)
+						count ++
+endCS13:				if 
+							:: count >= LOOP_TIMES ->
+								printf("[*] Pods are being scheduled and descheduled in deployment 1!\n")
+								assert(false)
+							:: else->;
+						fi;
+endCS14:				if 
+							:: d[i].replicasInDeletion < last_in_deletion && d[i].replicasInCreation < last_in_creation  ->
+							 	printf("[*] Recount checkEvictionCycle, %d %d\n", last_in_deletion, last_in_creation)
+								last_in_deletion = d[i].replicasInDeletion
+								last_in_creation = d[i].replicasInCreation
+								goto endCS11;
+						fi;
+				fi;
+		 fi
+	last_in_deletion = 0
+	last_in_creation = 0
 }
 
 // // Previous check for H2, and this version only look into the mismatch between minReplicas of HPA and current replicas

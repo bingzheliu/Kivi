@@ -163,6 +163,8 @@ endSch2: do
 					if 
 						:: pods[curPod].status == 1 ->
 							printf("[**][Scheduler] Pod %d has been scheduled!\n", curPod)
+						:: pods[curPod].status == 3 ->
+							printf("[**][Scheduler] Pod %d is pending for deletion, skip it!\n", curPod)
 						:: else->
 							clearNodeScore();
 							scheduleOne();

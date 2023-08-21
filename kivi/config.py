@@ -9,3 +9,6 @@ model_logging = logging.CRITICAL
 verifier_logging = logging.INFO
 
 default_timeout = 60
+
+# how many loops will be counted as oscillation in verification
+loop_times = 3

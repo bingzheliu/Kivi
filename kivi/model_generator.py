@@ -5,6 +5,7 @@
 #
 
 from util import *
+from config import *
 from processing_default import check_for_completion_add_default, default_controllers, event_uc_default_str, default_parameter_order, descheduler_args_default, controller_para_default, descheduler_plugins_maps
 
 index_starts_at_one = {"pods", "nodes", "d", "podTemplates", "deploymentTemplates"}
@@ -431,7 +432,8 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 					   	   .replace("[$MAX_AFFINITY_RULE]", str(max_affinity_rules)) \
 					   	   .replace("[$MAX_MATCHED_NODE]", str(max_matched_node)) \
 					   	   .replace("[$MAX_TOPO_CON]", str(max_topo_con)) \
-					   	   .replace("[$MAX_CPU_PATTERN]", str(max_cpu_pattern+1)) 
+					   	   .replace("[$MAX_CPU_PATTERN]", str(max_cpu_pattern+1)) \
+					   	   .replace("[$LOOP_TIMES]", str(loop_times))
 
 
 						   #.replace("[$MAX_POD]", str(pod_num+3)) \

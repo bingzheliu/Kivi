@@ -26,6 +26,9 @@ inline podCpuChangeWithPatternExec(i)
 {
 	d_step {
 		short cpu_change = podTemplates[pods[i].podTemplateId].curCpuRequest[pods[i].curCpuIndex] - pods[i].cpu
+	//			printf("[**] !!! %d %d %d %d %d %d\n",i, cpu_change, pods[i].curCpuIndex, podTemplates[pods[i].podTemplateId].timeCpuRequest[pods[i].curCpuIndex], time, pods[i].startTime)
+	//	printf("[**] !!! %d %d, %d %d, %d %d, %d %d, %d %d\n", ncIndex, ncTail, hpaTail, hpaIndex, sIndex, sTail, kblIndex, kblTail, dcIndex, dcTail)
+	//	printf("[**] ?? %d %d\n", (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail), (podTemplates[pods[i].podTemplateId].timeCpuRequest[pods[i].curCpuIndex] + pods[i].startTime >= time) || (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail))
 		updatePodCpuUsageOnNode(i, cpu_change);
 		pods[i].curCpuIndex ++;
 

@@ -79,10 +79,14 @@ inline replicasetAddPod(replicaset, curPod)
 			for (_m : 0 .. replicaset.replicas-1) {
 				if 
 					:: curPod < replicaset.podIds[_m]->
-						_rm = 0
-						for(_rm : _m .. replicaset.replicas-2) {
-							replicaset.podIds[_rm+1] = replicaset.podIds[_rm];
-						}
+						_rm = replicaset.replicas-1
+						do 
+							:: _rm > _m ->
+								replicaset.podIds[_rm] = replicaset.podIds[_rm-1];
+								_rm --;
+							:: else->
+								break
+						od
 						_rm = replicaset.replicas+1
 						replicaset.podIds[_m] = curPod;
 						break
@@ -112,6 +116,7 @@ inline replicasetDeletePod(replicaset, curPod)
 			_m = 0;
 			do 
 				:: _m < replicaset.replicas -> 
+					printf("!!! %d %d %d %d %d\n", _m, replicaset.podIds[_m], replicaset.replicas, curPod, d[pods[curPod].workloadId].replicasInCreation)
 					if 
 						:: replicaset.podIds[_m] == curPod->
 							for(_m : _m .. replicaset.replicas-2) {
@@ -131,7 +136,8 @@ inline replicasetDeletePod(replicaset, curPod)
 							d[pods[curPod].workloadId].replicasInCreation --
 							break
 						:: else->
-							printf("[*] Problematic pod Id updates!\n")
+							printf("[*Warning] Problematic pod Id updates!\n")
+							break
 					fi;
 			od;			
 			

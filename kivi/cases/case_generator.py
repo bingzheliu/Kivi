@@ -692,7 +692,7 @@ def generate_H1(num_node, non_violation=False):
 	pt["curCpuRequest"].append(3)
 	pt["timeCpuRequest"] = []
 	pt["timeCpuRequest"].append(0)
-	pt["timeCpuRequest"].append(60)
+	pt["timeCpuRequest"].append(3000)
 
 	#pt["numTopoSpreadConstraints"] = 0
 	case_config["setup"]["podTemplates"].append(pt)

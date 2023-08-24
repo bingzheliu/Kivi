@@ -429,6 +429,8 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 	s_main_event, pml_event, s_proc_after_stable = generate_other_event(json_config, s_main_event, pml_event, s_proc_after_stable)
 
 	#print(s_proc, s_user_command)
+	if len(s_first_proc) == 0:
+		s_first_proc = "first_proc = 1;"
 	
 	pml_main = pml_main.replace("[$INIT_SETUP]", s_init) \
 					   .replace("[$CONTROLLERS]", s_proc) \

@@ -9,7 +9,7 @@ from config import *
 from processing_default import check_for_completion_add_default, default_controllers, event_uc_default_str, default_parameter_order, descheduler_args_default, controller_para_default, descheduler_plugins_maps
 import json
 
-index_starts_at_one = {"pods", "nodes", "d", "podTemplates", "deploymentTemplates"}
+index_starts_at_one = {"pods", "nodes", "d", "podTemplates", "deploymentTemplates", "nodesStable"}
 
 
 # A pre-processor to process all the labels, converting each keys (including built-ins) into unique number, and all values for each key 

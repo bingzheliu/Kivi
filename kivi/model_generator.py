@@ -227,7 +227,10 @@ def generate_event_user_command_one(all_stat, cur_json, s_proc_after_stable, s_f
 			cur_stmt = ("run " + c + "(" + str(cur_json["para"]) + ") ")
 
 		if "first" in cur_json:
-			return all_stat, s_proc_after_stable, (s_first_proc+cur_stmt)
+			if cur_stmt not in s_first_proc:
+				cur_stmt += ";\n"
+				s_first_proc += cur_stmt
+			return all_stat, s_proc_after_stable, s_first_proc
 
 		if "priority" in cur_json:
 			logger.critical("Warning! Priority is used in " + c + ", partial order reduction can be disabled!")

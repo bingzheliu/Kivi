@@ -359,11 +359,11 @@ def generate_list_setup(json_config):
 			while j <= max_dep:
 				count = {"nodes":0, "d":0}
 				generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, count, cur_base={"nodes": i, "d" : j})
-				if exceed_node_proportion(count, j, json_config):
-					break
 				if not args.extreamly_high_confidence and count["nodes"] > high_confidence_node:
 					break_flag = True
 				j = get_next_num(j)
+				if exceed_node_proportion(count, j, json_config):
+					break
 
 			if break_flag:
 				break

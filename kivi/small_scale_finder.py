@@ -244,7 +244,7 @@ def generate_case_json(json_config, cur_setup):
 		cur_json_uc = {}
 		cur_json_uc["name"] = "createTargetDeployment"
 		cur_json_uc["para"] = cur_d_id
-		cur_json_uc["priority"] = 100
+		cur_json_uc["first"] = 1
 		new_json_config["userCommand"].append(cur_json_uc)
 
 		cur_d_id += 1

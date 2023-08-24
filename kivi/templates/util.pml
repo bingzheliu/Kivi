@@ -116,7 +116,6 @@ inline replicasetDeletePod(replicaset, curPod)
 			_m = 0;
 			do 
 				:: _m < replicaset.replicas -> 
-					printf("!!! %d %d %d %d %d\n", _m, replicaset.podIds[_m], replicaset.replicas, curPod, d[pods[curPod].workloadId].replicasInCreation)
 					if 
 						:: replicaset.podIds[_m] == curPod->
 							for(_m : _m .. replicaset.replicas-2) {

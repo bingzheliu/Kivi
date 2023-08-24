@@ -210,7 +210,7 @@ def generate_controllers(json_config, s_proc, pml_config):
 	
 	return s_proc, pml_config
 
-def generate_event_user_command_one(all_stat, cur_json, s_proc_after_stable):
+def generate_event_user_command_one(all_stat, cur_json, s_proc_after_stable, s_first_proc):
 	cur_p = 1
 	cur_stmt = ""
 	c = cur_json["name"]
@@ -226,7 +226,11 @@ def generate_event_user_command_one(all_stat, cur_json, s_proc_after_stable):
 		else:
 			cur_stmt = ("run " + c + "(" + str(cur_json["para"]) + ") ")
 
+		if "first" in cur_json:
+			return all_stat, s_proc_after_stable, (s_first_proc+cur_stmt)
+
 		if "priority" in cur_json:
+			logger.critical("Warning! Priority is used in " + c + ", partial order reduction can be disabled!")
 			cur_stmt += ("priority " + str(cur_json["priority"]) + "\n") 
 			cur_p = cur_json["priority"]
 		else:
@@ -240,13 +244,13 @@ def generate_event_user_command_one(all_stat, cur_json, s_proc_after_stable):
 		else:
 			all_stat[cur_p] += cur_stmt
 
-	return all_stat, s_proc_after_stable
+	return all_stat, s_proc_after_stable, s_first_proc
 
 def sort_priority(element):
 	return element[0]
 
 # TODO: this priority may need to apply to events as well. 
-def generate_event_user_command(json_config, s_event_uc, s_proc_after_stable):
+def generate_event_user_command(json_config, s_event_uc, s_proc_after_stable, s_first_proc):
 	all_stat = {1: ""}
 
 	# if "events" in json_config:
@@ -277,7 +281,7 @@ def generate_event_user_command(json_config, s_event_uc, s_proc_after_stable):
 	for e in ["events", "userCommand"]:
 		if e in json_config:
 			for cur_json in json_config[e]:
-				all_stat, s_proc_after_stable = generate_event_user_command_one(all_stat, cur_json, s_proc_after_stable)
+				all_stat, s_proc_after_stable, s_first_proc = generate_event_user_command_one(all_stat, cur_json, s_proc_after_stable, s_first_proc)
 
 	all_stat = list(all_stat.items())
 	all_stat.sort(key = sort_priority, reverse=True)
@@ -286,7 +290,7 @@ def generate_event_user_command(json_config, s_event_uc, s_proc_after_stable):
 	for p in all_stat:
 		s_event_uc += p[1]
 
-	return s_event_uc, s_proc_after_stable
+	return s_event_uc, s_proc_after_stable, s_first_proc
 
 def generate_intent(json_config, s_intentscheck_intent, s_main_intent):
 	if "intents" in json_config:
@@ -414,7 +418,8 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 	s_proc, pml_config = generate_controllers(json_config, s_proc, pml_config)
 
 	s_event_uc = ""
-	s_event_uc, s_proc_after_stable = generate_event_user_command(json_config, s_event_uc, s_proc_after_stable)
+	s_first_proc = ""
+	s_event_uc, s_proc_after_stable, s_first_proc = generate_event_user_command(json_config, s_event_uc, s_proc_after_stable, s_first_proc)
 
 	s_intentscheck_intent = ""
 	s_main_intent = ""
@@ -431,7 +436,8 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 					   .replace("[$AUTO_GENERATE_EVENT]", str(s_main_event)) \
 					   .replace("[$FILE_BASE]", str(template_path)) \
 					   .replace("[$INTENTS]", str(s_main_intent)) \
-					   .replace("[$PROC_AFTER_STABLE]", str(s_proc_after_stable))
+					   .replace("[$PROC_AFTER_STABLE]", str(s_proc_after_stable)) \
+					   .replace("[$FIRST_PROC]", str(s_first_proc))
 
 	max_no_schedule_node, max_no_prefer_schedule_node, max_affinity_rules, max_matched_node, max_topo_con, max_cpu_pattern = get_max_pod_template(json_config)
 

@@ -159,6 +159,7 @@ proctype createTargetDeployment(short deploymentId)
 					printf("[*][createTargetDeployment] Created deployment %d\n", deploymentId)
 				:: else ->;
 			fi;
+			first_proc = 1;
 		}
 	}
 }

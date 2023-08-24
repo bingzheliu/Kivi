@@ -41,7 +41,7 @@ hidden nodeTypeStable nodesStable[NODE_NUM+1]
 // short podTotal;
 
 bit init_status = 0;
-
+bit first_proc = 0
 short time = 0;
 
 // // This is a counter that could be used for all the forloop in nested functions

@@ -345,7 +345,7 @@ def generate_S9(num_node, non_violation=False):
 	case_config["controllers"]["deployment"] = {}
 	# enter descheduler plugin from here.
 	if non_violation:
-		case_config["controllers"]["descheduler"] = {"profiles":[]}
+		case_config["controllers"]["descheduler"] = {"profiles" : [{"RemovePodsViolatingTopologySpreadConstraint":{}}], "args": {"constraintsTopologySpread":0}}
 	else:
 		case_config["controllers"]["descheduler"] = {"profiles" : [{"RemovePodsViolatingTopologySpreadConstraint":{}}], "args": {"constraintsTopologySpread":2}}
 

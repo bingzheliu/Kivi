@@ -25,11 +25,11 @@ echo $path
 # 1.9 79.43282347242825
 # 2.0 100.0000000000001
 
-#case_scale=(3 4 5 6 8 10 13 16 20 25 32 40 50 64 80 100)
-case_id=(s4 s9 s6 s3 h2 s1 h1)
+case_scale=(3 4 5 6 8 10 13 16 20 25 32 40 50 64 80 100)
+#case_id=(s4 s9 s6 s3 h2 s1 h1)
 count=1
-case_scale=(10)
-#case_id=(s1 h1)
+#case_scale=(10)
+case_id=(h1)
 
 mkdir "eval/results/"
 for case in "${case_id[@]}"	

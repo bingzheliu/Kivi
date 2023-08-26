@@ -97,7 +97,12 @@ typedef replicaSetType {
 	/*****internal****/
 	// when use each podId, need to check whether 1) podIds is 0, or 2) the related pod status is 0. The index can be larger than replicas.
 	// This will only include the pods.status == 1, not include pending or deletion.
+
+#ifdef MORE_PODS
 	short podIds[POD_NUM];
+#else
+	byte podIds[POD_NUM];
+#endif
 
 }
 

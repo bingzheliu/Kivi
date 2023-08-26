@@ -173,8 +173,11 @@ inline removeDuplicates()
 		3. There should be other ways to impl this plugins, e.g., go through the owner instead of nodes, which should get an equavilence result. But to be more accurate, we try to model it the same way.
 		   However, this can be heavier than other impl. In the future, one can provide choice to choose between the two implementation, having the trade-off between accuracy and performance.
 	*/
-
+#ifdef MORE_PODS
 	short ownerKeyOccurence[DEP_NUM+1];
+#else
+	byte ownerKeyOccurence[DEP_NUM+1];
+#endif
 	deschedulerNodeDuplicateArray duplicatePods[DEP_NUM+1];
 	for (i : 0 .. DEP_NUM ) {
 		ownerKeyOccurence[i] = 0

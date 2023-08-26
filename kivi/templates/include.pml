@@ -1,28 +1,28 @@
 #include "../templates/dataType.pml"
 
 // in controller_utils 
-short sQueue[MAX_SCHEDULER_QUEUE];
+byte sQueue[MAX_SCHEDULER_QUEUE];
 short sTail = 0;
 short sIndex = 0;
 
 // descheduler now enqueues 1, which is just a trigger and descheduler will check all pods/nodes now.
-short dsQueue[MAX_DESCHEDULER_QUEUE];
+byte dsQueue[MAX_DESCHEDULER_QUEUE];
 short dsTail = 0;
 short dsIndex = 0;
 
-short dcQueue[MAX_DEP_QUEUE];
+byte dcQueue[MAX_DEP_QUEUE];
 short dcTail = 0;
 short dcIndex = 0;
 
-short hpaQueue[MAX_HPA_QUEUE];
+byte hpaQueue[MAX_HPA_QUEUE];
 short hpaTail = 0;
 short hpaIndex = 0;
 
-short ncQueue[MAX_NODE_CONTROLLER_QUEUE];
+byte ncQueue[MAX_NODE_CONTROLLER_QUEUE];
 short ncTail = 0;
 short ncIndex = 0;
 
-short kblQueue[MAX_KUBELET_QUEUE];
+byte kblQueue[MAX_KUBELET_QUEUE];
 short kblTail = 0;
 short kblIndex = 0;
 

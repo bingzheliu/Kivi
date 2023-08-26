@@ -359,8 +359,18 @@ inline podTopologySpreadFiltering(curPod, podSpec)
 {
 	/*----- preFilter ----*/
 	twoDArray tpPairToMatchNum[MAX_LABEL];
-	short tpKeyToDomainsNum[MAX_LABEL];
+#ifdef MORE_PODS
 	short tpKeyToCriticalPaths[MAX_LABEL];
+#else 
+	byte tpKeyToCriticalPaths[MAX_LABEL];
+#endif
+
+#ifdef MORE_VALUE
+	short tpKeyToDomainsNum[MAX_LABEL];
+#else 
+	byte tpKeyToDomainsNum[MAX_LABEL];
+#endif
+	
 
 	i = 0;
 	for (i : 0 .. MAX_LABEL-1) {
@@ -384,7 +394,7 @@ inline podTopologySpreadFiltering(curPod, podSpec)
 	for (i : 0 .. MAX_LABEL-1) {
 		j = 0;
 		tpKeyToDomainsNum[i] = 0;
-		for (j : 0 .. MAX_VALUE-1) {
+		for (j : 0 .. MAX_VALUE) {
 			tpPairToMatchNum[i].a[j] = 0;
 		}
 	}
@@ -757,7 +767,7 @@ inline podTopologySpreadScoring(podSpec)
 	twoDArray topologyPairToPodCounts[MAX_LABEL];
 	short topoSize[MAX_LABEL];
 	short topologyNormalizingWeight[MAX_LABEL]
-	short ignoredNode[NODE_NUM+1];
+	bit ignoredNode[NODE_NUM+1];
 
 	i = 0;
 	for (i : 0 .. MAX_LABEL-1) {
@@ -780,7 +790,7 @@ inline podTopologySpreadScoring(podSpec)
 	i = 0;
 	for (i : 0 .. MAX_LABEL-1) {
 		j = 0;
-		for (j : 0 .. MAX_VALUE-1) {
+		for (j : 0 .. MAX_VALUE) {
 			topologyPairToPodCounts[i].a[j] = 0;
 		}
 	}

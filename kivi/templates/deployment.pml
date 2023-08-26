@@ -80,7 +80,7 @@ inline deleteAPod()
 
 inline deletePods(numPods)
 {
-	short podsOnNode[NODE_NUM+1];
+	byte podsOnNode[NODE_NUM+1];
 	short numPodDeleted = 0;
 
 	do

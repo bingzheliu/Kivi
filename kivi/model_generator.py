@@ -467,6 +467,12 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 
 	max_no_schedule_node, max_no_prefer_schedule_node, max_affinity_rules, max_matched_node, max_topo_con, max_cpu_pattern = get_max_pod_template(json_config)
 
+	ifdef = ""
+	if pod_num-1 > 255:
+		ifdef += "#define MORE_PODS 1\n"
+	if max_value > 255:
+		ifdef += "#define MORE_VALUE 1\n"
+
 	dep_queue = deployment_num+2
 	pod_queue = pod_num+2
 	node_queue = node_num+2
@@ -495,7 +501,8 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 					   	   .replace("[$MAX_MATCHED_NODE]", str(max_matched_node)) \
 					   	   .replace("[$MAX_TOPO_CON]", str(max_topo_con)) \
 					   	   .replace("[$MAX_CPU_PATTERN]", str(max_cpu_pattern+1)) \
-					   	   .replace("[$LOOP_TIMES]", str(loop_times))
+					   	   .replace("[$LOOP_TIMES]", str(loop_times)) \
+					   	   .replace("[$IFDEF]", str(ifdef)) 
 
 
 						   #.replace("[$MAX_POD]", str(pod_num+3)) \

@@ -96,3 +96,6 @@
 
 /*--------- Internal Config -----------*/
 #define UNDEFINED_VALUE 0
+
+/*--------- ifdef ----------*/
+[$IFDEF]

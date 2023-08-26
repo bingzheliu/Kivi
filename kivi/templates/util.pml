@@ -70,10 +70,41 @@ inline replicasetAddPod(replicaset, curPod)
 		// :: else->
 		// 	printf("[*Warning]Max number of pod reached in pod list of replicaset\n");
 		// od;
-		replicaset.podIds[replicaset.replicas] = curPod;
-		replicaset.replicas++;
-		d[pods[curPod].workloadId].replicas++;
-		//printPodIds(replicaset)
+		d_step{
+			short _m = 0, _rm = 0;
+			_m = 0;
+			
+			_rm = 0
+			// rank the pod from small to large to help with partial order reduction
+			for (_m : 0 .. replicaset.replicas-1) {
+				if 
+					:: curPod < replicaset.podIds[_m]->
+						_rm = replicaset.replicas-1
+						do 
+							:: _rm > _m ->
+								replicaset.podIds[_rm] = replicaset.podIds[_rm-1];
+								_rm --;
+							:: else->
+								break
+						od
+						_rm = replicaset.replicas+1
+						replicaset.podIds[_m] = curPod;
+						break
+					:: else->
+				fi
+			}
+			if 
+				:: _rm < replicaset.replicas+1 ->
+					replicaset.podIds[replicaset.replicas] = curPod;
+				:: else->
+			fi
+			replicaset.replicas++;
+			d[pods[curPod].workloadId].replicas++;
+			//printPodIds(replicaset)
+
+			_m = 0
+			_rm = 0
+		}
 	}
 }
 
@@ -104,7 +135,8 @@ inline replicasetDeletePod(replicaset, curPod)
 							d[pods[curPod].workloadId].replicasInCreation --
 							break
 						:: else->
-							printf("[*] Problematic pod Id updates!\n")
+							printf("[*Warning] Problematic pod Id updates!\n")
+							break
 					fi;
 			od;			
 			
@@ -170,7 +202,7 @@ inline printfNodeScore()
 
 		short _m = 1;
 		for (_m : 1 .. NODE_NUM) {
-		   printf("[*****]Node %d, score: %d, curScore: %d\n", _m, nodes[_m].score, nodes[_m].curScore)
+		   printf("[*****]Node %d, score: %d, curScore: %d\n", _m, nodesStable[_m].score, nodesStable[_m].curScore)
 		}
 		_m = 0;
 	}

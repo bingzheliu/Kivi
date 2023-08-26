@@ -158,7 +158,8 @@ def template_generator(json_config, user_defined=None):
 			if user_defined[t+"_default"]["ScaleType"] == "proportion":
 				type_setup[i]["proportion"] = propotion[i]
 			if t == "d":
-				type_setup[i]["proportionHPA"] = user_defined[t+"_default"]["proportionHPA"]
+				#type_setup[i]["proportionHPA"] = user_defined[t+"_default"]["proportionHPA"]
+				type_setup[i]["proportionHPA"] = max_count_replicas[i]*1.0/len(json_config["setup"]["nodes"])
 				type_setup[i]["upperBound"] = max_count_replicas[i]
 				type_setup[i]["proportionNode"] = max_count_replicas[i]*1.0/len(json_config["setup"]["nodes"])
 
@@ -202,7 +203,7 @@ def generate_case_json(json_config, cur_setup):
 
 	cur_d_id = 1
 	for i in range(0, len(json_config["userDefined"]["dTypes"])):		
-		max_replicas = total_nodes*json_config["userDefined"]["dTypes"][i]["proportionHPA"] + cur_setup["d"][i]
+		max_replicas =  math.ceil(total_nodes*json_config["userDefined"]["dTypes"][i]["proportionHPA"])
 		if max_replicas > json_config["userDefined"]["dTypes"][i]["upperBound"]:
 			max_replicas = json_config["userDefined"]["dTypes"][i]["upperBound"]
 
@@ -244,7 +245,7 @@ def generate_case_json(json_config, cur_setup):
 		cur_json_uc = {}
 		cur_json_uc["name"] = "createTargetDeployment"
 		cur_json_uc["para"] = cur_d_id
-		cur_json_uc["priority"] = 100
+		cur_json_uc["first"] = 1
 		new_json_config["userCommand"].append(cur_json_uc)
 
 		cur_d_id += 1
@@ -261,7 +262,7 @@ def generate_case_json(json_config, cur_setup):
 
 # Need to smartly set the boundary, otherwise it can take longer time. Now 7 is extracted the maxium number of pods that cause the problem
 def get_next_num(j):
-	if args.fast_find:
+	if args.fast_find == 1:
 		if j < 7:
 			j += 1
 		else:
@@ -329,10 +330,17 @@ def get_max_base_propotions(json_config, cur_type):
 
 def exceed_node_proportion(count, j, json_config):
 	for d in json_config["userDefined"]["dTypes"]:
-		if j * d["proportion"] >= count["nodes"] * d["proportionNode"]:
+		if j * d["proportion"] > math.ceil(count["nodes"] * d["proportionNode"]):
 			return True
 
 	return False
+
+def find_propotionNode_base(count, json_config):
+	max_j = 0
+	for d in json_config["userDefined"]["dTypes"]:
+		max_j = max(max_j, (count["nodes"] * d["proportionNode"] * 1.0) / d["proportion"])
+
+	return max_j
 
 # To improve, just generate the next setup...
 def generate_list_setup(json_config):
@@ -348,25 +356,41 @@ def generate_list_setup(json_config):
 		max_dep = get_max_base_propotions(json_config, "d")
 
 	step = 1
-	if args.fast_find:
+	if args.fast_find == 1:
 		step = 2
 		logger.info("Entering fast find model, scale up in a scale of 2")
 
 	if max_node > 0 and max_dep > 0:
 		for i in range(1, max_node+1):
 			break_flag = False
-			j = 1
-			while j <= max_dep:
+			if args.fast_find == 2:
+				# first run a round of generate_list to gather the node number, and then get the max_j number. 
+				temp_setup = []
+				j = 1
+				count = {"nodes":0, "d":0}
+				generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, temp_setup, count, cur_base={"nodes": i, "d" : j})
+
+				j = find_propotionNode_base(count, json_config)
+				#print(j, max_dep, max_node, i)
 				count = {"nodes":0, "d":0}
 				generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, count, cur_base={"nodes": i, "d" : j})
-				if exceed_node_proportion(count, j, json_config):
-					break
 				if not args.extreamly_high_confidence and count["nodes"] > high_confidence_node:
 					break_flag = True
-				j = get_next_num(j)
+
+			else:
+				j = 1
+				while j <= max_dep:
+					count = {"nodes":0, "d":0}
+					generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, count, cur_base={"nodes": i, "d" : j})
+					if not args.extreamly_high_confidence and count["nodes"] > high_confidence_node:
+						break_flag = True
+					j = get_next_num(j)
+					if exceed_node_proportion(count, j, json_config):
+						break
 
 			if break_flag:
 				break
+
 	elif max_node > 0:
 		for i in range(1, max_node+1, step):
 			count = {"nodes":0, "d":0}
@@ -388,7 +412,7 @@ def sort_setup_node(element):
 	for i in element["nodes"]:
 		count += element["nodes"][i] 
 	for i in element["d"]:
-		count += (element["d"][i]*1.0/10)
+		count += (element["d"][i]*1.0/1000)
 	
 	return count
 
@@ -429,7 +453,7 @@ def finding_smallest_scale(json_config, pml_base_path, sort_favor="nodes"):
 		all_setup.sort(key = sort_setup_node)
 	if sort_favor == "all":
 		all_setup.sort(key = sort_setup_all)
-#	print(all_setup)
+	print(all_setup)
 
 	if args.file_debug > 2:
 		count = 0

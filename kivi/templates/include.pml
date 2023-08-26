@@ -28,7 +28,7 @@ short kblIndex = 0;
 
 // All these arrays start at index 1
 deploymentType d[DEP_NUM+1];
-podType pods[POD_NUM+1];
+podType pods[POD_NUM+1]
 nodeType nodes[NODE_NUM+1];
 
 // These would be read-only and not affecting the states
@@ -36,11 +36,12 @@ nodeType nodes[NODE_NUM+1];
 hidden podTemplateType podTemplates[POD_TEMPLATE_NUM+1];
 hidden deploymentType deploymentTemplates[DEP_TEMPLATE_NUM+1];
 hidden deschedulerProfileType deschedulerProfiles[DES_PROFILE_NUM];
+hidden nodeTypeStable nodesStable[NODE_NUM+1]
 
 // short podTotal;
 
 bit init_status = 0;
-
+bit first_proc = 0
 short time = 0;
 
 // // This is a counter that could be used for all the forloop in nested functions

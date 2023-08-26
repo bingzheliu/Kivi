@@ -345,7 +345,7 @@ def generate_S9(num_node, non_violation=False):
 	case_config["controllers"]["deployment"] = {}
 	# enter descheduler plugin from here.
 	if non_violation:
-		case_config["controllers"]["descheduler"] = {"profiles":[]}
+		case_config["controllers"]["descheduler"] = {"profiles" : [{"RemovePodsViolatingTopologySpreadConstraint":{}}], "args": {"constraintsTopologySpread":0}}
 	else:
 		case_config["controllers"]["descheduler"] = {"profiles" : [{"RemovePodsViolatingTopologySpreadConstraint":{}}], "args": {"constraintsTopologySpread":2}}
 
@@ -692,7 +692,7 @@ def generate_H1(num_node, non_violation=False):
 	pt["curCpuRequest"].append(3)
 	pt["timeCpuRequest"] = []
 	pt["timeCpuRequest"].append(0)
-	pt["timeCpuRequest"].append(60)
+	pt["timeCpuRequest"].append(3000)
 
 	#pt["numTopoSpreadConstraints"] = 0
 	case_config["setup"]["podTemplates"].append(pt)
@@ -1113,7 +1113,7 @@ def generate_H2(num_node, non_violation=False):
 
 	case_config["userCommand"] = []
 	# this is the id for the index of deploymentTemplates, not the deployment name
-	case_config["userCommand"].append({"name" : "applyDeployment", "para" : 1, "priority" : 0, "after_stable":True})
+	case_config["userCommand"].append({"name" : "applyDeployment", "para" : 1, "after_stable":True})
 
 	case_config["events"] = []
 
@@ -1387,7 +1387,7 @@ def generate_S3_woCPU(num_node, non_violation=False):
 	cur_json_uc = {}
 	cur_json_uc["name"] = "createTargetDeployment"
 	cur_json_uc["para"] = 1
-	cur_json_uc["priority"] = 100
+	cur_json_uc["first"] = 1
 	case_config["userCommand"].append(cur_json_uc)
 
 	return case_config

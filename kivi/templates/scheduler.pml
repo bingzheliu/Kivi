@@ -42,14 +42,14 @@ inline clearNodeScore()
 	i = 1;
 	do
 	:: i < NODE_NUM+1 ->
-		nodes[i].score = 0;
-		nodes[i].curScore = 0;
+		nodesStable[i].score = 0;
+		nodesStable[i].curScore = 0;
 		if
 			:: nodes[i].status != 1 ->
-				nodes[i].score = -1;
-				nodes[i].curScore = -1;
-				nodes[i].curAffinity = 0;
-				nodes[i].curTaint = 0;
+				nodesStable[i].score = -1;
+				nodesStable[i].curScore = -1;
+				nodesStable[i].curAffinity = 0;
+				nodesStable[i].curTaint = 0;
 			:: else->;
 		fi;
 		i++;
@@ -66,8 +66,8 @@ inline selectHost()
 	:: i < NODE_NUM+1 ->
 		if 
 		// the actual implementation choose the node randomly when several nodes have the same score. We may omit this detail, and choose the first one encountered. 
-		:: nodes[i].status == 1 && nodes[i].score > max ->
-				max = nodes[i].score;
+		:: nodes[i].status == 1 && nodesStable[i].score > max ->
+				max = nodesStable[i].score;
 				selectedNode = i;
 		:: else->;
 		fi
@@ -184,6 +184,9 @@ endSch2: do
 
 					time = time + SCHEDULER_RUN_TIME
 
+					clearNodeScore();
+
+					updateQueueIndex(sIndex, MAX_SCHEDULER_QUEUE)
 					selectedNode = 0;
 					i = 0;
 					j = 0;
@@ -191,9 +194,6 @@ endSch2: do
 					p = 0;
 					max = 0;
 					curPod = 0;
-					clearNodeScore();
-
-					updateQueueIndex(sIndex, MAX_SCHEDULER_QUEUE)
 				}
 		od;
 	}

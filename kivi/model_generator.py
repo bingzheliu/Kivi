@@ -7,8 +7,9 @@
 from util import *
 from config import *
 from processing_default import check_for_completion_add_default, default_controllers, event_uc_default_str, default_parameter_order, descheduler_args_default, controller_para_default, descheduler_plugins_maps
+import json
 
-index_starts_at_one = {"pods", "nodes", "d", "podTemplates", "deploymentTemplates"}
+index_starts_at_one = {"pods", "nodes", "d", "podTemplates", "deploymentTemplates", "nodesStable"}
 
 
 # A pre-processor to process all the labels, converting each keys (including built-ins) into unique number, and all values for each key 
@@ -210,7 +211,7 @@ def generate_controllers(json_config, s_proc, pml_config):
 	
 	return s_proc, pml_config
 
-def generate_event_user_command_one(all_stat, cur_json, s_proc_after_stable):
+def generate_event_user_command_one(all_stat, cur_json, s_proc_after_stable, s_first_proc):
 	cur_p = 1
 	cur_stmt = ""
 	c = cur_json["name"]
@@ -226,7 +227,14 @@ def generate_event_user_command_one(all_stat, cur_json, s_proc_after_stable):
 		else:
 			cur_stmt = ("run " + c + "(" + str(cur_json["para"]) + ") ")
 
+		if "first" in cur_json:
+			if cur_stmt not in s_first_proc:
+				cur_stmt += ";\n"
+				s_first_proc += cur_stmt
+			return all_stat, s_proc_after_stable, s_first_proc
+
 		if "priority" in cur_json:
+			logger.critical("Warning! Priority is used in " + c + ", partial order reduction can be disabled!")
 			cur_stmt += ("priority " + str(cur_json["priority"]) + "\n") 
 			cur_p = cur_json["priority"]
 		else:
@@ -240,13 +248,13 @@ def generate_event_user_command_one(all_stat, cur_json, s_proc_after_stable):
 		else:
 			all_stat[cur_p] += cur_stmt
 
-	return all_stat, s_proc_after_stable
+	return all_stat, s_proc_after_stable, s_first_proc
 
 def sort_priority(element):
 	return element[0]
 
 # TODO: this priority may need to apply to events as well. 
-def generate_event_user_command(json_config, s_event_uc, s_proc_after_stable):
+def generate_event_user_command(json_config, s_event_uc, s_proc_after_stable, s_first_proc):
 	all_stat = {1: ""}
 
 	# if "events" in json_config:
@@ -277,7 +285,7 @@ def generate_event_user_command(json_config, s_event_uc, s_proc_after_stable):
 	for e in ["events", "userCommand"]:
 		if e in json_config:
 			for cur_json in json_config[e]:
-				all_stat, s_proc_after_stable = generate_event_user_command_one(all_stat, cur_json, s_proc_after_stable)
+				all_stat, s_proc_after_stable, s_first_proc = generate_event_user_command_one(all_stat, cur_json, s_proc_after_stable, s_first_proc)
 
 	all_stat = list(all_stat.items())
 	all_stat.sort(key = sort_priority, reverse=True)
@@ -286,7 +294,7 @@ def generate_event_user_command(json_config, s_event_uc, s_proc_after_stable):
 	for p in all_stat:
 		s_event_uc += p[1]
 
-	return s_event_uc, s_proc_after_stable
+	return s_event_uc, s_proc_after_stable, s_first_proc
 
 def generate_intent(json_config, s_intentscheck_intent, s_main_intent):
 	if "intents" in json_config:
@@ -301,7 +309,7 @@ def generate_intent(json_config, s_intentscheck_intent, s_main_intent):
 def generate_other_event(json_config, s_main_event, pml_event, s_proc_after_stable):
 	# Processing pod CPU change pattern
 	s_cpu_change = ""
-	s_cpu_change_stmt = "      ::  pods[[$i]].status == 1 && pods[[$i]].curCpuIndex < podTemplates[pods[[$i]].podTemplateId].maxCpuChange && (podTemplates[pods[[$i]].podTemplateId].timeCpuRequest[pods[[$i]].curCpuIndex] + pods[[$i]].startTime >= time || (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail)) -> \n podCpuChangeWithPatternExec([$i])\n"
+	s_cpu_change_stmt = "      ::  pods[[$i]].status == 1 && pods[[$i]].curCpuIndex < podTemplates[pods[[$i]].podTemplateId].maxCpuChange && (podTemplates[pods[[$i]].podTemplateId].timeCpuRequest[pods[[$i]].curCpuIndex] + pods[[$i]].startTime <= time || (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail)) -> \n podCpuChangeWithPatternExec([$i])\n"
 	for tp in json_config["setup"]["podTemplates"]:
 		if tp["maxCpuChange"] > 0:
 			# Becuase some pods may be up/changed later, so we need to put every pod onto the check...
@@ -371,10 +379,39 @@ def process_node_affinity(json_config):
 				pt["affinityRules"][i]["numMatchedNode"] = len(pt["affinityRules"][i]["matchedNode"])
 				del pt["affinityRules"][i]["labels"]
 
+stable_variables = {"nodes" : ["id", "name", "labelKeyValue", "score", "curScore", "curAffinity", "curTaint"]} 
+
+def process_stable_variables(json_config):
+	#print(json.dumps(json_config, indent=2))
+	stable_array = {}
+	for e in json_config["setup"]:
+		if e in stable_variables:
+			stable_array[e+"Stable"] = []
+			for n in json_config["setup"][e]:
+				new_type = {}
+				for a in n:
+					if a in stable_variables[e]:
+						new_type[a] = deepcopy(n[a])
+				
+				for a in stable_variables[e]:
+					del n[a]
+
+				stable_array[e+"Stable"].append(deepcopy(new_type))
+
+	for e in stable_array:
+		json_config["setup"][e] = deepcopy(stable_array[e])
+
+	#print(json.dumps(json_config, indent=2))
+
+	return json_config
+
+
 def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, template_path, queue_size_default):
 	userDefinedConstraints = check_for_completion_add_default(json_config)
 	process_node_affinity(json_config)
 	max_label, max_value = process_labels(json_config)
+
+	json_config = process_stable_variables(json_config)
 
 	s_proc_after_stable = ""
 
@@ -385,7 +422,8 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 	s_proc, pml_config = generate_controllers(json_config, s_proc, pml_config)
 
 	s_event_uc = ""
-	s_event_uc, s_proc_after_stable = generate_event_user_command(json_config, s_event_uc, s_proc_after_stable)
+	s_first_proc = ""
+	s_event_uc, s_proc_after_stable, s_first_proc = generate_event_user_command(json_config, s_event_uc, s_proc_after_stable, s_first_proc)
 
 	s_intentscheck_intent = ""
 	s_main_intent = ""
@@ -395,6 +433,8 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 	s_main_event, pml_event, s_proc_after_stable = generate_other_event(json_config, s_main_event, pml_event, s_proc_after_stable)
 
 	#print(s_proc, s_user_command)
+	if len(s_first_proc) == 0:
+		s_first_proc = "first_proc = 1;"
 	
 	pml_main = pml_main.replace("[$INIT_SETUP]", s_init) \
 					   .replace("[$CONTROLLERS]", s_proc) \
@@ -402,7 +442,8 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 					   .replace("[$AUTO_GENERATE_EVENT]", str(s_main_event)) \
 					   .replace("[$FILE_BASE]", str(template_path)) \
 					   .replace("[$INTENTS]", str(s_main_intent)) \
-					   .replace("[$PROC_AFTER_STABLE]", str(s_proc_after_stable))
+					   .replace("[$PROC_AFTER_STABLE]", str(s_proc_after_stable)) \
+					   .replace("[$FIRST_PROC]", str(s_first_proc))
 
 	max_no_schedule_node, max_no_prefer_schedule_node, max_affinity_rules, max_matched_node, max_topo_con, max_cpu_pattern = get_max_pod_template(json_config)
 

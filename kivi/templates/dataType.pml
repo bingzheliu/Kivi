@@ -24,7 +24,7 @@ typedef nodeType {
 }
 
 typedef nodeTypeStable {
-	short id;
+	// short id;
 	short name;
 
 	// index is the key, and each index store its value, only 1 value for 1 key
@@ -44,7 +44,7 @@ typedef nodeTypeStable {
 // TODO: We made an assumption here that pods are managed by the deployment. But it's not always this case. So may need to sepreate more for the pod v.s. deployment.
 // But for now, it's OK to assume that is created by other resources: https://kubernetes.io/docs/concepts/workloads/pods/#working-with-pods
 typedef podType {
-	short id;
+	// short id;
 	short name;
 	byte namespace;
 	// No more than 255 nodes
@@ -87,7 +87,7 @@ typedef podType {
 }
 
 typedef replicaSetType {
-	short id;
+	// short id;
 	short deploymentId;
 
 	short replicas;
@@ -206,7 +206,7 @@ typedef podTemplateType {
 
 typedef deploymentType {
 	// We use id as an equivalence as name.
-	short id;
+	// short id;
 	short name;
 	byte namespace;
 	// TODO: decide if we need status or if we need to delete it, status includes progressing, available.

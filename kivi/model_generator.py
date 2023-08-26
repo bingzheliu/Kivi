@@ -405,13 +405,33 @@ def process_stable_variables(json_config):
 
 	return json_config
 
+def remove_id(cur_json):
+	if isinstance(cur_json, int) or isinstance(cur_json, str):
+		return
+	
+	temp_cur_json = deepcopy(cur_json)
+	for e in temp_cur_json:
+		if isinstance(cur_json[e], int) or isinstance(cur_json[e], str):
+			if e == "id":
+				del cur_json[e] 
+		else:
+			if isinstance(cur_json[e], list):
+				i = 0
+				for i in range(0, len(cur_json[e])):
+					remove_id(cur_json[e][i])
+			elif isinstance(cur_json[e], dict):
+				remove_id(cur_json[e])
+			else:
+				model_logger.critical("Unknown types of data structure!")
 
 def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, template_path, queue_size_default):
 	userDefinedConstraints = check_for_completion_add_default(json_config)
 	process_node_affinity(json_config)
 	max_label, max_value = process_labels(json_config)
 
+	# The following helps to improve prerformance; can remove then if id will be used in the future. 
 	json_config = process_stable_variables(json_config)
+	remove_id(json_config)
 
 	s_proc_after_stable = ""
 

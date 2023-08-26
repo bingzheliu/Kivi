@@ -53,7 +53,7 @@ proctype applyDeployment(short deploymentTemplateId)
 				if
 					:: d[i].status == 1 && d[i].name == deploymentTemplates[deploymentTemplateId].name ->
 						exists = 1;
-						printf("[*][applyDeployment] apply; %d; Applying the template %d to existing deployment {Id %d, index %d}\n", i, deploymentTemplateId, d[i].id, i);
+						printf("[*][applyDeployment] apply; %d; Applying the template %d to existing deployment {Id %d, index %d}\n", i, deploymentTemplateId, d[i].name, i);
 						/* 
 							1. [Limitation] We only support the following fields for updates for now. These update behavior can be configured when there's conflict.
 							   Now, we assume if a field has not been defined, then we put the default value to it (except HPA and podTemeplate); otherwise, we overwrite the old one with the new one. This may not be the right behavior, see #2 below.
@@ -74,7 +74,7 @@ proctype applyDeployment(short deploymentTemplateId)
 					for (i : 1 .. DEP_NUM) {
 						if
 							:: d[i].status == 0 ->
-								printf("[*][applyDeployment] apply; %d; Applying the template %d to new deployment {Id %d, index %d}\n", i, deploymentTemplateId, d[i].id, i);
+								printf("[*][applyDeployment] apply; %d; Applying the template %d to new deployment {Id %d, index %d}\n", i, deploymentTemplateId, d[i].name, i);
 								spared = 1
 								d[i].status = 1
 								d[i].replicasInDeletion = 0
@@ -124,7 +124,7 @@ proctype createDeployment(short deploymentTemplateId)
 					for (i : 1 .. DEP_NUM) {
 						if
 							:: d[i].status == 0 ->
-								printf("[*][createDeployment] create; %d; Create the template %d to new deployment {Id %d, index %d}\n", i, deploymentTemplateId, d[i].id, i);
+								printf("[*][createDeployment] create; %d; Create the template %d to new deployment {Id %d, index %d}\n", i, deploymentTemplateId, d[i].name, i);
 								spared = 1
 								d[i].status = 1
 								d[i].replicasInDeletion = 0

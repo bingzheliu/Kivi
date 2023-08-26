@@ -44,7 +44,7 @@ inline filter(q)
 
 	// For 2.c, only model 2), but can easily append them here later. 
 	if 
-		:: pods[q].critical && deschedulerProfiles[ii].evictSystemCriticalPods == 0 ->
+		:: podsStable[q].critical && deschedulerProfiles[ii].evictSystemCriticalPods == 0 ->
 			flag = 0;
 			goto DF1;
 		:: else->;
@@ -64,7 +64,7 @@ inline evictPod(q)
 {
 	// check maxPodsToEvictPerNode and maxPodsToEvictPerNamespace(Omitting for now)
 	if 
-		:: (nodePodCount[pods[q].loc] + 1 > maxNoOfPodsToEvictPerNode) || (namespacePodCount[pods[q].namespace] + 1 > maxNoOfPodsToEvictPerNamespace) ->
+		:: (nodePodCount[pods[q].loc] + 1 > maxNoOfPodsToEvictPerNode) || (namespacePodCount[podsStable[q].namespace] + 1 > maxNoOfPodsToEvictPerNamespace) ->
 			printf("[**][Descheduler] Exceeded maxNoOfPodsToEvictPerNode or maxNoOfPodsToEvictPerNamespace for pod %d\n", q)
 			flag = 1
 		:: else ->
@@ -75,7 +75,7 @@ inline evictPod(q)
 			updateQueue(kblQueue, kblTail, kblIndex, q, MAX_KUBELET_QUEUE)
 
 			nodePodCount[pods[q].loc] ++
-			namespacePodCount[pods[q].namespace] ++
+			namespacePodCount[podsStable[q].namespace] ++
 	fi;
 }
 
@@ -472,7 +472,7 @@ inline removePodsViolatingTopologySpreadConstraint()
 								flag = 0
 								for (p : 0 .. podTemplates[i].topoSpreadConstraints[j].numMatchedLabel - 1) {
 									if 
-										:: (pods[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].labelKey[p]] != podTemplates[i].topoSpreadConstraints[j].labelValue[p]) ->
+										:: (podsStable[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].labelKey[p]] != podTemplates[i].topoSpreadConstraints[j].labelValue[p]) ->
 											flag = 1;
 											break;
 										:: else->;

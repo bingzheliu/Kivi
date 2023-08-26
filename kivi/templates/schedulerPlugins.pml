@@ -154,7 +154,7 @@ inline findMatchedPod(i, j, podSpec)
 			printf("[******] matching pod %d with {%d, %d}\n", k, p, podSpec.topoSpreadConstraints[j].labelKey[p])
 			if 
 			 	// TBDL Need to double check if the pods have extra keys than the matchlabel, will it be selected.
-				::(pods[k].labelKeyValue[podSpec.topoSpreadConstraints[j].labelKey[p]] != podSpec.topoSpreadConstraints[j].labelValue[p]) -> goto fmpend;
+				::(podsStable[k].labelKeyValue[podSpec.topoSpreadConstraints[j].labelKey[p]] != podSpec.topoSpreadConstraints[j].labelValue[p]) -> goto fmpend;
 				// ::(podTemplates[pods[k].podTemplateId].labelKeyValue[podSpec.topoSpreadConstraints[j].labelKey[p]] != podSpec.topoSpreadConstraints[j].labelValue[p]) -> goto fmpend;
 				:: else->; 
 			fi;
@@ -317,7 +317,7 @@ inline podTopologySpreadFilter(curPod, podSpec)
 				flag = 0;
 				for (p : 0 .. podSpec.topoSpreadConstraints[j].numMatchedLabel - 1) {
 						if 
-							:: (pods[curPod].labelKeyValue[podSpec.topoSpreadConstraints[j].labelKey[p]] != podSpec.topoSpreadConstraints[j].labelValue[p]) ->
+							:: (podsStable[curPod].labelKeyValue[podSpec.topoSpreadConstraints[j].labelKey[p]] != podSpec.topoSpreadConstraints[j].labelValue[p]) ->
 						 // :: (podSpec.labelKeyValue[podSpec.topoSpreadConstraints[j].labelKey[p]] != podSpec.topoSpreadConstraints[j].labelValue[p]) ->
 								flag = 1;
 								break;

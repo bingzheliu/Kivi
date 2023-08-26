@@ -104,7 +104,7 @@ inline scheduleOne()
 inline checkIfUnschedulable()
 {
 	if
-	:: selectedNode == 0 && pods[curPod].important == 1 ->
+	:: selectedNode == 0 && podsStable[curPod].important == 1 ->
 		assert(false);
 	:: else->;
 	fi;
@@ -142,8 +142,8 @@ inline bindNode()
 inline assumePod()
 {
 	nodes[selectedNode].numPod++;
-	nodes[selectedNode].cpuLeft = nodes[selectedNode].cpuLeft - pods[curPod].cpu;
-	nodes[selectedNode].memLeft = nodes[selectedNode].memLeft - pods[curPod].memory;
+	nodes[selectedNode].cpuLeft = nodes[selectedNode].cpuLeft - podsStable[curPod].cpu;
+	nodes[selectedNode].memLeft = nodes[selectedNode].memLeft - podsStable[curPod].memory;
 }
 
 proctype scheduler()

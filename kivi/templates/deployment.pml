@@ -57,14 +57,14 @@ inline deleteAPod()
 	:: i < POD_NUM+1 ->
 		if 
 			:: pods[i].status == 1 && pods[i].workloadId == curD && pods[i].workloadType == 1 ->
-				pods[i].score = podsOnNode[pods[i].loc];
+				podsStable[i].score = podsOnNode[pods[i].loc];
 				if 
-				:: pods[i].score > cur_max ->
-					cur_max = pods[i].score;
+				:: podsStable[i].score > cur_max ->
+					cur_max = podsStable[i].score;
 					podSelected = i;
 				:: else->;
 				fi;
-				printf("[******][Deployment] pod score %d: %d; max: %d\n", i, pods[i].score, cur_max);
+				printf("[******][Deployment] pod score %d: %d; max: %d\n", i, podsStable[i].score, cur_max);
 			:: else->;
 		fi;
 		i++;
@@ -106,7 +106,7 @@ inline enqueuePods(batchSize)
 		:: j < POD_NUM+1 -> 
 			if
 			:: pods[j].status == 0 ->
-				copyDeploymentInfoToPod(pods[j], curD);
+				copyDeploymentInfoToPod(pods[j], podsStable[j], curD);
 				pods[j].status = 2;
 				printf("[*][Deployment] create; %d; Adding a new pod %d to deployment %d\n", curD, j, curD)
 				updateQueue(sQueue, sTail, sIndex, j, MAX_SCHEDULER_QUEUE)

@@ -49,10 +49,10 @@ inline computeReplicasForMetric(curMetricName, curMetricTarget, curMetricType)
 					if
 						// CPU usage
 						:: curMetricName == 0 ->
-							metricsTotal = metricsTotal + pods[k].cpu;
+							metricsTotal = metricsTotal + podsStable[k].cpu;
 						// Mem usage
 						:: curMetricName == 1 ->
-							metricsTotal = metricsTotal + pods[k].memory;
+							metricsTotal = metricsTotal + podsStable[k].memory;
 						:: else->
 							printf("[*Internal error][HPA] Invalid metric name\n");
 							assert(false);
@@ -62,11 +62,11 @@ inline computeReplicasForMetric(curMetricName, curMetricTarget, curMetricType)
 					 if
 						// CPU usage
 						:: curMetricName == 0->
-							metricsTotal = metricsTotal + pods[k].cpu;
+							metricsTotal = metricsTotal + podsStable[k].cpu;
 							requestTotal = requestTotal + podTemplates[pods[k].podTemplateId].cpuRequested;
 						// Mem usage
 						:: curMetricName == 1->
-							metricsTotal = metricsTotal + pods[k].memory;
+							metricsTotal = metricsTotal + podsStable[k].memory;
 							requestTotal = requestTotal + podTemplates[pods[k].podTemplateId].memRequested;
 						:: else->
 							printf("[*Internal error][HPA] Invalid metric name\n");

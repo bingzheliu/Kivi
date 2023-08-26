@@ -379,7 +379,8 @@ def process_node_affinity(json_config):
 				pt["affinityRules"][i]["numMatchedNode"] = len(pt["affinityRules"][i]["matchedNode"])
 				del pt["affinityRules"][i]["labels"]
 
-stable_variables = {"nodes" : ["id", "name", "labelKeyValue", "score", "curScore", "curAffinity", "curTaint"]} 
+stable_variables = {"nodes" : ["id", "name", "labelKeyValue", "score", "curScore", "curAffinity", "curTaint"], 
+					"pods":["name", "namespace", "score", "important", "critical", "cpu", "memory", "labelKeyValue"]} 
 
 def process_stable_variables(json_config):
 	#print(json.dumps(json_config, indent=2))
@@ -394,7 +395,8 @@ def process_stable_variables(json_config):
 						new_type[a] = deepcopy(n[a])
 				
 				for a in stable_variables[e]:
-					del n[a]
+					if a in n:
+						del n[a]
 
 				stable_array[e+"Stable"].append(deepcopy(new_type))
 

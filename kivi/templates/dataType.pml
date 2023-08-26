@@ -43,47 +43,50 @@ typedef nodeTypeStable {
 
 // TODO: We made an assumption here that pods are managed by the deployment. But it's not always this case. So may need to sepreate more for the pod v.s. deployment.
 // But for now, it's OK to assume that is created by other resources: https://kubernetes.io/docs/concepts/workloads/pods/#working-with-pods
+// Only reveal the pods that has essential info to pods status in the global variables
 typedef podType {
-	// short id;
-	short name;
-	byte namespace;
 	// No more than 255 nodes
 	byte loc;
-
-	// label is per pod basis
-	byte labelKeyValue[MAX_LABEL];
 
 	// https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
 	// 0: idle; 1: running (the only healthy status); 
 	// 2: pending (not count for replicas); 3: being terminated (still count for replicas) 
 	unsigned status : 3;
 
-	// resource
-	short cpu;
-	short memory;
-
-	bit critical;
-
 	// CPU pattern change index
 	byte curCpuIndex;
 
 	short startTime;
-
 	/*----internal----*/
 	// 0: pod, 1: deployment
 	// potentially can support CronJob, Job, etc. in the future. 
 	unsigned workloadType : 3;
 	// If workloadType is 0 (pod), then this is the ID for a podTemplate array (need to define such an array somewhere).
 	// Otherwise it's the array index for the deployment (or other types of owners)
-	byte workloadId;
-	byte podTemplateId;
+	// change these into large value if involves more deployments
+	unsigned workloadId : 3;
+	unsigned podTemplateId : 3;
+}
 
+typedef podTypeStable {
+	// short id;
+	short name;
+
+	byte namespace;
 	short score;
 	//short num_deschedule;
 	// short toDelete;
 
 	// used for invariants
 	bit important;
+	bit critical;
+
+	// resource
+	short cpu;
+	short memory;
+
+	// label is per pod basis
+	byte labelKeyValue[MAX_LABEL];
 }
 
 typedef replicaSetType {

@@ -1,5 +1,6 @@
 import subprocess
 import random
+import datetime
 
 from util import *
 from config import *
@@ -35,6 +36,10 @@ def verifier_operator_one(json_config, case_name, log_level, pan_compile, pan_ru
 			success, stdout, stderr = run_script(['./pan']+pan_runtime, False, args.timeout)
 		else:
 			success, stdout, stderr = run_script(['./pan']+pan_runtime, False)
+
+	with open(file_base + "/bin/eval/results/" + case_name + "/pan_" + str(queue_size), "w") as fr:
+			fr.write(str(datetime.datetime.now()))
+			fr.write(stdout.decode())
 
 	if args.file_debug > 0:
 		with open(result_base_path + "/raw_data/exec_" + case_name + "_" + str(queue_size), "w") as fr:

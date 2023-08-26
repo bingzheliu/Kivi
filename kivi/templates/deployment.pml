@@ -218,7 +218,7 @@ proctype deploymentController()
 		short i = 0, j = 0, podSelected = 0;
 
 endDC:	do
-		:: (dcIndex != dcTail && kblIndex != kblTail) ->
+		:: (dcIndex != dcTail && kblIndex == kblTail) ->
 				atomic{
 					d_step {
 						short curD = dcQueue[dcIndex];

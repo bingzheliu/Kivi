@@ -330,7 +330,7 @@ def get_max_base_propotions(json_config, cur_type):
 
 def exceed_node_proportion(count, j, json_config):
 	for d in json_config["userDefined"]["dTypes"]:
-		if j * d["proportion"] > count["nodes"] * d["proportionNode"]:
+		if j * d["proportion"] > math.ceil(count["nodes"] * d["proportionNode"]):
 			return True
 
 	return False

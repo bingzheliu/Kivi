@@ -51,7 +51,8 @@ inline deleteAPod()
 {
 	short cur_max = 0;
 	i = 1;
-	podSelected = 0;
+	podSelected = 1;
+	cur_max = 0;
 	
 	do
 	:: i < POD_NUM+1 ->
@@ -81,7 +82,8 @@ inline deleteAPod()
 inline deletePods(numPods)
 {
 	byte podsOnNode[NODE_NUM+1];
-	short numPodDeleted = 0;
+	short numPodDeleted;
+	numPodDeleted = 0;
 
 	do
 	:: numPodDeleted < diff->
@@ -129,10 +131,12 @@ inline scale(curReplicaSet)
 	batchSize = 0;
 	remaining = 0;
 
+	printf("[***][Deployment] curReplicaSet specReplicas:%d , replicas:%d, replicasInDeletion:%d\n", curReplicaSet.specReplicas, curReplicaSet.replicas, dStable[curD].replicasInDeletion)
 	// TODO: add dealing pause
 	if
 	:: curReplicaSet.specReplicas <  curReplicaSet.replicas - dStable[curD].replicasInDeletion ->
-		short diff =  curReplicaSet.replicas - curReplicaSet.specReplicas - dStable[curD].replicasInDeletion;
+		short diff;
+		diff = curReplicaSet.replicas - curReplicaSet.specReplicas - dStable[curD].replicasInDeletion;
 
 		printf("[**][Deployment] Starting the deployment controller to delete %d pods\n", diff);
 		deletePods(diff);
@@ -222,6 +226,7 @@ proctype deploymentController()
 endDC:	do
 		:: (dcIndex != dcTail && kblIndex == kblTail) ->
 				atomic{
+					d_step{
 						short curD = dcQueue[dcIndex];
 						printf("[**][Deployment] Start to work on deployment %d\n", curD)
 
@@ -246,7 +251,7 @@ endDC:	do
 						j = 0; 
 						podSelected = 0;
 						curD = 0;
-					
+					}
 				}
 		od;
 }

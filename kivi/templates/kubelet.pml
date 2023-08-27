@@ -11,7 +11,7 @@ proctype kubelet() {
 endK:	do
 		:: (kblIndex != kblTail) ->
 			atomic {
-				d_step{
+
 					i = kblQueue[kblIndex];
 					if 
 						:: pods[i].status == 0 ->
@@ -79,7 +79,7 @@ endK:	do
 					i = 0;
 					j = 0;
 					flag = 0;
-				}	
+			
 			}
 	od;
 

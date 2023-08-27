@@ -21,10 +21,10 @@
 proctype checkH1()
 {
 endCH11:	if 
-			:: d[1].hpaSpec.maxReplicas != d[1].hpaSpec.minReplicas && d[1].replicas == d[1].hpaSpec.maxReplicas ->
+			:: dStable[1].hpaSpec.maxReplicas != dStable[1].hpaSpec.minReplicas && d[1].replicas == dStable[1].hpaSpec.maxReplicas ->
 		 	printf("[**] Entering stage 2 for check!\n")
 endCH12:		if 
-		 		:: d[1].replicas == d[1].hpaSpec.minReplicas || d[1].replicas < d[1].hpaSpec.maxReplicas - 5 ->
+		 		:: d[1].replicas == dStable[1].hpaSpec.minReplicas || d[1].replicas < dStable[1].hpaSpec.maxReplicas - 5 ->
 		 			printf("[*] The number of replicas was oscillating, now %d\n", d[1].replicas)
 		 			assert(false)
 		 	fi;
@@ -49,13 +49,13 @@ endCH12:		if
 proctype checkH2()
 {
 endCH21:	if 
-			::  init_status == 1 && d[1].replicas == d[1].hpaSpec.maxReplicas && d[1].hpaSpec.maxReplicas != d[1].hpaSpec.minReplicas->
+			::  init_status == 1 && d[1].replicas == dStable[1].hpaSpec.maxReplicas && dStable[1].hpaSpec.maxReplicas != dStable[1].hpaSpec.minReplicas->
 		 		printf("[**] Entering stage 2 for check!\n")
 endCH22:		if 
-			 		::d[1].replicas < d[1].hpaSpec.maxReplicas ->
+			 		::d[1].replicas < dStable[1].hpaSpec.maxReplicas ->
 			 			printf("[**] Entering stage 3 for check!\n")
 endCH23:			 	if 
-			 				:: d[1].replicas == d[1].hpaSpec.maxReplicas ->
+			 				:: d[1].replicas == dStable[1].hpaSpec.maxReplicas ->
 					 			// printf("[*] The number of replicas %d below the minReplicas %d\n", d[1].replicas, d[1].hpaSpec.minReplicas)
 					 			printf("[*] The number of replicas was oscillating, now %d\n", d[1].replicas)
 					 			assert(false)
@@ -68,9 +68,9 @@ proctype checkS1()
 {
 	byte count = 0;
 endCS11: if 
-			:: d[1].replicasInDeletion > 0 ->
+			:: dStable[1].replicasInDeletion > 0 ->
 endCS12:		if 
-					:: d[1].replicasInCreation > 0 ->
+					:: dStable[1].replicasInCreation > 0 ->
 						count ++
 endCS13:				if 
 							:: count >= LOOP_TIMES ->
@@ -79,7 +79,7 @@ endCS13:				if
 							:: else->;
 						fi;
 endCS14:				if 
-							:: d[1].replicasInDeletion == 0 ->
+							:: dStable[1].replicasInDeletion == 0 ->
 								goto endCS11;
 						fi;
 				fi;
@@ -93,11 +93,11 @@ proctype checkEvictionCycle(short i)
 	last_in_deletion = 0
 	last_in_creation = 0
 endCS11: if 
-			:: d[i].replicasInDeletion > last_in_deletion ->
-				last_in_deletion = d[i].replicasInDeletion;
+			:: dStable[i].replicasInDeletion > last_in_deletion ->
+				last_in_deletion = dStable[i].replicasInDeletion;
 endCS12:		if 
-					:: d[i].replicasInCreation > last_in_creation ->
-					    last_in_creation = d[i].replicasInCreation
+					:: dStable[i].replicasInCreation > last_in_creation ->
+					    last_in_creation = dStable[i].replicasInCreation
 					    printf("[*] Pods are being scheduled and descheduled in deployment 1, %d %d!\n", last_in_deletion, last_in_creation)
 						count ++
 endCS13:				if 
@@ -107,10 +107,10 @@ endCS13:				if
 							:: else->;
 						fi;
 endCS14:				if 
-							:: d[i].replicasInDeletion < last_in_deletion && d[i].replicasInCreation < last_in_creation  ->
+							:: dStable[i].replicasInDeletion < last_in_deletion && dStable[i].replicasInCreation < last_in_creation  ->
 							 	printf("[*] Recount checkEvictionCycle, %d %d\n", last_in_deletion, last_in_creation)
-								last_in_deletion = d[i].replicasInDeletion
-								last_in_creation = d[i].replicasInCreation
+								last_in_deletion = dStable[i].replicasInDeletion
+								last_in_creation = dStable[i].replicasInCreation
 								goto endCS11;
 						fi;
 				fi;

@@ -41,7 +41,7 @@ inline scorePods()
 
 inline deleteAPodUpdate()
 {
-	d[curD].replicasInDeletion ++;
+	dStable[curD].replicasInDeletion ++;
 	pods[podSelected].status = 3;
 	updateQueue(kblQueue, kblTail, kblIndex, podSelected, MAX_KUBELET_QUEUE)	
 }
@@ -125,12 +125,14 @@ inline enqueuePods(batchSize)
 inline scale(curReplicaSet)
 {
 	// $$$$ this variable can be parameterized. 
-	short batchSize = 0, remaining = 0;
+	short batchSize, remaining;
+	batchSize = 0;
+	remaining = 0;
 
 	// TODO: add dealing pause
 	if
-	:: curReplicaSet.specReplicas <  curReplicaSet.replicas - d[curD].replicasInDeletion ->
-		short diff =  curReplicaSet.replicas - curReplicaSet.specReplicas - d[curD].replicasInDeletion;
+	:: curReplicaSet.specReplicas <  curReplicaSet.replicas - dStable[curD].replicasInDeletion ->
+		short diff =  curReplicaSet.replicas - curReplicaSet.specReplicas - dStable[curD].replicasInDeletion;
 
 		printf("[**][Deployment] Starting the deployment controller to delete %d pods\n", diff);
 		deletePods(diff);
@@ -141,12 +143,12 @@ inline scale(curReplicaSet)
 
 
 	// TODO: refine the d[curD].replicasInCreation. 
-	:: curReplicaSet.specReplicas >  curReplicaSet.replicas + d[curD].replicasInCreation ->
+	:: curReplicaSet.specReplicas >  curReplicaSet.replicas + dStable[curD].replicasInCreation ->
 		// do slowStartBatch, https://github.com/kubernetes/kubernetes/blob/98742f9d77a57aec44cc05b1daf721973fb029be/pkg/controller/replicaset/replica_set.go#L742
 		// may be simplified by not having these batch updates
 
 		// Since we are doing atomic, batch may not actually make difference. But keep it for now. 
-		remaining = curReplicaSet.specReplicas - curReplicaSet.replicas - d[curD].replicasInCreation;
+		remaining = curReplicaSet.specReplicas - curReplicaSet.replicas - dStable[curD].replicasInCreation;
 		batchSize = (remaining < SlowStartInitialBatchSize -> remaining : SlowStartInitialBatchSize)
 		printf("[*][Deployment] scale; %d; increase; %d; Too few replicas in replicaSet %d need to create %d\n", curD, curReplicaSet.specReplicas, curReplicaSet.deploymentId, remaining);
 		
@@ -157,7 +159,7 @@ inline scale(curReplicaSet)
 
 			// curReplicaSet.replicas = curReplicaSet.replicas + batchSize;
 			// d[curD].replicas = d[curD].replicas + batchSize;
-			d[curD].replicasInCreation = d[curD].replicasInCreation + batchSize;
+			dStable[curD].replicasInCreation = dStable[curD].replicasInCreation + batchSize;
 			enqueuePods(batchSize);
 			remaining = remaining - batchSize;
 			min(batchSize, remaining, 2*batchSize);
@@ -177,13 +179,13 @@ inline rollout()
 	short oldV = d[curD].curVersion;
 	short newV = 1 - oldV;
 	if
-		:: d[curD].strategy == 0 ->
+		:: dStable[curD].strategy == 0 ->
 			// Recreate, looks like it does not comply with the MaxUnavailable Replicas. 
-			d[curD].replicaSets[oldV].specReplicas = 0
-			scale(d[curD].replicaSets[oldV]);
+			dStable[curD].replicaSets[oldV].specReplicas = 0
+			scale(dStable[curD].replicaSets[oldV]);
 
-			d[curD].replicaSets[newV].specReplicas = d[curD].specReplicas;
-			scale(d[curD].replicaSets[newV]);
+			dStable[curD].replicaSets[newV].specReplicas = d[curD].specReplicas;
+			scale(dStable[curD].replicaSets[newV]);
 
 			d[curD].curVersion = newV;
 
@@ -192,13 +194,13 @@ inline rollout()
 			// TODO: I did not fully understand the example 1: https://github.com/kubernetes/kubernetes/blob/4106b10d9c3abe0e90153376ce7cb26b0fb2d1d5/pkg/controller/deployment/rolling.go#L114
 			// TODO: I did model the pod that is in the un-ready status. Need to determine whether to model it after looking into other controllers. 
 			do
-			:: d[curD].replicas < d[curD].specReplicas + d[curD].maxSurge * d[curD].replicas / 100 -> 
-				d[curD].replicaSets[newV].specReplicas = d[curD].specReplicas + d[curD].maxSurge *  d[curD].replicas / 100 - d[curD].replicas;
-				scale(d[curD].replicaSets[newV]);
-			:: d[curD].replicaSets[newV].replicas == d[curD].replicas -> break;
+			:: d[curD].replicas < d[curD].specReplicas + dStable[curD].maxSurge * d[curD].replicas / 100 -> 
+				d[curD].replicaSets[newV].specReplicas = d[curD].specReplicas + dStable[curD].maxSurge *  d[curD].replicas / 100 - d[curD].replicas;
+				scale(dStable[curD].replicaSets[newV]);
+			:: dStable[curD].replicaSets[newV].replicas == d[curD].replicas -> break;
 			:: else ->
-				d[curD].replicaSets[oldV].specReplicas =  d[curD].replicas - d[curD].maxUnavailable * d[curD].replicas / 100;
-				scale(d[curD].replicaSets[oldV]);
+				d[curD].replicaSets[oldV].specReplicas =  d[curD].replicas - dStable[curD].maxUnavailable * d[curD].replicas / 100;
+				scale(dStable[curD].replicaSets[oldV]);
 			od;
 
 			d[curD].curVersion = newV;
@@ -220,15 +222,14 @@ proctype deploymentController()
 endDC:	do
 		:: (dcIndex != dcTail && kblIndex == kblTail) ->
 				atomic{
-					d_step {
 						short curD = dcQueue[dcIndex];
 						printf("[**][Deployment] Start to work on deployment %d\n", curD)
 
 						if
-						:: (d[curD].specReplicas != d[curD].replicas + d[curD].replicasInCreation - d[curD].replicasInDeletion) -> 
-							printf("[***][Deployment] replicas spec: %d, cur: %d, in creation: %d, in deletion: %d\n", d[curD].specReplicas, d[curD].replicas, d[curD].replicasInCreation, d[curD].replicasInDeletion)
-							d[curD].replicaSets[d[curD].curVersion].specReplicas = d[curD].specReplicas;
-							scale(d[curD].replicaSets[d[curD].curVersion]);
+						:: (d[curD].specReplicas != d[curD].replicas + dStable[curD].replicasInCreation - dStable[curD].replicasInDeletion) -> 
+							printf("[***][Deployment] replicas spec: %d, cur: %d, in creation: %d, in deletion: %d\n", d[curD].specReplicas, d[curD].replicas, dStable[curD].replicasInCreation, dStable[curD].replicasInDeletion)
+							dStable[curD].replicaSets[d[curD].curVersion].specReplicas = d[curD].specReplicas;
+							scale(dStable[curD].replicaSets[d[curD].curVersion]);
 						// TODO: refine this rollout condition
 						:: else-> ;
 							printf("[**][Deployment] Deployment %d specReplicas is the same as replicas\n", curD)
@@ -240,11 +241,12 @@ endDC:	do
 
 						time = time + DEP_RUN_TIME
 
+						printf("[**][Deployment] Finished deployment %d\n", curD)
 						i = 0; 
 						j = 0; 
 						podSelected = 0;
 						curD = 0;
-					}
+					
 				}
 		od;
 }

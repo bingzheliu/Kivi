@@ -30,7 +30,7 @@ inline computeReplicasForMetric(curMetricName, curMetricTarget, curMetricType)
 	do
 		:: p < totalReplicas ->
 			// This only include the pods status is 1
-			k = d[curD].replicaSets[d[curD].curVersion].podIds[j];
+			k = dStable[curD].replicaSets[d[curD].curVersion].podIds[j];
 			printf("[******][HPA] curD %d, j %d, d[curD].curVersion %d, k %d, pods[k].status %d \n", curD, j, d[curD].curVersion, k, pods[k].status)
 
 			// TODO: now that we added the unreadyPod status, we consider the pod being terminiated still part of the calcluation. Need to check on the code.
@@ -125,8 +125,8 @@ inline computeReplicasForMetrics()
 	short replicaCountProposal = 0, metricNameProposal = 0, timestampProposal = 0;
 
 	do
-		:: i < d[curD].hpaSpec.numMetrics->
-			computeReplicasForMetric(d[curD].hpaSpec.metricNames[i], d[curD].hpaSpec.metricTargets[i], d[curD].hpaSpec.metricTypes[i]);
+		:: i < dStable[curD].hpaSpec.numMetrics->
+			computeReplicasForMetric(dStable[curD].hpaSpec.metricNames[i], dStable[curD].hpaSpec.metricTargets[i], dStable[curD].hpaSpec.metricTypes[i]);
 			if
 				:: (replicas == 0) || (replicaCountProposal > replicas) ->
 					timestamp = timestampProposal;
@@ -165,14 +165,14 @@ inline convertDesiredReplicasWithRules()
 		:: else->;
 	fi;
 
-	short maximumAllowedReplicas = d[curD].hpaSpec.maxReplicas;
+	short maximumAllowedReplicas = dStable[curD].hpaSpec.maxReplicas;
 	if
 		:: maximumAllowedReplicas > scaleUpLimit->
 			maximumAllowedReplicas = scaleUpLimit;
 		:: else->;
 	fi;
 
-	short minimumAllowedReplicas = d[curD].hpaSpec.minReplicas;
+	short minimumAllowedReplicas = dStable[curD].hpaSpec.minReplicas;
 	if 
 		:: desiredReplicas < minimumAllowedReplicas ->
 			desiredReplicas = minimumAllowedReplicas;
@@ -216,7 +216,7 @@ endHPA:	do
 
 					if
 						// TODO: check on this condition -- now we add this because HPA should not start to calculate if there's no replicas
-						::d[curD].hpaSpec.isEnabled == 0 || d[curD].replicas == 0 ->
+						::dStable[curD].hpaSpec.isEnabled == 0 || d[curD].replicas == 0 ->
 							skip
 						::else->;
 							if
@@ -225,12 +225,12 @@ endHPA:	do
 								:: else -> 
 									if
 										// TODO: double check if the below is >= or >, it could affect the logic
-										::currentReplicas > d[curD].hpaSpec.maxReplicas ->
+										::currentReplicas > dStable[curD].hpaSpec.maxReplicas ->
 											printf("[**][HPA] Current number of replicas above Spec.MaxReplicas\n");
-											desiredReplicas = d[curD].hpaSpec.maxReplicas;
-										::currentReplicas < d[curD].hpaSpec.minReplicas ->
+											desiredReplicas = dStable[curD].hpaSpec.maxReplicas;
+										::currentReplicas < dStable[curD].hpaSpec.minReplicas ->
 											printf("[**][HPA] Current number of replicas below Spec.MinReplicas\n");
-											desiredReplicas = d[curD].hpaSpec.minReplicas;
+											desiredReplicas = dStable[curD].hpaSpec.minReplicas;
 										::else->
 											computeReplicasForMetrics()
 											if 

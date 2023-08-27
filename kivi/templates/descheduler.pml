@@ -78,6 +78,7 @@ endDes:	do
 							}
 						}
 						updateQueueIndex(dsIndex, MAX_DESCHEDULER_QUEUE);
+						printf("[**][Descheduler] Finished descheduling...")
 
 des1:					i = 0;
 						j = 0;

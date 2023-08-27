@@ -37,7 +37,7 @@ def verifier_operator_one(json_config, case_name, log_level, pan_compile, pan_ru
 		else:
 			success, stdout, stderr = run_script(['./pan']+pan_runtime, False)
 
-	with open(file_base + "/bin/eval/results/" + case_name + "/pan_" + str(queue_size), "w") as fr:
+	with open(file_base + "/bin/eval/results/" + case_name.split("_")[0].strip() + "/pan_" + str(queue_size), "w") as fr:
 			fr.write(str(datetime.datetime.now()))
 			fr.write(stdout.decode())
 

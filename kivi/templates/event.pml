@@ -64,15 +64,15 @@ proctype eventCpuChange(short targetDeployment)
 		atomic {
 			// can we only select the pod from the running list?
 
-			d[targetDeployment].replicaSets[d[targetDeployment].curVersion].replicas != 0;
+			dStable[targetDeployment].replicaSets[d[targetDeployment].curVersion].replicas != 0;
 
-			select(index_selected : 0 .. d[targetDeployment].replicaSets[d[targetDeployment].curVersion].replicas-1);
+			select(index_selected : 0 .. dStable[targetDeployment].replicaSets[d[targetDeployment].curVersion].replicas-1);
 			select(cpu_change : 1 .. 6);
 			select(direction : 1 .. 1);
 
 			d_step{
 				printf("[**][eventCpuChange]Index %d is selected\n", index_selected)
-				pod_selected = d[targetDeployment].replicaSets[d[targetDeployment].curVersion].podIds[index_selected]
+				pod_selected = dStable[targetDeployment].replicaSets[d[targetDeployment].curVersion].podIds[index_selected]
 
 				if
 				:: direction == 0 ->

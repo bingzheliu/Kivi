@@ -17,10 +17,10 @@ inline copyDeploymentWithTemplate(i, deploymentTemplateId, overwrite)
 			d[i].strategy = (deploymentTemplates[deploymentTemplateId].strategy == -1 -> d[i].strategy : deploymentTemplates[deploymentTemplateId].strategy);
 	*/
 	// podTemplate must be defined for a new deployment; but can be 0, which means it will be kept for the existing deployment. 
-	d[i].podTemplateId = (deploymentTemplates[deploymentTemplateId].podTemplateId == 0 -> d[i].podTemplateId : deploymentTemplates[deploymentTemplateId].podTemplateId)
-	d[i].maxSurge = deploymentTemplates[deploymentTemplateId].maxSurge
-	d[i].maxUnavailable = deploymentTemplates[deploymentTemplateId].maxUnavailable
-	d[i].strategy = deploymentTemplates[deploymentTemplateId].strategy 
+	dStable[i].podTemplateId = (deploymentTemplates[deploymentTemplateId].podTemplateId == 0 -> dStable[i].podTemplateId : deploymentTemplates[deploymentTemplateId].podTemplateId)
+	dStable[i].maxSurge = deploymentTemplates[deploymentTemplateId].maxSurge
+	dStable[i].maxUnavailable = deploymentTemplates[deploymentTemplateId].maxUnavailable
+	dStable[i].strategy = deploymentTemplates[deploymentTemplateId].strategy 
 	d[i].specReplicas = deploymentTemplates[deploymentTemplateId].specReplicas
 
 	// if existing deployment does not define HPA, we will keep the original defined HPA. Becase in the actually k8s kubectl apply, the HPA does not really be applied. 
@@ -29,13 +29,13 @@ inline copyDeploymentWithTemplate(i, deploymentTemplateId, overwrite)
 		:: deploymentTemplates[deploymentTemplateId].hpaSpec.isEnabled == 0 && overwrite == 0 ->
 			skip
 		:: else ->
-			d[i].hpaSpec.isEnabled = deploymentTemplates[deploymentTemplateId].hpaSpec.isEnabled
-			d[i].hpaSpec.minReplicas = deploymentTemplates[deploymentTemplateId].hpaSpec.minReplicas
-			d[i].hpaSpec.maxReplicas = deploymentTemplates[deploymentTemplateId].hpaSpec.maxReplicas
-			d[i].hpaSpec.numMetrics = deploymentTemplates[deploymentTemplateId].hpaSpec.numMetrics
-			for (j : 0 .. d[i].hpaSpec.numMetrics-1) {
-				d[i].hpaSpec.metricNames[j] = deploymentTemplates[deploymentTemplateId].hpaSpec.metricNames[j]
-				d[i].hpaSpec.metricTypes[j] = deploymentTemplates[deploymentTemplateId].hpaSpec.metricTypes[j]
+			dStable[i].hpaSpec.isEnabled = deploymentTemplates[deploymentTemplateId].hpaSpec.isEnabled
+			dStable[i].hpaSpec.minReplicas = deploymentTemplates[deploymentTemplateId].hpaSpec.minReplicas
+			dStable[i].hpaSpec.maxReplicas = deploymentTemplates[deploymentTemplateId].hpaSpec.maxReplicas
+			dStable[i].hpaSpec.numMetrics = deploymentTemplates[deploymentTemplateId].hpaSpec.numMetrics
+			for (j : 0 .. dStable[i].hpaSpec.numMetrics-1) {
+				dStable[i].hpaSpec.metricNames[j] = deploymentTemplates[deploymentTemplateId].hpaSpec.metricNames[j]
+				dStable[i].hpaSpec.metricTypes[j] = deploymentTemplates[deploymentTemplateId].hpaSpec.metricTypes[j]
 			}
 	fi;
 }
@@ -51,9 +51,9 @@ proctype applyDeployment(short deploymentTemplateId)
 			bit exists = 0;
 			for (i : 1 .. DEP_NUM) {
 				if
-					:: d[i].status == 1 && d[i].name == deploymentTemplates[deploymentTemplateId].name ->
+					:: d[i].status == 1 && dStable[i].name == deploymentTemplates[deploymentTemplateId].name ->
 						exists = 1;
-						printf("[*][applyDeployment] apply; %d; Applying the template %d to existing deployment {Id %d, index %d}\n", i, deploymentTemplateId, d[i].name, i);
+						printf("[*][applyDeployment] apply; %d; Applying the template %d to existing deployment {Id %d, index %d}\n", i, deploymentTemplateId, dStable[i].name, i);
 						/* 
 							1. [Limitation] We only support the following fields for updates for now. These update behavior can be configured when there's conflict.
 							   Now, we assume if a field has not been defined, then we put the default value to it (except HPA and podTemeplate); otherwise, we overwrite the old one with the new one. This may not be the right behavior, see #2 below.
@@ -74,11 +74,11 @@ proctype applyDeployment(short deploymentTemplateId)
 					for (i : 1 .. DEP_NUM) {
 						if
 							:: d[i].status == 0 ->
-								printf("[*][applyDeployment] apply; %d; Applying the template %d to new deployment {Id %d, index %d}\n", i, deploymentTemplateId, d[i].name, i);
+								printf("[*][applyDeployment] apply; %d; Applying the template %d to new deployment {Id %d, index %d}\n", i, deploymentTemplateId, dStable[i].name, i);
 								spared = 1
 								d[i].status = 1
-								d[i].replicasInDeletion = 0
-								d[i].replicasInCreation = 0
+								dStable[i].replicasInDeletion = 0
+								dStable[i].replicasInCreation = 0
 								copyDeploymentWithTemplate(i, deploymentTemplateId, 1)
 								updateQueue(dcQueue, dcTail, dcIndex, i, MAX_DEP_QUEUE)	
 								break;
@@ -110,7 +110,7 @@ proctype createDeployment(short deploymentTemplateId)
 			bit exists = 0;
 			for (i : 1 .. DEP_NUM) {
 				if
-					:: d[i].status == 1 && d[i].name == deploymentTemplates[deploymentTemplateId].name ->
+					:: d[i].status == 1 && dStable[i].name == deploymentTemplates[deploymentTemplateId].name ->
 						exists = 1;
 					:: else->;
 				fi
@@ -124,11 +124,11 @@ proctype createDeployment(short deploymentTemplateId)
 					for (i : 1 .. DEP_NUM) {
 						if
 							:: d[i].status == 0 ->
-								printf("[*][createDeployment] create; %d; Create the template %d to new deployment {Id %d, index %d}\n", i, deploymentTemplateId, d[i].name, i);
+								printf("[*][createDeployment] create; %d; Create the template %d to new deployment {Id %d, index %d}\n", i, deploymentTemplateId, dStable[i].name, i);
 								spared = 1
 								d[i].status = 1
-								d[i].replicasInDeletion = 0
-								d[i].replicasInCreation = 0
+								dStable[i].replicasInDeletion = 0
+								dStable[i].replicasInCreation = 0
 								copyDeploymentWithTemplate(i, deploymentTemplateId, 1)
 								updateQueue(dcQueue, dcTail, dcIndex, i, MAX_DEP_QUEUE)	
 								break;

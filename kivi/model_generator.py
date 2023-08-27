@@ -9,7 +9,7 @@ from config import *
 from processing_default import check_for_completion_add_default, default_controllers, event_uc_default_str, default_parameter_order, descheduler_args_default, controller_para_default, descheduler_plugins_maps
 import json
 
-index_starts_at_one = {"pods", "nodes", "d", "podTemplates", "deploymentTemplates", "nodesStable"}
+index_starts_at_one = {"pods", "nodes", "d", "podTemplates", "deploymentTemplates", "nodesStable", "dStable", "podsStable"}
 
 
 # A pre-processor to process all the labels, converting each keys (including built-ins) into unique number, and all values for each key 
@@ -380,7 +380,10 @@ def process_node_affinity(json_config):
 				del pt["affinityRules"][i]["labels"]
 
 stable_variables = {"nodes" : ["id", "name", "labelKeyValue", "score", "curScore", "curAffinity", "curTaint"], 
-					"pods":["name", "namespace", "score", "important", "critical", "cpu", "memory", "labelKeyValue"]} 
+					"pods":["name", "namespace", "score", "important", "critical", "cpu", "memory", "labelKeyValue"],
+					"d": ["name", "namespace", "maxSurge", "maxUnavailable", "strategy", "hpaSpec", "replicaSets", "replicasInDeletion", "replicasInCreation", "podTemplateId"],
+					"deploymentTemplates": ["name", "namespace", "maxSurge", "maxUnavailable", "strategy", "hpaSpec", 
+											"replicasInDeletion", "replicasInCreation", "podTemplateId", "specReplicas"]} 
 
 def process_stable_variables(json_config):
 	#print(json.dumps(json_config, indent=2))

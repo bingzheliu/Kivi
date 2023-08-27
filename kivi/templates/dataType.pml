@@ -53,8 +53,8 @@ typedef podType {
 	// 2: pending (not count for replicas); 3: being terminated (still count for replicas) 
 	unsigned status : 3;
 
-	// CPU pattern change index
-	byte curCpuIndex;
+	// CPU pattern change index: won't change more than 8 times
+	unsigned curCpuIndex : 3;
 
 	short startTime;
 	/*----internal----*/
@@ -212,20 +212,13 @@ typedef podTemplateType {
 
 }
 
-typedef deploymentType {
+typedef deploymentTypeStable {
 	// We use id as an equivalence as name.
 	// short id;
 	short name;
 	byte namespace;
-	// TODO: decide if we need status or if we need to delete it, status includes progressing, available.
-	// short statusType; 
-	bit status;
 
 	replicaSetType replicaSets[2];
-	bit curVersion; 
-
-	short specReplicas;
-	short replicas;
 
 	/*-----For rollout or recreate-----*/
 	// default is 25%
@@ -237,9 +230,6 @@ typedef deploymentType {
 	// 0 is recreate, 1 is rollingupdates
 	bit strategy;
 
-	// must be defined for any new deployment
-	byte podTemplateId;
-
 	/*-----For HPA-----*/
 	hpaSpecType hpaSpec;
 
@@ -247,6 +237,22 @@ typedef deploymentType {
 	byte replicasInDeletion;
 	byte replicasInCreation;
 
+	// must be defined for any new deployment
+	byte podTemplateId;
+
+	// used by deploymentTemplate
+	byte specReplicas;
+}
+
+typedef deploymentType {
+	// TODO: decide if we need status or if we need to delete it, status includes progressing, available.
+	// short statusType; 
+	bit status;
+	
+	bit curVersion; 
+
+	short specReplicas;
+	short replicas;
 	/*-----Internal----*/
 	// byte evicted;
 

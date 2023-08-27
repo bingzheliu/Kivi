@@ -30,8 +30,8 @@ endK:	do
 									j = pods[i].workloadId;
 									// d[j].replicas ++;
 									// k = d[j].replicaSets[d[j].curVersion].replicas;
-									replicasetAddPod(d[j].replicaSets[d[j].curVersion], i)
-									d[j].replicasInCreation --;
+									replicasetAddPod(dStable[j].replicaSets[d[j].curVersion], i)
+									dStable[j].replicasInCreation --;
 									updateQueue(dsQueue, dsTail, dsIndex, pods[i].workloadId, MAX_DESCHEDULER_QUEUE);
 
 								:: else ->;
@@ -44,9 +44,9 @@ endK:	do
 							pods[i].curCpuIndex = 0;
 							// d[pods[i].workloadId].replicas --;
 							flag = 0
-							replicasetDeletePod(d[pods[i].workloadId].replicaSets[d[pods[i].workloadId].curVersion], i)
+							replicasetDeletePod(dStable[pods[i].workloadId].replicaSets[d[pods[i].workloadId].curVersion], i)
 							pods[i].status = 0;
-							d[pods[i].workloadId].replicasInDeletion --;
+							dStable[pods[i].workloadId].replicasInDeletion --;
 							// podTotal = podTotal - 1;
 
 							j = pods[i].loc
@@ -73,9 +73,9 @@ endK:	do
 						:: else ->
 							printf("[**][Kubelet] Unknown pod status %d with pod Id %d and location %d\n", pods[i].status, i, pods[i].loc)
 					fi;
-					updateQueueIndex(kblIndex, MAX_KUBELET_QUEUE)
-					time = time + KUBELET_RUN_TIME
-
+					updateQueueIndex(kblIndex, MAX_KUBELET_QUEUE);
+					time = time + KUBELET_RUN_TIME;
+					printf("[***] Finished Kubelet\n");
 					i = 0;
 					j = 0;
 					flag = 0;

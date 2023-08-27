@@ -131,8 +131,8 @@ inline replicasetDeletePod(replicaset, curPod)
 				:: else->;
 					// Note: this may not be very rubust way. If not found the replica, the pod may be in pending
 					if 
-						:: d[pods[curPod].workloadId].replicasInCreation > 0 ->
-							d[pods[curPod].workloadId].replicasInCreation --
+						:: dStable[pods[curPod].workloadId].replicasInCreation > 0 ->
+							dStable[pods[curPod].workloadId].replicasInCreation --
 							break
 						:: else->
 							printf("[*Warning] Problematic pod Id updates!\n")
@@ -172,23 +172,23 @@ inline copyDeploymentInfoToPod(pod, podStable, curD)
 			pod.loc = 0;
 			podStable.score = 0;
 			if 
-				:: podTemplates[d[curD].podTemplateId].maxCpuChange == 0 ->
-					podStable.cpu = podTemplates[d[curD].podTemplateId].cpuRequested;
+				:: podTemplates[dStable[curD].podTemplateId].maxCpuChange == 0 ->
+					podStable.cpu = podTemplates[dStable[curD].podTemplateId].cpuRequested;
 				:: else->
-					podStable.cpu = podTemplates[d[curD].podTemplateId].curCpuRequest[0]
+					podStable.cpu = podTemplates[dStable[curD].podTemplateId].curCpuRequest[0]
 			fi;
 			// The initial CPU value has been used. 
 			pod.curCpuIndex = 1;
 
 			// TBD: the memory may need also to have a change pattern. Assuming it's the request for now as we haven't model memory runtime behavior.
-			podStable.memory = podTemplates[d[curD].podTemplateId].memRequested;
+			podStable.memory = podTemplates[dStable[curD].podTemplateId].memRequested;
 
 			podStable.important = 0;
-			pod.podTemplateId = d[curD].podTemplateId;
+			pod.podTemplateId = dStable[curD].podTemplateId;
 			
 			short _m = 0;
 			for(_m : 0 .. MAX_LABEL-1) {
-				podStable.labelKeyValue[_m] = podTemplates[d[curD].podTemplateId].labelKeyValue[_m]
+				podStable.labelKeyValue[_m] = podTemplates[dStable[curD].podTemplateId].labelKeyValue[_m]
 			}
 			_m = 0;
 		}

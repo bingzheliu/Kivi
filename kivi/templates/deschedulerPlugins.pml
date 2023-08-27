@@ -70,7 +70,7 @@ inline evictPod(q)
 		:: else ->
 			printf("[*][Descheduler] Pod %d (status %d) on node %d pending for deletion!\n", q, pods[q].status, pods[q].loc)
 			// call into kubernetes client to evict the pod. We use the same way that deployment evict the pods. 
-			d[pods[q].workloadId].replicasInDeletion ++;
+			dStable[pods[q].workloadId].replicasInDeletion ++;
 			pods[q].status = 3;
 			updateQueue(kblQueue, kblTail, kblIndex, q, MAX_KUBELET_QUEUE)
 
@@ -100,10 +100,10 @@ inline examTargetNodes(q)
 
 		// First check tolerence
 		// Only skip TaintEffectNoSchedule and TaintEffectNoExecute
-		for (n : 0 .. podTemplates[d[q].podTemplateId].numNoScheduleNode - 1)
+		for (n : 0 .. podTemplates[dStable[q].podTemplateId].numNoScheduleNode - 1)
 		{
 			if 
-				:: podTemplates[d[q].podTemplateId].noScheduleNode[j] == m -> 
+				:: podTemplates[dStable[q].podTemplateId].noScheduleNode[j] == m -> 
 					goto DRMD2;
 				:: else->;
 			fi;
@@ -112,7 +112,7 @@ inline examTargetNodes(q)
 		// check on node selector and affinity
 		// If node selector is defined, then it should equal to the current node. 
 		if 
-			:: podTemplates[d[q].podTemplateId].nodeName != 0 && podTemplates[d[q].podTemplateId].nodeName != nodesStable[m].name ->
+			:: podTemplates[dStable[q].podTemplateId].nodeName != 0 && podTemplates[dStable[q].podTemplateId].nodeName != nodesStable[m].name ->
 				goto DRMD2;
 			:: else->;
 		fi;
@@ -125,13 +125,13 @@ inline examTargetNodes(q)
 		// Because looks like they are the same as scheduler, I am just using the same logic for now. 
 		flag = 1;
 		bit matched = 0;
-		for (n : 0 .. podTemplates[d[q].podTemplateId].numRules - 1) {
+		for (n : 0 .. podTemplates[dStable[q].podTemplateId].numRules - 1) {
 			if
-				:: podTemplates[d[q].podTemplateId].affinityRules[n].isRequired == 1 ->
+				:: podTemplates[dStable[q].podTemplateId].affinityRules[n].isRequired == 1 ->
 					flag = 0;
-					for (k : 0 .. podTemplates[d[q].podTemplateId].affinityRules[n].numMatchedNode - 1) {
+					for (k : 0 .. podTemplates[dStable[q].podTemplateId].affinityRules[n].numMatchedNode - 1) {
 						if 
-							:: podTemplates[d[q].podTemplateId].affinityRules[n].matchedNode[k] == m ->
+							:: podTemplates[dStable[q].podTemplateId].affinityRules[n].matchedNode[k] == m ->
 								matched = 1;
 							:: else->;
 						fi;

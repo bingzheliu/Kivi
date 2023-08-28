@@ -30,7 +30,6 @@ inline podCpuChangeWithPatternExec(i)
 		printf("[**] !!! %d %d, %d %d, %d %d, %d %d, %d %d\n", ncIndex, ncTail, hpaTail, hpaIndex, sIndex, sTail, kblIndex, kblTail, dcIndex, dcTail)
 	//	printf("[**] ?? %d %d\n", (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail), (podTemplates[pods[i].podTemplateId].timeCpuRequest[pods[i].curCpuIndex] + pods[i].startTime >= time) || (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail))
 		updatePodCpuUsageOnNode(i, cpu_change);
-		pods[i].curCpuIndex ++;
 
 		if 
 			:: pods[i].workloadType == 1 ->
@@ -43,6 +42,7 @@ inline podCpuChangeWithPatternExec(i)
 			:: else->;
 		fi;
 		printf("[**] Finished pod CPU change on pod %d for its # %d (of %d) at time %d\n", i, pods[i].curCpuIndex, podTemplates[pods[i].podTemplateId].maxCpuChange, time)
+		pods[i].curCpuIndex ++;
 
 		cpu_change = 0
 	}
@@ -73,6 +73,31 @@ endPCCWP:			atomic{
 			od;
 }
 
+// proctype podCpuChangeWithPattern()
+// {
+// 		do 
+// 			:: true -> 
+// endPCCWP:		atomic{
+// 					if
+// 						// the events should happen at the same time without lots of intermedia states if it's time for them to happen.
+// 						:: [$podCpuChangeWithPattern]
+// 							byte j;
+// 							bit flag;
+// 							flag = (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail)
+// 							for (j : 1 .. POD_NUM) {
+// 								printf("[@@@] %d %d %d\n", pods[j].curCpuIndex, podTemplates[pods[j].podTemplateId].timeCpuRequest[pods[j].curCpuIndex] + pods[j].startTime, time)
+// 								if 
+// 									// TODO: need to further check workload ID to make sure they are equivalent
+// 									:: pods[j].status == 1 && pods[j].curCpuIndex < podTemplates[pods[j].podTemplateId].maxCpuChange && (podTemplates[pods[j].podTemplateId].timeCpuRequest[pods[j].curCpuIndex] + pods[j].startTime <= time || flag) ->
+// 										 podCpuChangeWithPatternExec(j);
+// 									:: else->
+// 								fi;
+// 							}
+// 							j = 0;
+// 					fi;
+// 				}
+// 		od;
+// }
 
 
 // TODO: this is a passive event, may need to be distinguished 

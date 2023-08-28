@@ -37,7 +37,7 @@ hidden podTemplateType podTemplates[POD_TEMPLATE_NUM+1];
 hidden deploymentType deploymentTemplates[DEP_TEMPLATE_NUM+1];
 hidden deschedulerProfileType deschedulerProfiles[DES_PROFILE_NUM];
 hidden nodeTypeStable nodesStable[NODE_NUM+1]
-hidden podTypeStable podsStable[POD_NUM+1]
+podTypeStable podsStable[POD_NUM+1]
 
 // short podTotal;
 

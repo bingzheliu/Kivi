@@ -309,18 +309,23 @@ def generate_intent(json_config, s_intentscheck_intent, s_main_intent):
 def generate_other_event(json_config, s_main_event, pml_event, s_proc_after_stable):
 	# Processing pod CPU change pattern
 	s_cpu_change = ""
-	s_cpu_change_stmt = "      ::  pods[[$i]].status == 1 && pods[[$i]].curCpuIndex < podTemplates[pods[[$i]].podTemplateId].maxCpuChange && (podTemplates[pods[[$i]].podTemplateId].timeCpuRequest[pods[[$i]].curCpuIndex] + pods[[$i]].startTime <= time || (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail)) -> \n podCpuChangeWithPatternExec([$i])\n"
+	#s_cpu_change_stmt = "      ::  pods[[$i]].status == 1 && pods[[$i]].curCpuIndex < podTemplates[pods[[$i]].podTemplateId].maxCpuChange && (podTemplates[pods[[$i]].podTemplateId].timeCpuRequest[pods[[$i]].curCpuIndex] + pods[[$i]].startTime <= time || (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail)) -> \n podCpuChangeWithPatternExec([$i])\n"
+	s_cpu_change_stmt = "(pods[[$i]].status == 1 && pods[[$i]].curCpuIndex < podTemplates[pods[[$i]].podTemplateId].maxCpuChange && (podTemplates[pods[[$i]].podTemplateId].timeCpuRequest[pods[[$i]].curCpuIndex] + pods[[$i]].startTime <= time || (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail)))"
 	for tp in json_config["setup"]["podTemplates"]:
 		if tp["maxCpuChange"] > 0:
 			# Becuase some pods may be up/changed later, so we need to put every pod onto the check...
 			for i in range(1, len(json_config["setup"]["pods"])+1):
-				s_cpu_change += s_cpu_change_stmt.replace("[$i]", str(i))
+				s_cpu_change += (s_cpu_change_stmt.replace("[$i]", str(i)) + " || ")
 			break
+
 	if len(s_cpu_change) > 0:
+		# remove the last one "||"
+		s_cpu_change = s_cpu_change[:-4]
+		s_cpu_change += "->"
 		pml_event = pml_event.replace("[$podCpuChangeWithPattern]", s_cpu_change)
 		s_main_event += ("run podCpuChangeWithPattern()\n")
 	else:
-		pml_event = pml_event.replace("[$podCpuChangeWithPattern]", ":: true->break")
+		pml_event = pml_event.replace("[$podCpuChangeWithPattern]", "true->break;")
 
 
 	return s_main_event, pml_event, s_proc_after_stable

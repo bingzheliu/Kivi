@@ -49,55 +49,55 @@ inline podCpuChangeWithPatternExec(i)
 }
 
 // TODO: A potential problem is that we can't be sure about how long each CPU usage will last. 
-proctype podCpuChangeWithPattern()
-{
-			do 
-				:: true -> 
-endPCCWP:			atomic{
-					if
-							// ::  pods[0].status == 1 && pods[0].curCpuIndex < podTemplates[pods[0].podTemplateId].maxCpuChange && (podTemplates[pods[0].podTemplateId].timeCpuRequest[pods[0].curCpuIndex] + pods[0].startTime >= time || (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail)) ->
-							// 		podCpuChangeWithPatternExec(0)
-							// ::  pods[1].status == 1 && pods[1].curCpuIndex < podTemplates[pods[1].podTemplateId].maxCpuChange ->
-							// 		podCpuChangeWithPatternExec(1)
-							// ::  pods[2].status == 1 && pods[2].curCpuIndex < podTemplates[pods[2].podTemplateId].maxCpuChange ->
-							// 		podCpuChangeWithPatternExec(2)
-							// ::  pods[3].status == 1 && pods[3].curCpuIndex < podTemplates[pods[3].podTemplateId].maxCpuChange ->
-							// 		podCpuChangeWithPatternExec(3)
-							// ::  pods[4].status == 1 && pods[4].curCpuIndex < podTemplates[pods[4].podTemplateId].maxCpuChange ->
-							// 		podCpuChangeWithPatternExec(4)
-							// ::  pods[5].status == 1 && pods[5].curCpuIndex < podTemplates[pods[5].podTemplateId].maxCpuChange ->
-							// 		podCpuChangeWithPatternExec(5)
-							[$podCpuChangeWithPattern]
-					fi;
-					}
-			od;
-}
-
 // proctype podCpuChangeWithPattern()
 // {
-// 		do 
-// 			:: true -> 
-// endPCCWP:		atomic{
+// 			do 
+// 				:: true -> 
+// endPCCWP:			atomic{
 // 					if
-// 						// the events should happen at the same time without lots of intermedia states if it's time for them to happen.
-// 						:: [$podCpuChangeWithPattern]
-// 							byte j;
-// 							bit flag;
-// 							flag = (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail)
-// 							for (j : 1 .. POD_NUM) {
-// 								printf("[@@@] %d %d %d\n", pods[j].curCpuIndex, podTemplates[pods[j].podTemplateId].timeCpuRequest[pods[j].curCpuIndex] + pods[j].startTime, time)
-// 								if 
-// 									// TODO: need to further check workload ID to make sure they are equivalent
-// 									:: pods[j].status == 1 && pods[j].curCpuIndex < podTemplates[pods[j].podTemplateId].maxCpuChange && (podTemplates[pods[j].podTemplateId].timeCpuRequest[pods[j].curCpuIndex] + pods[j].startTime <= time || flag) ->
-// 										 podCpuChangeWithPatternExec(j);
-// 									:: else->
-// 								fi;
-// 							}
-// 							j = 0;
+// 							// ::  pods[0].status == 1 && pods[0].curCpuIndex < podTemplates[pods[0].podTemplateId].maxCpuChange && (podTemplates[pods[0].podTemplateId].timeCpuRequest[pods[0].curCpuIndex] + pods[0].startTime >= time || (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail)) ->
+// 							// 		podCpuChangeWithPatternExec(0)
+// 							// ::  pods[1].status == 1 && pods[1].curCpuIndex < podTemplates[pods[1].podTemplateId].maxCpuChange ->
+// 							// 		podCpuChangeWithPatternExec(1)
+// 							// ::  pods[2].status == 1 && pods[2].curCpuIndex < podTemplates[pods[2].podTemplateId].maxCpuChange ->
+// 							// 		podCpuChangeWithPatternExec(2)
+// 							// ::  pods[3].status == 1 && pods[3].curCpuIndex < podTemplates[pods[3].podTemplateId].maxCpuChange ->
+// 							// 		podCpuChangeWithPatternExec(3)
+// 							// ::  pods[4].status == 1 && pods[4].curCpuIndex < podTemplates[pods[4].podTemplateId].maxCpuChange ->
+// 							// 		podCpuChangeWithPatternExec(4)
+// 							// ::  pods[5].status == 1 && pods[5].curCpuIndex < podTemplates[pods[5].podTemplateId].maxCpuChange ->
+// 							// 		podCpuChangeWithPatternExec(5)
+// 							[$podCpuChangeWithPattern]
 // 					fi;
-// 				}
-// 		od;
+// 					}
+// 			od;
 // }
+
+proctype podCpuChangeWithPattern()
+{
+		do 
+			:: true -> 
+endPCCWP:		atomic{
+					if
+						// the events should happen at the same time without lots of intermedia states if it's time for them to happen.
+						:: [$podCpuChangeWithPattern]
+							byte j;
+							bit flag;
+							flag = (ncIndex == ncTail && hpaTail == hpaIndex && sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail)
+							for (j : 1 .. POD_NUM) {
+								printf("[@@@] %d %d %d\n", pods[j].curCpuIndex, podTemplates[pods[j].podTemplateId].timeCpuRequest[pods[j].curCpuIndex] + pods[j].startTime, time)
+								if 
+									// TODO: need to further check workload ID to make sure they are equivalent
+									:: pods[j].status == 1 && pods[j].curCpuIndex < podTemplates[pods[j].podTemplateId].maxCpuChange && (podTemplates[pods[j].podTemplateId].timeCpuRequest[pods[j].curCpuIndex] + pods[j].startTime <= time || flag) ->
+										 podCpuChangeWithPatternExec(j);
+									:: else->
+								fi;
+							}
+							j = 0;
+					fi;
+				}
+		od;
+}
 
 
 // TODO: this is a passive event, may need to be distinguished 

@@ -222,6 +222,8 @@ def generate_case_json(json_config, cur_setup):
 	for i in range(0, len(json_config["userDefined"]["dTypes"])):		
 		cur_d_json = json_config["userDefined"]["dTypes"][i]
 		d = deepcopy(json_config["userDefined"]["dTypes"][i]["template"])
+		cur_spec = adjust_replicas(min(cur_setup["d"][i], math.ceil(total_nodes*cur_d_json["proportionNodeSpec"])), cur_d_json)
+		print(cur_spec)
 		d["id"] = cur_id
 		if "name" not in d:
 			d["name"] = cur_id
@@ -235,7 +237,7 @@ def generate_case_json(json_config, cur_setup):
 		cur_id += 1
 		rp["deploymentId"] = cur_d_id
 		rp["replicas"] = 0
-		rp["specReplicas"] = adjust_replicas(cur_setup["d"][i], cur_d_json)
+		rp["specReplicas"] = cur_spec
 		rp["version"] = 0
 		rp["podIds"] = []
 		d["replicaSets"].append(rp)
@@ -246,14 +248,14 @@ def generate_case_json(json_config, cur_setup):
 		rp["deploymentId"] = cur_d_id
 		d["replicaSets"].append(rp)
 
-		d["specReplicas"] = adjust_replicas(cur_setup["d"][i], cur_d_json)
+		d["specReplicas"] = cur_spec
 		d["replicas"] = 0
 
 		max_replicas = d["specReplicas"]
 		if "hpaSpec" in d:
 			if d["hpaSpec"]["isEnabled"] == 1:
-				d["hpaSpec"]["minReplicas"] = adjust_replicas(math.floor(cur_setup["d"][i]*1.0*cur_d_json["proportionNodeMin"]/cur_d_json["proportionNodeSpec"]), cur_d_json)
-				d["hpaSpec"]["maxReplicas"] = adjust_replicas(math.ceil(cur_setup["d"][i]*1.0*cur_d_json["proportionNodeMax"]/cur_d_json["proportionNodeSpec"]), cur_d_json)
+				d["hpaSpec"]["minReplicas"] = adjust_replicas(min(math.ceil(total_nodes*cur_d_json["proportionNodeMin"]), math.floor(cur_setup["d"][i]*1.0*cur_d_json["proportionNodeMin"]/cur_d_json["proportionNodeSpec"])), cur_d_json)
+				d["hpaSpec"]["maxReplicas"] = adjust_replicas(min(math.ceil(total_nodes*cur_d_json["proportionNodeMax"]), math.ceil(cur_setup["d"][i]*1.0*cur_d_json["proportionNodeMax"]/cur_d_json["proportionNodeSpec"])), cur_d_json)
 				max_replicas = max(max_replicas, d["hpaSpec"]["maxReplicas"])
 
 		new_json_config["setup"]["d"].append(d)

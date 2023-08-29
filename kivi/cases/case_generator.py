@@ -1662,11 +1662,13 @@ user_defined_all = {"s4" : {"nodes_default" : {"upperBound":10, "lowerBound":2, 
 
 def get_case_user_defined(case_id, scale):
 	user_defined_all = {"default" : {"nodes_default" : {"upperBound":scale, "lowerBound":1, "ScaleType":"proportion"}, \
-									"d_default" : {"upperBound":scale*3, "lowerBound":2, "ScaleType":"proportion", "proportionHPA" : 2}},\
+									"d_default" : {"upperBound":scale*3, "lowerBound":2, "ScaleType":"proportion"}},\
 						"s6" : {"nodes_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}, \
-							    "d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion", "proportionHPA" : 2}}, \
+							    "d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}}, \
 						"s4" : {"nodes_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}, \
-							    "d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion", "proportionHPA" : 2}}
+							    "d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}},\
+						"h1" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
+							    "d_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}},\
 						# "h2" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
 						# 			"d_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion", "proportionHPA" : 2}} \
 					 	}

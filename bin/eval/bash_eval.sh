@@ -3,27 +3,54 @@
 path=$(cd ..;pwd)
 echo $path
 
-case_scale=(3 4 5 6 10 20 30 50 80 100)
-case_id=(s4 s1 s9 s6 s3 h2 h1)
-count=3
-#case_scale=(5)
-#case_id=(s4)
+# $1 0: only violation, 1: only non-violation, 2: both
+# $2 0: only with small scale algorithm 1: only for original scale 2: both
+
+# The is case scale is chosen with a log-based scale. range: 3-100.
+# round it to the nearest 5-based or 2-squared number if possible.
+# 0.5 3.1622776601683795
+# 0.6 3.981071705534973
+# 0.7 5.011872336272725
+# 0.8 6.309573444801936
+# 0.9 7.943282347242818
+# 1.0 10.000000000000005
+# 1.1 12.589254117941682
+# 1.2 15.848931924611149
+# 1.3 19.95262314968882
+# 1.4 25.11886431509582
+# 1.5 31.622776601683825
+# 1.6 39.81071705534978
+# 1.7 50.11872336272727
+# 1.8 63.09573444801939
+# 1.9 79.43282347242825
+# 2.0 100.0000000000001
+
+case_scale=(3 4 5 6 8 10 13 16 20 25 32 40 50 64 80 100)
+#case_id=(s4 s9 s6 s3 h2 s1 h1)
+count=1
+#case_scale=(10)
+case_id=(h1)
 
 mkdir "eval/results/"
 for case in "${case_id[@]}"	
 do
-	cur_per_file="eval/results/$case"
-	cur_per_cn_file="eval/results/${case}_cn"
+	mkdir "eval/results/${case}"
+	cur_per_file="eval/results/$case/$case"
+	cur_per_cn_file="eval/results/$case/${case}_cn"
+
+	cur_log_base_file="eval/results/${case}/output_$case"
 	if [ $1 != 1 ]
 	then
 		> $cur_per_file
-		> eval/results/output_$case
+		> $cur_log_base_file
+		> ${cur_log_base_file}_o
 	fi
 
 	if [ $1 -gt 0 ]
 	then
 		> $cur_per_cn_file
-		> eval/results/output_non_violation_$case
+		> ${cur_log_base_file}_cn
+		> ${cur_log_base_file}_cn_o
 	fi
 	
 	echo "========================="
@@ -34,29 +61,51 @@ do
 		echo "Working on (case $case, scale $i)..."
 		elapsed_all=0
 		elapsed_non_violation_all=0
+
+		if [ $1 != 1 ] && [ $2 -gt 0 ]
+		then
+			echo "first bench mark the actual result for the cases.."
+			echo "python3 kivi_runner.py -c $case -s $i -o -r -f 1 >> ${cur_log_base_file}_o"
+			start_time="$(gdate -u +%s.%N)"
+			python3 kivi_runner.py -f 1 -c $case -s $i -o >> ${cur_log_base_file}_o
+			end_time="$(gdate -u +%s.%N)"
+			elapsed="$(bc <<<"$end_time-$start_time")"
+			elapsed_all="$(bc <<<"$elapsed+$elapsed_all")"
+			echo "Runtime #$j $elapsed"
+		fi
+
+		if [ $1 -gt 0 ] && [ $2 -gt 0 ]
+		then
+			echo "python3 kivi_runner.py -f 1 -c $case -s $i -o -cn -r >> ${cur_log_base_file}_cn_o"
+			start_time="$(gdate -u +%s.%N)"
+			python3 kivi_runner.py -f 1 -c $case -s $i -o -cn -r >> ${cur_log_base_file}_cn_o
+			end_time="$(gdate -u +%s.%N)"
+			elapsed="$(bc <<<"$end_time-$start_time")"
+			echo "Runtime #$j $elapsed"
+		fi
+
 		for j in $(seq $count)
 		do
 			echo "Times $j..."
-			if [ $1 != 1 ]
+			if [ $1 != 1 ] && [ $2 != 1 ]
 			then
 				echo "Working on violation cases"
-				echo "python3 kivi_runner.py -f -c $case -s $i >> 'eval/results/output_$case'"
+				echo "python3 kivi_runner.py -f 1 -c $case -s $i >> $cur_log_base_file"
 				# mac support gdate; for linux, may need to change to date
 				start_time="$(gdate -u +%s.%N)"
-				python3 kivi_runner.py -f -c $case -s $i >> eval/results/output_$case
+				python3 kivi_runner.py -f 1 -c $case -s $i >> $cur_log_base_file
 				end_time="$(gdate -u +%s.%N)"
 				elapsed="$(bc <<<"$end_time-$start_time")"
 				elapsed_all="$(bc <<<"$elapsed+$elapsed_all")"
 				echo "Runtime #$j $elapsed"
 			fi
 
-			# 0: only violation, 1: only non-violation, 2: both
-			if [ $1 -gt 0 ]
+			if [ $1 -gt 0 ] && [ $2 != 1 ]
 			then
 				echo "Working on non-violation cases"
-				echo "python3 kivi_runner.py -f -c $case -s $i -cn > 'eval/results/output_non_violation_$case"
+				echo "python3 kivi_runner.py -f 2 -c $case -s $i -cn -eh -to 180 >> ${cur_log_base_file}_cn"
 				start_time="$(gdate -u +%s.%N)"
-				python3 kivi_runner.py -f -c $case -s $i -cn >> eval/results/output_non_violation_$case
+				python3 kivi_runner.py -f 2 -c $case -s $i -cn -eh -to 180 >> ${cur_log_base_file}_cn
 				end_time="$(gdate -u +%s.%N)"
 				elapsed="$(bc <<<"$end_time-$start_time")"
 				elapsed_non_violation_all="$(bc <<<"$elapsed+$elapsed_non_violation_all")"

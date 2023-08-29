@@ -51,25 +51,30 @@ def parse_pan_output(output):
 	failure_type = "None"
 	error_trail_name = None
 	failure_details = ""
+	error_trail_flag = False
 	for s in output.splitlines():
 		# TODO:check on how to test if the file is ended
 		if "pan:1: invalid end state" in s:
 			failure_type = analyze_end_state(s)
 			 
-		if "pan:1: assertion violated" in s:
+		elif "pan:1: assertion violated" in s:
 			failure_type = analyze_assert(s)
 		
-		if "pan:1: end state in claim reached" in s:
+		elif "pan:1: end state in claim reached" in s:
 			failure_type = "Never Claim Violated"
 
-		if "pan: wrote" in s:
-			error_trail_name = s.split("pan: wrote")[1].strip()	 
-
-		if "pan:1: non-progress cycle" in s:
+		elif "pan:1: non-progress cycle" in s:
 			failure_type = "non-progress cycle"
+			
+		elif "pan:1:" in s:
+			failure_type = s
 
 		if "error:" in s:
 			failure_type = analyze_assert(s)
+
+		if "pan: wrote" in s:
+			error_trail_name = s.split("pan: wrote")[1].strip()	
+			error_trail_flag = True 
 
 		if "total actual memory usage" in s:
 			total_mem = s.split("total")[0].strip()
@@ -77,6 +82,8 @@ def parse_pan_output(output):
 		if "elapsed time" in s:
 			elapsed_time = s.split("time")[1].split("seconds")[0].strip()
 
+	if error_trail_flag and failure_type == "None":
+		failure_type = "Unknown type ---- " + failure_type
 
 	return failure_type, failure_details, error_trail_name, total_mem, elapsed_time
 

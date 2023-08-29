@@ -16,7 +16,7 @@ def simulation(json_config, file_base, pml_base_path):
 	#myprint(stdout, logger.debug)
 
 	result_log, failure_details = parse_spin_error_trail(stdout.decode(), args.verbose_level)
-	myprint(result_log, logger.debug)
+	myprint(result_log, logger.info)
 
 def verifier():
 	scale = args.scale
@@ -48,12 +48,13 @@ def verifier():
 	file_base = sys_path
 	pml_base_path, result_base_path = generate_dir(file_base, case_id, scale)
 	
-	if args.original:
-		with open(pml_base_path + "/" + case_id + ".json",'w') as f:
-			json.dump(json_config, f, indent=4)
-	else:
-		with open(pml_base_path + "/" + case_id + "_template.json",'w') as f:
-			json.dump(json_config, f, indent=4)
+	if args.file_debug > 0:
+		if args.original:
+			with open(pml_base_path + "/" + case_id + ".json",'w') as f:
+				json.dump(json_config, f, indent=4)
+		else:
+			with open(pml_base_path + "/" + case_id + "_template.json",'w') as f:
+				json.dump(json_config, f, indent=4)
 
 	if args.simulation:
 		traces = simulation(json_config, file_base, pml_base_path)

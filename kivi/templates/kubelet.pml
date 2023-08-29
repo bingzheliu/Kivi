@@ -38,7 +38,8 @@ endK:	do
 							fi;
 
 							printf("[*][Kubelet] start; %d; %d; Created pod %d on node %d, deployment %d now have %d replicas\n", i, selectedNode, i, selectedNode, pods[i].workloadId, d[pods[i].workloadId].replicas);
-
+							selectedNode = 0;
+							
 						:: pods[i].status == 3 ->
 							pods[i].curCpuIndex = 0;
 							// d[pods[i].workloadId].replicas --;
@@ -52,8 +53,8 @@ endK:	do
 							if 
 								:: j != 0 ->
 									nodes[j].numPod = nodes[j].numPod - 1;
-									nodes[j].cpuLeft = nodes[j].cpuLeft + pods[i].cpu;
-									nodes[j].memLeft = nodes[j].memLeft + pods[i].memory;
+									nodes[j].cpuLeft = nodes[j].cpuLeft + podsStable[i].cpu;
+									nodes[j].memLeft = nodes[j].memLeft + podsStable[i].memory;
 								:: else->
 							fi;
 							// TODO: move this message to Deployment
@@ -69,12 +70,15 @@ endK:	do
 							fi;
 							// TODO: add a pod info clear func. Not clearing pod info for now, as we will override them later. But this may potentially cause problem if we made mistakes on overriding. 
 						:: pods[i].status == 1 -> skip;
+						:: else ->
+							printf("[**][Kubelet] Unknown pod status %d with pod Id %d and location %d\n", pods[i].status, i, pods[i].loc)
 					fi;
 					updateQueueIndex(kblIndex, MAX_KUBELET_QUEUE)
 					time = time + KUBELET_RUN_TIME
 
 					i = 0;
 					j = 0;
+					flag = 0;
 				}	
 			}
 	od;

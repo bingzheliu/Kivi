@@ -8,4 +8,7 @@ resource_difference_tolerance = 8
 model_logging = logging.CRITICAL
 verifier_logging = logging.INFO
 
-default_timeout = 60
+default_timeout = 300
+
+# how many loops will be counted as oscillation in verification
+loop_times = 3

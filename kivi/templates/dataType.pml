@@ -7,24 +7,28 @@
 */
 
 typedef twoDArray {
-	short a[MAX_2D];
+	short a[MAX_2D+1];
 }
 
 typedef nodeType {
-	short id;
-	short name;
-
-	int cpu;
-	int cpuLeft;
-	int memory;
-	int memLeft;
+	short cpu;
+	short cpuLeft;
+	short memory;
+	short memLeft;
 
 	// 0: false, 1: ready, 2: unhealthy
 	unsigned status : 3;
 	byte numPod;
 
+	bit maintained;
+}
+
+typedef nodeTypeStable {
+	// short id;
+	short name;
+
 	// index is the key, and each index store its value, only 1 value for 1 key
-	short labelKeyValue[MAX_LABEL];
+	byte labelKeyValue[MAX_LABEL];
 
 	/*----internal---*/
 	// used by scheduler
@@ -35,58 +39,58 @@ typedef nodeType {
 	bit curAffinity;
 	// 1: current node can taint the current pod and can't be scheduled
 	bit curTaint;
-
-	bit maintained;
 }
 
 // TODO: We made an assumption here that pods are managed by the deployment. But it's not always this case. So may need to sepreate more for the pod v.s. deployment.
 // But for now, it's OK to assume that is created by other resources: https://kubernetes.io/docs/concepts/workloads/pods/#working-with-pods
+// Only reveal the pods that has essential info to pods status in the global variables
 typedef podType {
-	short id;
-	short name;
-	byte namespace;
 	// No more than 255 nodes
 	byte loc;
-
-
-	// label is per pod basis
-	short labelKeyValue[MAX_LABEL];
 
 	// https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
 	// 0: idle; 1: running (the only healthy status); 
 	// 2: pending (not count for replicas); 3: being terminated (still count for replicas) 
 	unsigned status : 3;
 
-	// resource
-	int cpu;
-	int memory;
-
-	bit critical;
-
 	// CPU pattern change index
 	byte curCpuIndex;
 
 	short startTime;
-
 	/*----internal----*/
 	// 0: pod, 1: deployment
 	// potentially can support CronJob, Job, etc. in the future. 
 	unsigned workloadType : 3;
 	// If workloadType is 0 (pod), then this is the ID for a podTemplate array (need to define such an array somewhere).
 	// Otherwise it's the array index for the deployment (or other types of owners)
-	byte workloadId;
-	byte podTemplateId;
+	// change these into large value if involves more deployments
+	unsigned workloadId : 3;
+	unsigned podTemplateId : 3;
+}
 
+typedef podTypeStable {
+	// short id;
+	short name;
+
+	byte namespace;
 	short score;
 	//short num_deschedule;
 	// short toDelete;
 
 	// used for invariants
 	bit important;
+	bit critical;
+
+	// resource
+	short cpu;
+	short memory;
+
+	// label is per pod basis
+	byte labelKeyValue[MAX_LABEL];
 }
 
 typedef replicaSetType {
-	short id;
+	// short id;
 	short deploymentId;
 
 	short replicas;
@@ -96,7 +100,12 @@ typedef replicaSetType {
 	/*****internal****/
 	// when use each podId, need to check whether 1) podIds is 0, or 2) the related pod status is 0. The index can be larger than replicas.
 	// This will only include the pods.status == 1, not include pending or deletion.
+
+#ifdef MORE_PODS
 	short podIds[POD_NUM];
+#else
+	byte podIds[POD_NUM];
+#endif
 
 }
 
@@ -110,7 +119,7 @@ typedef hpaSpecType {
 	// 0 means values, including PodMetric and the valued ResourceMetric; 1 means utlization, including ResourceMetric
 	byte metricTypes[MAX_NUM_METRICS];
 
-	short minReplicas;
+	byte minReplicas;
 	short maxReplicas;
 }
 
@@ -152,15 +161,15 @@ typedef topoSpreadConType {
 // TODO: check on if the label key used in nodes can also be used in pods
 typedef podTemplateType {
 	/*--- metadata ---*/
-	short labelKeyValue[MAX_LABEL];
+	byte labelKeyValue[MAX_LABEL];
 
 	/*--- podSpec ---*/
 	// https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#PodSpec
 
 	// In fact, the requested CPU and memory will be defined for each container in the pod, but we simplified them into one resources for now, and may pre-process the container info in the wrapper functions. 
 	// https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#resources
-	int cpuRequested;
-	int memRequested;
+	short cpuRequested;
+	short memRequested;
 
 	// For scheduler: https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#scheduling
 	//// node affinity, https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
@@ -177,7 +186,7 @@ typedef podTemplateType {
 	*/
 	byte numNoScheduleNode;
 	byte noScheduleNode[MAX_NO_SCHEDULE_NODE];
-	short numPreferNoScheduleNode;
+	byte numPreferNoScheduleNode;
 	byte preferNoScheduleNode[MAX_PEFER_NO_CHEDULE_NODE];
 
 	//// Pod Spreading Policy
@@ -188,7 +197,7 @@ typedef podTemplateType {
 	// If defined, the timeCpuRequest[0] must be 0 to define the initial behavior of CPU. This field will be mostly used when create pods in runtime.
 	// curCpuRequest represent the current CPU usage of the pod; timeCpuRequest represent until when this usage will start. 
 	byte maxCpuChange;
-	int curCpuRequest[MAX_CPU_PATTERN];
+	short curCpuRequest[MAX_CPU_PATTERN];
 	short timeCpuRequest[MAX_CPU_PATTERN];
 
 	/* 
@@ -205,7 +214,7 @@ typedef podTemplateType {
 
 typedef deploymentType {
 	// We use id as an equivalence as name.
-	short id;
+	// short id;
 	short name;
 	byte namespace;
 	// TODO: decide if we need status or if we need to delete it, status includes progressing, available.
@@ -220,13 +229,13 @@ typedef deploymentType {
 
 	/*-----For rollout or recreate-----*/
 	// default is 25%
-	short maxSurge;
+	byte maxSurge;
 	// default is 25%
-	short maxUnavailable;
+	byte maxUnavailable;
 
 	// https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
 	// 0 is recreate, 1 is rollingupdates
-	short strategy;
+	bit strategy;
 
 	// must be defined for any new deployment
 	byte podTemplateId;
@@ -239,7 +248,7 @@ typedef deploymentType {
 	byte replicasInCreation;
 
 	/*-----Internal----*/
-	byte evicted;
+	// byte evicted;
 
 	/*-----omitting-----*/
 	// short progressDeadlineSeconds;
@@ -263,11 +272,11 @@ typedef deploymentType {
 //The plugins will be executed in the order of their array index
 typedef deschedulerProfileType {
 	// removePodsViolatingNodeAffinity: 1
-	short numDeschedulePlugins;
+	byte numDeschedulePlugins;
 	byte deschedulePlugins[MAX_NUM_DESPLUGINS];
 
 	// removeDuplicates: 1; removePodsViolatingTopologySpreadConstraint: 2;
-	short numBalancePlugins;
+	byte numBalancePlugins;
 	byte balancePlugins[MAX_NUM_BALPLUGINS];
 
 	// We only support the default evictor for now. If user have multiple evictor, we'll need the following structure.
@@ -284,7 +293,7 @@ typedef deschedulerProfileType {
 
 typedef podsArray {
 	bit pods[POD_NUM+1];
-	short numPods;
+	byte numPods;
 	bit exist;
 }
 
@@ -294,7 +303,7 @@ typedef deschedulerNodeDuplicateArray {
 }
 
 typedef deschedulerTopoSortArray {
-	short evictedNumPods;
-	short numPods;
-	short index;
+	byte evictedNumPods;
+	byte numPods;
+	byte index;
 }

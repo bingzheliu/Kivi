@@ -9,7 +9,7 @@ from util import *
 from config import resource_difference_tolerance
 
 user_defined_default = {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
-						"d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}}
+						"d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion", "minHPAReplicas":6}}
 
 equal_templates = {"nodes":["cpu", "memory", "cpuLeft", "memLeft", "status", "labels"], "d":["podTemplateId", "hpaSpec"]}
 
@@ -138,6 +138,9 @@ def template_generator(json_config, user_defined=None):
 						if "hpaSpec" in n: 
 							max_count_replicas[i] = max(n["hpaSpec"]["maxReplicas"], max_count_replicas[i])
 							min_count_replicas[i] = min(n["hpaSpec"]["minReplicas"], min_count_replicas[i])
+						else:
+							max_count_replicas[i] = max(n["specReplicas"], max_count_replicas[i])
+							min_count_replicas[i] = min(n["specReplicas"], min_count_replicas[i])
 						spec_replicas[i] = max(n["specReplicas"], spec_replicas[i])
 					break
 
@@ -151,11 +154,18 @@ def template_generator(json_config, user_defined=None):
 					new_type["template"]["numPod"] = 0
 				if t == "d":
 					new_type["template"]["status"] = 0
-					max_count_replicas.append(n["hpaSpec"]["maxReplicas"])
-					min_count_replicas.append(n["hpaSpec"]["minReplicas"])
+					if "hpaSpec" in n:
+						max_count_replicas.append(n["hpaSpec"]["maxReplicas"])
+						min_count_replicas.append(n["hpaSpec"]["minReplicas"])
+					else:
+						max_count_replicas.append(n["specReplicas"])
+						min_count_replicas.append(n["specReplicas"])
 					spec_replicas.append(n["specReplicas"])
 				new_type["template"]["name"] = n["name"]
 				new_type["lowerBound"] = user_defined[t+"_default"]["lowerBound"]
+				if "minHPAReplicas" in user_defined[t+"_default"]:
+					new_type["minHPAReplicas"] = user_defined[t+"_default"]["minHPAReplicas"]
+					max_count_replicas[-1] = max(new_type["minHPAReplicas"], max_count_replicas[-1])
 				# propotion == 0 if nodeScaleType is free
 				new_type["proportion"] = 0
 				type_setup.append(new_type)
@@ -167,8 +177,9 @@ def template_generator(json_config, user_defined=None):
 				type_setup[i]["proportion"] = propotion[i]
 			if t == "d":
 				#type_setup[i]["proportionHPA"] = user_defined[t+"_default"]["proportionHPA"]
-				type_setup[i]["proportionNodeMin"] = min_count_replicas[i]*1.0/len(json_config["setup"]["nodes"])
-				type_setup[i]["proportionNodeMax"] = max_count_replicas[i]*1.0/len(json_config["setup"]["nodes"])
+				if "hpaSpec" in type_setup[i]["template"]:
+					type_setup[i]["proportionNodeMin"] = min_count_replicas[i]*1.0/len(json_config["setup"]["nodes"])
+					type_setup[i]["proportionNodeMax"] = max_count_replicas[i]*1.0/len(json_config["setup"]["nodes"])
 				type_setup[i]["proportionNodeSpec"] = spec_replicas[i]*1.0/len(json_config["setup"]["nodes"])
 				type_setup[i]["upperBound"] = max_count_replicas[i]
 
@@ -223,7 +234,6 @@ def generate_case_json(json_config, cur_setup):
 		cur_d_json = json_config["userDefined"]["dTypes"][i]
 		d = deepcopy(json_config["userDefined"]["dTypes"][i]["template"])
 		cur_spec = adjust_replicas(min(cur_setup["d"][i], math.ceil(total_nodes*cur_d_json["proportionNodeSpec"])), cur_d_json)
-		print(cur_spec)
 		d["id"] = cur_id
 		if "name" not in d:
 			d["name"] = cur_id
@@ -255,7 +265,7 @@ def generate_case_json(json_config, cur_setup):
 		if "hpaSpec" in d:
 			if d["hpaSpec"]["isEnabled"] == 1:
 				d["hpaSpec"]["minReplicas"] = adjust_replicas(min(math.ceil(total_nodes*cur_d_json["proportionNodeMin"]), math.floor(cur_setup["d"][i]*1.0*cur_d_json["proportionNodeMin"]/cur_d_json["proportionNodeSpec"])), cur_d_json)
-				d["hpaSpec"]["maxReplicas"] = adjust_replicas(min(math.ceil(total_nodes*cur_d_json["proportionNodeMax"]), math.ceil(cur_setup["d"][i]*1.0*cur_d_json["proportionNodeMax"]/cur_d_json["proportionNodeSpec"])), cur_d_json)
+				d["hpaSpec"]["maxReplicas"] = adjust_replicas(max(cur_d_json["minHPAReplicas"], min(math.ceil(total_nodes*cur_d_json["proportionNodeMax"]), math.ceil(cur_setup["d"][i]*1.0*cur_d_json["proportionNodeMax"]/cur_d_json["proportionNodeSpec"]))), cur_d_json)
 				max_replicas = max(max_replicas, d["hpaSpec"]["maxReplicas"])
 
 		new_json_config["setup"]["d"].append(d)

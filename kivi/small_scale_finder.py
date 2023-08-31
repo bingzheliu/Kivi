@@ -111,7 +111,7 @@ def deduct_cpu_nodes(json_config):
 	return json_config
 
 def template_generator(json_config, user_defined=None):
-	print(json.dumps(json_config, indent=2))
+	#print(json.dumps(json_config, indent=2))
 	if user_defined is None:
 		user_defined = user_defined_default
 
@@ -286,7 +286,7 @@ def generate_case_json(json_config, cur_setup):
 			cur_pod["status"] = 0
 			new_json_config["setup"]["pods"].append(cur_pod)
 
-	print(json.dumps(new_json_config, indent=2))
+	#print(json.dumps(new_json_config, indent=2))
 
 	return new_json_config, len(new_json_config["setup"]["nodes"]), len(new_json_config["setup"]["pods"]) 
 

@@ -1,6 +1,7 @@
 import subprocess
 import random
 import datetime
+import sys
 
 from util import *
 from config import *
@@ -18,10 +19,10 @@ def verifier_operator_one(json_config, case_name, log_level, pan_compile, pan_ru
 	else:
 		queue_size = 0
 
-	success, stdout, stderr = run_script([file_base + '/libs/Spin/Src/spin', '-a', pml_base_path + "/" + main_filename], True)
+	_success, stdout, stderr = run_script([file_base + '/libs/Spin/Src/spin', '-a', pml_base_path + "/" + main_filename], True)
 	myprint(stdout, logger.debug)
 
-	success, stdout, stderr = run_script(['gcc'] + pan_compile, True)
+	_success, stdout, stderr = run_script(['gcc'] + pan_compile, True)
 
 	result_log = ""
 
@@ -55,7 +56,7 @@ def verifier_operator_one(json_config, case_name, log_level, pan_compile, pan_ru
 	myprint(failure_details)
 
 	if error_trail_name != None:
-		success, stdout, stderr = run_script(['./pan', '-r', error_trail_name], False)
+		_success, stdout, stderr = run_script(['./pan', '-r', error_trail_name], False)
 		if args.file_debug > 0:
 			with open(result_base_path + "/raw_data/error_" + case_name + "_" + str(queue_size), "w") as fr:
 				fr.write(stdout.decode())
@@ -65,16 +66,16 @@ def verifier_operator_one(json_config, case_name, log_level, pan_compile, pan_ru
 			with open(result_base_path + "/" + case_name + "_" + str(queue_size), "w") as fw:
 				fw.write(result_log)
 
-	return failure_type, result_log, failure_details, total_mem, elapsed_time
+	return success, failure_type, result_log, failure_details, total_mem, elapsed_time
 
 def verifier_operator_adjust_queue(json_config, case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base):
 	queue_size = 10
-	failure_type, result_log, failure_details, total_mem, elapsed_time = verifier_operator_one(deepcopy(json_config), case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base, None)
+	success, failure_type, result_log, failure_details, total_mem, elapsed_time = verifier_operator_one(deepcopy(json_config), case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base, None)
 
 	while queue_size < 500:
 		if len(failure_details.split("\n")) > 1 and "Queue is full!" in failure_details.split("\n")[1]:
 			logger.critical("trying queue size "+str(queue_size))
-			failure_type, result_log, failure_details, total_mem, elapsed_time = verifier_operator_one(deepcopy(json_config), case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base, queue_size)
+			success, failure_type, result_log, failure_details, total_mem, elapsed_time = verifier_operator_one(deepcopy(json_config), case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base, queue_size)
 			queue_size *= 2
 		else:
 			break
@@ -84,7 +85,7 @@ def verifier_operator_adjust_queue(json_config, case_name, log_level, pan_compil
 		return "None", result_log, failure_details, total_mem, elapsed_time
 		#failure_type, result_log, failure_details, total_mem, elapsed_time = verifier_operator_one(deepcopy(json_config), case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base, None)
 
-	return failure_type, result_log, failure_details, total_mem, elapsed_time
+	return success, failure_type, result_log, failure_details, total_mem, elapsed_time
 
 def verifier_operator(json_config, case_name, file_base, result_base_path, pml_base_path):
 	pan_runtime = ["-" + o.strip() for o in args.pan_runtime.split(",")]
@@ -118,7 +119,7 @@ def verifier_operator(json_config, case_name, file_base, result_base_path, pml_b
 			logger.critical("===========================")
 			logger.critical("Working on setup: " + str_setup(s))
 
-			failure_type, result_log, failure_details, total_mem, elapsed_time = verifier_operator_adjust_queue(new_json_config, case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base)
+			success, failure_type, result_log, failure_details, total_mem, elapsed_time = verifier_operator_adjust_queue(new_json_config, case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base)
 
 			if failure_type != "None":
 				failures.append((failure_type, result_log, failure_details, total_mem, elapsed_time))
@@ -126,8 +127,12 @@ def verifier_operator(json_config, case_name, file_base, result_base_path, pml_b
 				if not args.all_violation:
 					break
 
+			if not success and args.timeout:
+				logger.critical("Timeout at setup " + str_setup(s))
+				sys.exit("Timeout at setup " + str_setup(s))
+
 	else:
-		failure_type, result_log, failure_details, total_mem, elapsed_time = verifier_operator_adjust_queue(json_config, case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base)
+		success, failure_type, result_log, failure_details, total_mem, elapsed_time = verifier_operator_adjust_queue(json_config, case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base)
 
 		if failure_type != "None":
 			failures.append((failure_type, result_log, failure_details, total_mem, elapsed_time))

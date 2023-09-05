@@ -53,8 +53,8 @@ endK:	do
 							if 
 								:: j != 0 ->
 									nodes[j].numPod = nodes[j].numPod - 1;
-									nodes[j].cpuLeft = nodes[j].cpuLeft + pods[i].cpu;
-									nodes[j].memLeft = nodes[j].memLeft + pods[i].memory;
+									nodes[j].cpuLeft = nodes[j].cpuLeft + podsStable[i].cpu;
+									nodes[j].memLeft = nodes[j].memLeft + podsStable[i].memory;
 								:: else->
 							fi;
 							// TODO: move this message to Deployment

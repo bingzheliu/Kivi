@@ -38,7 +38,7 @@ def setup_argparser(arg_parser):
 
     verification_arg = arg_parser.add_argument_group("Verification parameters")
     verification_arg.add_argument('-o', '--original', action='store_true', help='Disable finding minimal examples and verify for the original configs')
-    verification_arg.add_argument('-f', '--fast_find', action='store_true', help='When finding minimal examples, find the minimal scale faster instead of trying all the scales')
+    verification_arg.add_argument('-f', '--fast_find', type=int, default=0, help='When finding minimal examples, find the minimal scale faster instead of trying all the scales. Speed can be chosen from 0 to 3. With default 0 the origional speed.')
     # TODO: add option to send to pan and see if we want to find all the violations
     verification_arg.add_argument('-a', '--all_violation', action='store_true', help='Find all violations (default: stop after finding one)')
     verification_arg.add_argument('-v', '--verbose_level', type=int, default=1, help="Log level for generated examples. Smaller value means less hints in the examples." )
@@ -47,8 +47,8 @@ def setup_argparser(arg_parser):
     verification_arg.add_argument('-eh', '--extreamly_high_confidence', action='store_true', help='Enable extreamly high confidence mode for verification. Default: disable -- verification will stop at N(Node) = 10 with high confidence.')
 
     spin_arg = arg_parser.add_argument_group("Spin options", description="Options sent to pan or spin. All options need to be quoted and seperated by comma without dash, e.g., 'm10000, n'")
-    spin_arg.add_argument('-pc', '--pan_compile', type=str, default="DVECTORSZ=450000, DT_RAND, DP_RAND", help="Options for pan compiler. ")
-    spin_arg.add_argument('-pr', '--pan_runtime',  type=str, default='m10000000', help="Options for pan runtime")
+    spin_arg.add_argument('-pc', '--pan_compile', type=str, default="DVECTORSZ=10000, DT_RAND, DP_RAND, DMEMLIM=20480", help="Options for pan compiler. ")
+    spin_arg.add_argument('-pr', '--pan_runtime',  type=str, default='m10000', help="Options for pan runtime")
     spin_arg.add_argument('-l', '--loop', action='store_true', help="Check if exists loop/oscillation.")
 
     arg_parser.add_argument('-s', '--scale', type=int, choices=range(3, 500), default=3, help='Choose a scale if use -c and -o. Default: 3 nodes.')

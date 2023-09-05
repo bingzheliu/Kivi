@@ -93,3 +93,9 @@
 
 /*--------- Intent Config -----------*/
 #define LOOP_TIMES [$LOOP_TIMES]
+
+/*--------- Internal Config -----------*/
+#define UNDEFINED_VALUE 0
+
+/*--------- ifdef ----------*/
+[$IFDEF]

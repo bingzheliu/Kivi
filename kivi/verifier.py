@@ -16,7 +16,7 @@ def simulation(json_config, file_base, pml_base_path):
 	#myprint(stdout, logger.debug)
 
 	result_log, failure_details = parse_spin_error_trail(stdout.decode(), args.verbose_level)
-	myprint(result_log, logger.debug)
+	myprint(result_log, logger.info)
 
 def verifier():
 	scale = args.scale

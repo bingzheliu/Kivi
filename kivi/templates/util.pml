@@ -70,10 +70,41 @@ inline replicasetAddPod(replicaset, curPod)
 		// :: else->
 		// 	printf("[*Warning]Max number of pod reached in pod list of replicaset\n");
 		// od;
-		replicaset.podIds[replicaset.replicas] = curPod;
-		replicaset.replicas++;
-		d[pods[curPod].workloadId].replicas++;
-		//printPodIds(replicaset)
+		d_step{
+			short _m = 0, _rm = 0;
+			_m = 0;
+			
+			_rm = 0
+			// rank the pod from small to large to help with partial order reduction
+			for (_m : 0 .. replicaset.replicas-1) {
+				if 
+					:: curPod < replicaset.podIds[_m]->
+						_rm = replicaset.replicas-1
+						do 
+							:: _rm > _m ->
+								replicaset.podIds[_rm] = replicaset.podIds[_rm-1];
+								_rm --;
+							:: else->
+								break
+						od
+						_rm = replicaset.replicas+1
+						replicaset.podIds[_m] = curPod;
+						break
+					:: else->
+				fi
+			}
+			if 
+				:: _rm < replicaset.replicas+1 ->
+					replicaset.podIds[replicaset.replicas] = curPod;
+				:: else->
+			fi
+			replicaset.replicas++;
+			d[pods[curPod].workloadId].replicas++;
+			//printPodIds(replicaset)
+
+			_m = 0
+			_rm = 0
+		}
 	}
 }
 
@@ -104,7 +135,8 @@ inline replicasetDeletePod(replicaset, curPod)
 							d[pods[curPod].workloadId].replicasInCreation --
 							break
 						:: else->
-							printf("[*] Problematic pod Id updates!\n")
+							printf("[*Warning] Problematic pod Id updates!\n")
+							break
 					fi;
 			od;			
 			
@@ -130,7 +162,7 @@ inline printPodIds(replicaset)
 	}
 }
 
-inline copyDeploymentInfoToPod(pod, curD)
+inline copyDeploymentInfoToPod(pod, podStable, curD)
 {
 	atomic{
 		d_step{
@@ -138,25 +170,25 @@ inline copyDeploymentInfoToPod(pod, curD)
 			pod.workloadType = 1;
 			pod.workloadId = curD;
 			pod.loc = 0;
-			pod.score = 0;
+			podStable.score = 0;
 			if 
 				:: podTemplates[d[curD].podTemplateId].maxCpuChange == 0 ->
-					pod.cpu = podTemplates[d[curD].podTemplateId].cpuRequested;
+					podStable.cpu = podTemplates[d[curD].podTemplateId].cpuRequested;
 				:: else->
-					pod.cpu = podTemplates[d[curD].podTemplateId].curCpuRequest[0]
+					podStable.cpu = podTemplates[d[curD].podTemplateId].curCpuRequest[0]
 			fi;
 			// The initial CPU value has been used. 
 			pod.curCpuIndex = 1;
 
 			// TBD: the memory may need also to have a change pattern. Assuming it's the request for now as we haven't model memory runtime behavior.
-			pod.memory = podTemplates[d[curD].podTemplateId].memRequested;
+			podStable.memory = podTemplates[d[curD].podTemplateId].memRequested;
 
-			pod.important = 0;
+			podStable.important = 0;
 			pod.podTemplateId = d[curD].podTemplateId;
 			
 			short _m = 0;
 			for(_m : 0 .. MAX_LABEL-1) {
-				pod.labelKeyValue[_m] = podTemplates[d[curD].podTemplateId].labelKeyValue[_m]
+				podStable.labelKeyValue[_m] = podTemplates[d[curD].podTemplateId].labelKeyValue[_m]
 			}
 			_m = 0;
 		}
@@ -170,7 +202,7 @@ inline printfNodeScore()
 
 		short _m = 1;
 		for (_m : 1 .. NODE_NUM) {
-		   printf("[*****]Node %d, score: %d, curScore: %d\n", _m, nodes[_m].score, nodes[_m].curScore)
+		   printf("[*****]Node %d, score: %d, curScore: %d\n", _m, nodesStable[_m].score, nodesStable[_m].curScore)
 		}
 		_m = 0;
 	}
@@ -202,18 +234,18 @@ inline updatePodCpuUsageOnNode(pod_selected, cpu_change)
 {
 	atomic{
 		d_step{
-			nodes[pods[pod_selected].loc].cpuLeft = nodes[pods[pod_selected].loc].cpuLeft + pods[pod_selected].cpu;
+			nodes[pods[pod_selected].loc].cpuLeft = nodes[pods[pod_selected].loc].cpuLeft + podsStable[pod_selected].cpu;
 			if
-				:: pods[pod_selected].cpu + cpu_change < 0 -> 
-					pods[pod_selected].cpu = 0;
-				:: pods[pod_selected].cpu + cpu_change > POD_CPU_THRE ->
-					pods[pod_selected].cpu = POD_CPU_THRE;
+				:: podsStable[pod_selected].cpu + cpu_change < 0 -> 
+					podsStable[pod_selected].cpu = 0;
+				:: podsStable[pod_selected].cpu + cpu_change > POD_CPU_THRE ->
+					podsStable[pod_selected].cpu = POD_CPU_THRE;
 				:: else ->
-					pods[pod_selected].cpu = pods[pod_selected].cpu+cpu_change;
+					podsStable[pod_selected].cpu = podsStable[pod_selected].cpu+cpu_change;
 			fi;
-			nodes[pods[pod_selected].loc].cpuLeft = nodes[pods[pod_selected].loc].cpuLeft - pods[pod_selected].cpu;
+			nodes[pods[pod_selected].loc].cpuLeft = nodes[pods[pod_selected].loc].cpuLeft - podsStable[pod_selected].cpu;
 
-			printf("[*][CPU Change] cpu_change; %d; %d; CPU change %d on pod %d, now %d, and node %d, now %d\n",  pod_selected, cpu_change, cpu_change, pod_selected, pods[pod_selected].cpu, pods[pod_selected].loc, nodes[pods[pod_selected].loc].cpuLeft);
+			printf("[*][CPU Change] cpu_change; %d; %d; CPU change %d on pod %d, now %d, and node %d, now %d\n",  pod_selected, cpu_change, cpu_change, pod_selected, podsStable[pod_selected].cpu, pods[pod_selected].loc, nodes[pods[pod_selected].loc].cpuLeft);
 		}
 	}
 }

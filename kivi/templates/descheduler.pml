@@ -36,8 +36,13 @@ endDes:	do
 							:: else->
 						fi;
 
+#ifdef MORE_PODS
 						short nodePodCount[NODE_NUM+1];
 						short namespacePodCount[NAMESPACE_NUM+1];
+#else
+						byte nodePodCount[NODE_NUM+1];
+						byte namespacePodCount[NAMESPACE_NUM+1];
+#endif
 						// Go through the profiles 
 						// Run deschedule first
 						for (ii : 0 .. DES_PROFILE_NUM-1) {

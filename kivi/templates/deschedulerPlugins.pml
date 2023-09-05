@@ -44,7 +44,7 @@ inline filter(q)
 
 	// For 2.c, only model 2), but can easily append them here later. 
 	if 
-		:: pods[q].critical && deschedulerProfiles[ii].evictSystemCriticalPods == 0 ->
+		:: podsStable[q].critical && deschedulerProfiles[ii].evictSystemCriticalPods == 0 ->
 			flag = 0;
 			goto DF1;
 		:: else->;
@@ -64,7 +64,7 @@ inline evictPod(q)
 {
 	// check maxPodsToEvictPerNode and maxPodsToEvictPerNamespace(Omitting for now)
 	if 
-		:: (nodePodCount[pods[q].loc] + 1 > maxNoOfPodsToEvictPerNode) || (namespacePodCount[pods[q].namespace] + 1 > maxNoOfPodsToEvictPerNamespace) ->
+		:: (nodePodCount[pods[q].loc] + 1 > maxNoOfPodsToEvictPerNode) || (namespacePodCount[podsStable[q].namespace] + 1 > maxNoOfPodsToEvictPerNamespace) ->
 			printf("[**][Descheduler] Exceeded maxNoOfPodsToEvictPerNode or maxNoOfPodsToEvictPerNamespace for pod %d\n", q)
 			flag = 1
 		:: else ->
@@ -75,7 +75,7 @@ inline evictPod(q)
 			updateQueue(kblQueue, kblTail, kblIndex, q, MAX_KUBELET_QUEUE)
 
 			nodePodCount[pods[q].loc] ++
-			namespacePodCount[pods[q].namespace] ++
+			namespacePodCount[podsStable[q].namespace] ++
 	fi;
 }
 
@@ -112,7 +112,7 @@ inline examTargetNodes(q)
 		// check on node selector and affinity
 		// If node selector is defined, then it should equal to the current node. 
 		if 
-			:: podTemplates[d[q].podTemplateId].nodeName != 0 && podTemplates[d[q].podTemplateId].nodeName != nodes[m].name ->
+			:: podTemplates[d[q].podTemplateId].nodeName != 0 && podTemplates[d[q].podTemplateId].nodeName != nodesStable[m].name ->
 				goto DRMD2;
 			:: else->;
 		fi;
@@ -173,8 +173,11 @@ inline removeDuplicates()
 		3. There should be other ways to impl this plugins, e.g., go through the owner instead of nodes, which should get an equavilence result. But to be more accurate, we try to model it the same way.
 		   However, this can be heavier than other impl. In the future, one can provide choice to choose between the two implementation, having the trade-off between accuracy and performance.
 	*/
-
+#ifdef MORE_PODS
 	short ownerKeyOccurence[DEP_NUM+1];
+#else
+	byte ownerKeyOccurence[DEP_NUM+1];
+#endif
 	deschedulerNodeDuplicateArray duplicatePods[DEP_NUM+1];
 	for (i : 0 .. DEP_NUM ) {
 		ownerKeyOccurence[i] = 0
@@ -309,7 +312,7 @@ inline topologyIsBalanced()
 	short minDomainSize = POD_NUM
 	short maxDomainSize = 0
 
-	for (k : 0 .. MAX_VALUE-1) {
+	for (k : 1 .. MAX_VALUE) {
 		if	
 			:: topologyValueToPods[k].exist == 1->
 				minDomainSize = (topologyValueToPods[k].numPods < minDomainSize -> topologyValueToPods[k].numPods : minDomainSize)
@@ -359,7 +362,7 @@ inline balanceDomains(constraint)
 	// TBD: think about if there's potential estimation
 	// Only consider to sort the domain according to number of pods, not considering the pod priority etc.
 	p = 0
-	for (k : 0 .. MAX_VALUE-1) {
+	for (k : 1 .. MAX_VALUE) {
 		if 
 			:: topologyValueToPods[k].exist == 1 ->
 				sortedDomains[p].numPods = topologyValueToPods[k].numPods
@@ -435,8 +438,8 @@ inline removePodsViolatingTopologySpreadConstraint()
 
 	for (i : 1 .. POD_TEMPLATE_NUM ) {
 		for (j : 0 .. podTemplates[i].numTopoSpreadConstraints - 1) {
-			podsArray topologyValueToPods[MAX_VALUE];
-			for (k : 0 .. MAX_VALUE-1) {
+			podsArray topologyValueToPods[MAX_VALUE+1];
+			for (k : 1 .. MAX_VALUE) {
 				topologyValueToPods[k].exist = 0
 				topologyValueToPods[k].numPods = 0
 				for ( p : 0 .. POD_NUM ) {
@@ -452,9 +455,9 @@ inline removePodsViolatingTopologySpreadConstraint()
 					sumValues = 0;
 					for (k : 1 .. NODE_NUM) {
 						if 
-							::nodes[k].status == 1 && nodes[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey] != -1 ->
-								sumValues = (topologyValueToPods[nodes[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey]].exist == 0 -> sumValues + 1 : sumValues)
-								topologyValueToPods[nodes[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey]].exist = 1
+							::nodes[k].status == 1 && nodesStable[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey] != UNDEFINED_VALUE ->
+								sumValues = (topologyValueToPods[nodesStable[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey]].exist == 0 -> sumValues + 1 : sumValues)
+								topologyValueToPods[nodesStable[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey]].exist = 1
 								
 							:: else ->
 						fi;
@@ -469,7 +472,7 @@ inline removePodsViolatingTopologySpreadConstraint()
 								flag = 0
 								for (p : 0 .. podTemplates[i].topoSpreadConstraints[j].numMatchedLabel - 1) {
 									if 
-										:: (pods[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].labelKey[p]] != podTemplates[i].topoSpreadConstraints[j].labelValue[p]) ->
+										:: (podsStable[k].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].labelKey[p]] != podTemplates[i].topoSpreadConstraints[j].labelValue[p]) ->
 											flag = 1;
 											break;
 										:: else->;
@@ -477,7 +480,7 @@ inline removePodsViolatingTopologySpreadConstraint()
 								}
 								if 
 									:: flag == 0 ->
-										short curVal = nodes[pods[k].loc].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey] 
+										short curVal = nodesStable[pods[k].loc].labelKeyValue[podTemplates[i].topoSpreadConstraints[j].topologyKey] 
 										topologyValueToPods[curVal].pods[k] = 1
 										topologyValueToPods[curVal].numPods ++
 										sumPods++
@@ -491,7 +494,7 @@ inline removePodsViolatingTopologySpreadConstraint()
 					topologyIsBalanced()
 					if 
 						:: flag == 0 ->
-							// for (k : 0 .. MAX_VALUE-1) {
+							// for (k : 1 .. MAX_VALUE) {
 							// 	printf("[*]%d %d %d!!\n", k, topologyValueToPods[k].numPods, topologyValueToPods[k].exist)
 							// 	for ( p : 1 .. POD_NUM ) { 
 							// 		printf("[*]%d %d\n", p, topologyValueToPods[k].pods[p])
@@ -499,7 +502,7 @@ inline removePodsViolatingTopologySpreadConstraint()
 							// }
 							// printf("[*]~~~~\n")
 
-							deschedulerTopoSortArray sortedDomains[MAX_VALUE]
+							deschedulerTopoSortArray sortedDomains[MAX_VALUE+1]
 							balanceDomains(podTemplates[i].topoSpreadConstraints[j])
 							// They run the podFilter again. Not sure if this is needed. Omitting for now
 							for (k : 0 .. sumValues-1) {

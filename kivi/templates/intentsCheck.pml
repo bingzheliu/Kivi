@@ -24,7 +24,7 @@ endCH11:	if
 			:: d[1].hpaSpec.maxReplicas != d[1].hpaSpec.minReplicas && d[1].replicas == d[1].hpaSpec.maxReplicas ->
 		 	printf("[**] Entering stage 2 for check!\n")
 endCH12:		if 
-		 		:: d[1].replicas == d[1].hpaSpec.minReplicas || d[1].replicas < d[1].hpaSpec.maxReplicas - 5 ->
+		 		:: d[1].replicas == d[1].hpaSpec.minReplicas || d[1].replicas <= d[1].hpaSpec.maxReplicas - 3 ->
 		 			printf("[*] The number of replicas was oscillating, now %d\n", d[1].replicas)
 		 			assert(false)
 		 	fi;

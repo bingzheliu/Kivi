@@ -1568,7 +1568,8 @@ def generate_case_json(case_id, scale, from_template=False, filename=None):
 		json_config = case_fun[case_id](int(scale))
 
 	if from_template:
-		json_config = template_generator(json_config)
+		user_defined = get_case_user_defined(case_id, scale)
+		json_config = template_generator(json_config, user_defined)
 
 	if filename != None and args.file_debug > 2:
 		with open(filename,'w') as f:
@@ -1664,9 +1665,9 @@ def get_case_user_defined(case_id, scale):
 	user_defined_all = {"default" : {"nodes_default" : {"upperBound":scale, "lowerBound":1, "ScaleType":"proportion"}, \
 									"d_default" : {"upperBound":scale*3, "lowerBound":2, "ScaleType":"proportion", "minHPAReplicas":6}},\
 						"s6" : {"nodes_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}, \
-							    "d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}}, \
-						"s4" : {"nodes_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}, \
-							    "d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}},\
+							    "d_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}}, \
+						"s4" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
+							    "d_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}},\
 						"h1" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
 							    "d_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion", "minHPAReplicas":6}},\
 						"h2" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \

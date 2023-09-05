@@ -109,7 +109,7 @@ def verifier_operator(json_config, case_name, file_base, result_base_path, pml_b
 	if not args.original:
 		# Note: if the sort_favor for finding_smallest_scale is not "Nodes", will need to change the below arg.extreamly_high_confidence line to find the right break point.
 		all_setup, json_config_template = finding_smallest_scale(json_config, pml_base_path)
-		heatmap_name = "eval/results/heatmap_" + case_name
+		heatmap_name = "eval/results/heatmap/heatmap_" + case_name
 		if args.case_non_violation:
 			heatmap_name = heatmap_name + "_cn"
 		with open(heatmap_name, "w") as fw:
@@ -136,6 +136,7 @@ def verifier_operator(json_config, case_name, file_base, result_base_path, pml_b
 					fw.write(str(num_node) + " " + str(s["d"][0]) + " 0\n")
 				else:
 					fw.write(str(num_node) + " " + str(s["d"][0]) + " 1\n")
+					success, stdout, stderr = run_script(['cp'] + ['-r'] + [pml_base_path] + [file_base + '/bin/eval/results/heatmap/non_violation_pml/'+case_name], False)
 
 	else:
 		failure_type, result_log, failure_details, total_mem, elapsed_time = verifier_operator_adjust_queue(json_config, case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base)

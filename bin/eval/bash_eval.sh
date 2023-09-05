@@ -25,11 +25,11 @@ echo $path
 # 1.9 79.43282347242825
 # 2.0 100.0000000000001
 
-case_scale=(3 4 5 6 8 10 13 16 20 25 32 40 50 64 80 100)
+#case_scale=(3 4 5 6 8 10 13 16 20 25 32 40 50 64 80 100)
 #case_id=(s4 s9 s6 s3 h2 s1 h1)
 count=1
-#case_scale=(10)
-case_id=(h1)
+case_scale=(50)
+case_id=(s4 s9 s3 h2 s1 h1 s6)
 
 mkdir "eval/results/"
 for case in "${case_id[@]}"	
@@ -65,9 +65,9 @@ do
 		if [ $1 != 1 ] && [ $2 -gt 0 ]
 		then
 			echo "first bench mark the actual result for the cases.."
-			echo "python3 kivi_runner.py -c $case -s $i -o -r -f 1 >> ${cur_log_base_file}_o"
+			echo "python3 kivi_runner.py -c $case -s $i -eh -a >> ${cur_log_base_file}_o"
 			start_time="$(gdate -u +%s.%N)"
-			python3 kivi_runner.py -f 1 -c $case -s $i -o >> ${cur_log_base_file}_o
+			python3 kivi_runner.py -c $case -s $i -eh -a >> ${cur_log_base_file}_o
 			end_time="$(gdate -u +%s.%N)"
 			elapsed="$(bc <<<"$end_time-$start_time")"
 			elapsed_all="$(bc <<<"$elapsed+$elapsed_all")"
@@ -76,9 +76,9 @@ do
 
 		if [ $1 -gt 0 ] && [ $2 -gt 0 ]
 		then
-			echo "python3 kivi_runner.py -f 1 -c $case -s $i -o -cn -r >> ${cur_log_base_file}_cn_o"
+			echo "python3 kivi_runner.py -c $case -s $i -cn -eh -a >> ${cur_log_base_file}_cn_o"
 			start_time="$(gdate -u +%s.%N)"
-			python3 kivi_runner.py -f 1 -c $case -s $i -o -cn -r >> ${cur_log_base_file}_cn_o
+			python3 kivi_runner.py -c $case -s $i -cn -eh -a >> ${cur_log_base_file}_cn_o
 			end_time="$(gdate -u +%s.%N)"
 			elapsed="$(bc <<<"$end_time-$start_time")"
 			echo "Runtime #$j $elapsed"

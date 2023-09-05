@@ -31,6 +31,14 @@ endCH12:		if
 	fi;
 }
 
+never
+{
+	do
+	:: d[1].replicas < d[1].hpaSpec.minReplicas -> break
+	:: else
+	od;
+}
+
 // check for S6
 // proctype checkS6()
 // {

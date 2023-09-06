@@ -248,7 +248,14 @@ typedef deploymentType {
 	byte replicasInCreation;
 
 	/*-----Internal----*/
-	// byte evicted;
+#ifdef CHECK_EVICTION_CYCLE
+	bit evicted;
+	bit added;
+#endif
+
+#ifdef CHECK_BALANCE_NODE
+	bit added_for_check_balance;
+#endif
 
 	/*-----omitting-----*/
 	// short progressDeadlineSeconds;

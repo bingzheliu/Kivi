@@ -222,7 +222,8 @@ def generate_S1(num_node, non_violation=False):
 
 	case_config["intents"] = []
 	
-	case_config["intents"].append("run checkS1()\n")
+	#case_config["intents"].append("run checkS1()\n")
+	case_config["intents"].append({"name":"checkEvictionCycle", "para":{"did":1}})
 
 	return case_config
 
@@ -354,7 +355,8 @@ def generate_S9(num_node, non_violation=False):
 
 	case_config["intents"] = []
 	
-	case_config["intents"].append("run checkS1()\n")
+	#case_config["intents"].append("run checkS1()\n")
+	case_config["intents"].append({"name":"checkEvictionCycle", "para":{"did":1}})
 
 	return case_config
 
@@ -472,123 +474,123 @@ def generate_S3_template(num_node, non_violation=False):
 
 	return case_config
 
-def generate_H1_template(num_node, non_violation=False):
-	case_config = {}
-	case_config["userDefined"] = {}
+# def generate_H1_template(num_node, non_violation=False):
+# 	case_config = {}
+# 	case_config["userDefined"] = {}
 
-	## Generate Nodes
-	case_config["userDefined"]["nodesScaleType"] = "proportion"
-	case_config["userDefined"]["nodesTypes"] = []
-	cur_node = {}
-	cur_node["template"] = {}
-	cur_node["template"]["cpu"] = 64
-	cur_node["template"]["memory"] = 64
-	cur_node["template"]["cpuLeft"] = 64
-	cur_node["template"]["memLeft"] = 64
-	cur_node["template"]["numPod"] = 0
-	cur_node["template"]["status"] = 1
-	cur_node["upperBound"] = 3
-	cur_node["lowerBound"] = 1
-	# The propotion to other nodes 
-	cur_node["proportion"] = 1
-	case_config["userDefined"]["nodesTypes"].append(cur_node)
+# 	## Generate Nodes
+# 	case_config["userDefined"]["nodesScaleType"] = "proportion"
+# 	case_config["userDefined"]["nodesTypes"] = []
+# 	cur_node = {}
+# 	cur_node["template"] = {}
+# 	cur_node["template"]["cpu"] = 64
+# 	cur_node["template"]["memory"] = 64
+# 	cur_node["template"]["cpuLeft"] = 64
+# 	cur_node["template"]["memLeft"] = 64
+# 	cur_node["template"]["numPod"] = 0
+# 	cur_node["template"]["status"] = 1
+# 	cur_node["upperBound"] = 3
+# 	cur_node["lowerBound"] = 1
+# 	# The propotion to other nodes 
+# 	cur_node["proportion"] = 1
+# 	case_config["userDefined"]["nodesTypes"].append(cur_node)
 
-	# cur_node = {}
-	# cur_node["template"] = {}
-	# cur_node["template"]["cpu"] = 64
-	# cur_node["template"]["memory"] = 64
-	# cur_node["template"]["cpuLeft"] = 64
-	# cur_node["template"]["memLeft"] = 64
-	# cur_node["template"]["numPod"] = 0
-	# cur_node["template"]["status"] = 1
-	# cur_node["upperBound"] = 4
-	# cur_node["lowerBound"] = 1
-	# cur_node["proportion"] = 1
-	# case_config["userDefined"]["nodeTypes"].append(cur_node)
+# 	# cur_node = {}
+# 	# cur_node["template"] = {}
+# 	# cur_node["template"]["cpu"] = 64
+# 	# cur_node["template"]["memory"] = 64
+# 	# cur_node["template"]["cpuLeft"] = 64
+# 	# cur_node["template"]["memLeft"] = 64
+# 	# cur_node["template"]["numPod"] = 0
+# 	# cur_node["template"]["status"] = 1
+# 	# cur_node["upperBound"] = 4
+# 	# cur_node["lowerBound"] = 1
+# 	# cur_node["proportion"] = 1
+# 	# case_config["userDefined"]["nodeTypes"].append(cur_node)
 
-	## Generate Pods
-	#### We don't have pod type seperately, and assume they belongs to a deployment for now
+# 	## Generate Pods
+# 	#### We don't have pod type seperately, and assume they belongs to a deployment for now
 
-	## Generate Deployment
-	#### We can't model when deployment have multiple versions. 
-	case_config["userDefined"]["dScaleType"] = "proportion"
-	case_config["userDefined"]["dTypes"] = []
-	d = {}
-	d["template"] = {}
-	d["template"]["status"] = 0
-	d["lowerBound"] = 1
-	d["upperBound"] = 5
-	# propotion to other deployments
-	d["proportion"] = 1
-	# propotioin to # of all nodes (scale)
-	d["proportionHPA"] = 2
+# 	## Generate Deployment
+# 	#### We can't model when deployment have multiple versions. 
+# 	case_config["userDefined"]["dScaleType"] = "proportion"
+# 	case_config["userDefined"]["dTypes"] = []
+# 	d = {}
+# 	d["template"] = {}
+# 	d["template"]["status"] = 0
+# 	d["lowerBound"] = 1
+# 	d["upperBound"] = 5
+# 	# propotion to other deployments
+# 	d["proportion"] = 1
+# 	# propotioin to # of all nodes (scale)
+# 	d["proportionHPA"] = 2
 
-	d["template"]["podTemplateId"] = 1
-	d["template"]["hpaSpec"] = {}
-	d["template"]["hpaSpec"]["isEnabled"] = 1
-	d["template"]["hpaSpec"]["numMetrics"] = 1
-	d["template"]["hpaSpec"]["metricNames"] = []
-	d["template"]["hpaSpec"]["metricNames"].append(0)
-	d["template"]["hpaSpec"]["metricTargets"] = []
-	d["template"]["hpaSpec"]["metricTargets"].append(50)
-	d["template"]["hpaSpec"]["metricTypes"] = []
-	d["template"]["hpaSpec"]["metricTypes"].append(1)
+# 	d["template"]["podTemplateId"] = 1
+# 	d["template"]["hpaSpec"] = {}
+# 	d["template"]["hpaSpec"]["isEnabled"] = 1
+# 	d["template"]["hpaSpec"]["numMetrics"] = 1
+# 	d["template"]["hpaSpec"]["metricNames"] = []
+# 	d["template"]["hpaSpec"]["metricNames"].append(0)
+# 	d["template"]["hpaSpec"]["metricTargets"] = []
+# 	d["template"]["hpaSpec"]["metricTargets"].append(50)
+# 	d["template"]["hpaSpec"]["metricTypes"] = []
+# 	d["template"]["hpaSpec"]["metricTypes"].append(1)
 
-	case_config["userDefined"]["dTypes"].append(d)
+# 	case_config["userDefined"]["dTypes"].append(d)
 
-	# d = {}
-	# d["template"] = {}
-	# d["template"]["status"] = 0
-	# d["lowerBound"] = 1
-	# d["upperBound"] = 5
-	# d["proportion"] = 3
+# 	# d = {}
+# 	# d["template"] = {}
+# 	# d["template"]["status"] = 0
+# 	# d["lowerBound"] = 1
+# 	# d["upperBound"] = 5
+# 	# d["proportion"] = 3
 
-	# d["template"]["podTemplateId"] = 1
-	# d["template"]["hpaSpec"] = {}
-	# d["template"]["hpaSpec"]["isEnabled"] = 1
-	# d["template"]["hpaSpec"]["numMetrics"] = 1
-	# d["template"]["hpaSpec"]["metricNames"] = []
-	# d["template"]["hpaSpec"]["metricNames"].append(0)
-	# d["template"]["hpaSpec"]["metricTargets"] = []
-	# d["template"]["hpaSpec"]["metricTargets"].append(50)
-	# d["template"]["hpaSpec"]["metricTypes"] = []
-	# d["template"]["hpaSpec"]["metricTypes"].append(1)
+# 	# d["template"]["podTemplateId"] = 1
+# 	# d["template"]["hpaSpec"] = {}
+# 	# d["template"]["hpaSpec"]["isEnabled"] = 1
+# 	# d["template"]["hpaSpec"]["numMetrics"] = 1
+# 	# d["template"]["hpaSpec"]["metricNames"] = []
+# 	# d["template"]["hpaSpec"]["metricNames"].append(0)
+# 	# d["template"]["hpaSpec"]["metricTargets"] = []
+# 	# d["template"]["hpaSpec"]["metricTargets"].append(50)
+# 	# d["template"]["hpaSpec"]["metricTypes"] = []
+# 	# d["template"]["hpaSpec"]["metricTypes"].append(1)
 
-	# case_config["userDefined"]["deploymentTypes"].append(d)
+# 	# case_config["userDefined"]["deploymentTypes"].append(d)
 
-	# Generate podTemplate
-	case_config["setup"] = {}
-	case_config["setup"]["podTemplates"] = []
-	pt = {}
-	pt["labels"] = {"name" : "app"}
-	pt["cpuRequested"] = 8
-	pt["memRequested"] = 8
-	pt["maxCpuChange"] = 2
-	pt["curCpuRequest"] = []
-	pt["curCpuRequest"].append(8)
-	pt["curCpuRequest"].append(3)
-	pt["timeCpuRequest"] = []
-	pt["timeCpuRequest"].append(0)
-	pt["timeCpuRequest"].append(60)
+# 	# Generate podTemplate
+# 	case_config["setup"] = {}
+# 	case_config["setup"]["podTemplates"] = []
+# 	pt = {}
+# 	pt["labels"] = {"name" : "app"}
+# 	pt["cpuRequested"] = 8
+# 	pt["memRequested"] = 8
+# 	pt["maxCpuChange"] = 2
+# 	pt["curCpuRequest"] = []
+# 	pt["curCpuRequest"].append(8)
+# 	pt["curCpuRequest"].append(3)
+# 	pt["timeCpuRequest"] = []
+# 	pt["timeCpuRequest"].append(0)
+# 	pt["timeCpuRequest"].append(60)
 
-	#pt["numTopoSpreadConstraints"] = 0
-	case_config["setup"]["podTemplates"].append(pt)
+# 	#pt["numTopoSpreadConstraints"] = 0
+# 	case_config["setup"]["podTemplates"].append(pt)
 
-	case_config["controllers"] = {}
-	case_config["controllers"]["scheduler"] = {}
-	case_config["controllers"]["hpa"] = {}
-	case_config["controllers"]["deployment"] = {}
+# 	case_config["controllers"] = {}
+# 	case_config["controllers"]["scheduler"] = {}
+# 	case_config["controllers"]["hpa"] = {}
+# 	case_config["controllers"]["deployment"] = {}
 
-	# case_config["userCommand"] = {}
-	# case_config["userCommand"]["createTargetDeployment"] = 1
+# 	# case_config["userCommand"] = {}
+# 	# case_config["userCommand"]["createTargetDeployment"] = 1
 
-	case_config["events"] = []
+# 	case_config["events"] = []
 
-	case_config["intents"] = []
-	if not non_violation:
-		case_config["intents"].append("run checkH1()\n")
+# 	case_config["intents"] = []
+# 	if not non_violation:
+# 		case_config["intents"].append("run checkH1()\n")
 
-	return case_config
+# 	return case_config
 
 def generate_H1(num_node, non_violation=False):
 	case_config = {}
@@ -673,7 +675,10 @@ def generate_H1(num_node, non_violation=False):
 	d["hpaSpec"]["metricNames"] = []
 	d["hpaSpec"]["metricNames"].append(0)
 	d["hpaSpec"]["metricTargets"] = []
-	d["hpaSpec"]["metricTargets"].append(50)
+	if non_violation:
+		d["hpaSpec"]["metricTargets"].append(100)
+	else:
+		d["hpaSpec"]["metricTargets"].append(50)
 	d["hpaSpec"]["metricTypes"] = []
 	d["hpaSpec"]["metricTypes"].append(1)
 	d["hpaSpec"]["minReplicas"] =  1 if num_node/5 < 1 else int(num_node/5)
@@ -709,8 +714,8 @@ def generate_H1(num_node, non_violation=False):
 	case_config["events"] = []
 
 	case_config["intents"] = []
-	if not non_violation:
-		case_config["intents"].append("run checkH1()\n")
+	#case_config["intents"].append("run checkOscillation(1)\n")
+	case_config["intents"].append({"name":"checkOscillation", "para":{"did":1}})
 
 	return case_config
 
@@ -841,8 +846,10 @@ def generate_S6(num_node, non_violation=False):
 		#case_config["intents"].append("run checkS6()\n")
 		# TODO: check why never not work
 		#case_config["intents"].append("\nnever \n{\n do\n  :: init_status == 1 && d[1].replicas == d[1].specReplicas -> \n if\n :: d[1].replicas < d[1].specReplicas - " + str(p) +  " -> break\n  fi\n   :: else\nod;\n}\n")
-		case_config["intents"].append("\nactive proctype checkS6() \n{\nendCS61: if\n  		:: init_status == 1 && d[1].replicas == d[1].specReplicas -> \nendCS62:   		if\n :: d[1].replicas < d[1].specReplicas - " + str(p) +  ' -> printf("[*] Replicas below expatation!\\n")\n assert(false)\n    		fi\n     fi;\n}\n')
-
+		#case_config["intents"].append("\nactive proctype checkS6() \n{\nendCS61: if\n  		:: init_status == 1 && d[1].replicas == d[1].specReplicas -> \nendCS62:   		if\n :: d[1].replicas < d[1].specReplicas - " + str(p) +  ' -> printf("[*] Replicas below expatation!\\n")\n assert(false)\n    		fi\n     fi;\n}\n')
+		
+		case_config["intents"].append({"name":"checkExpReplicas", "para":{"did": 1, "expReplicas": "d[did].specReplicas-1"}})
+		#case_config["intents"].append({"name":"checkBalanceNode", "para":{"did": 1, "maxSkew": 1}})
 	return case_config
 
 
@@ -1113,15 +1120,16 @@ def generate_H2(num_node, non_violation=False):
 	case_config["controllers"]["deployment"] = {}
 
 	case_config["userCommand"] = []
-	# this is the id for the index of deploymentTemplates, not the deployment name
-	case_config["userCommand"].append({"name" : "applyDeployment", "para" : 1, "after_stable":True})
+	if not non_violation:
+		# this is the id for the index of deploymentTemplates, not the deployment name
+		case_config["userCommand"].append({"name" : "applyDeployment", "para" : 1, "after_stable":True})
 
 	case_config["events"] = []
 
 	case_config["intents"] = []
 	#case_config["intents"].append( "never {\n do \n:: d[1].replicas < d[1].hpaSpec.minReplicas -> break\n :: else\n od;\n}")
-	if not non_violation:
-		case_config["intents"].append("run checkH2()\n")
+	#case_config["intents"].append("run checkMinReplicas(1)\n")
+	case_config["intents"].append({"name":"checkMinReplicas", "para":{"did":1}})
 	return case_config
 
 def generate_S4(num_node, non_violation=False):
@@ -1234,6 +1242,9 @@ def generate_S4(num_node, non_violation=False):
 
 	case_config["events"] = []
 	case_config["events"].append({"name" : "kernelPanic"})
+
+	case_config["intents"] = []
+	case_config["intents"].append({"name": "kernel_panic"})
 	return case_config
 
 ## HPA + scheduler (pod spreading) + deployment controller
@@ -1390,6 +1401,9 @@ def generate_S3_woCPU(num_node, non_violation=False):
 	cur_json_uc["para"] = 1
 	cur_json_uc["first"] = 1
 	case_config["userCommand"].append(cur_json_uc)
+
+	case_config["intents"] = []
+	case_config["intents"].append({"name":"no_feasiable_node"})
 
 	return case_config
 

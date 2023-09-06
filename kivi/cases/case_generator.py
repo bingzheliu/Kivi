@@ -1402,6 +1402,8 @@ def generate_S3_woCPU(num_node, non_violation=False):
 
 	case_config["intents"] = []
 	case_config["intents"].append({"name":"no_feasiable_node"})
+	case_config["intents"].append({"name": "kernel_panic"})
+	case_config["intents"].append({"name":"checkEvictionCycle", "para":{"did":1}})
 
 	return case_config
 

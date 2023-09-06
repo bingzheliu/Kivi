@@ -45,6 +45,7 @@ def setup_argparser(arg_parser):
     verification_arg.add_argument('-r', '--random', action='store_true', help='Enable the verifier to automatically try random seed for verification. If -to is not defined, the default timeout for each random number is 10sec.')
     verification_arg.add_argument('-to','--timeout', type=int, help='Timeout for each pan execuation.')
     verification_arg.add_argument('-eh', '--extreamly_high_confidence', action='store_true', help='Enable extreamly high confidence mode for verification. Default: disable -- verification will stop at N(Node) = 10 with high confidence.')
+    verification_arg.add_argument("-ig", '--intents_group', type=int, default=0, help="Defines how many intents to be verified at a time. Defualt is 0, meaning all intents verified together.")
 
     spin_arg = arg_parser.add_argument_group("Spin options", description="Options sent to pan or spin. All options need to be quoted and seperated by comma without dash, e.g., 'm10000, n'")
     spin_arg.add_argument('-pc', '--pan_compile', type=str, default="DVECTORSZ=10000, DT_RAND, DP_RAND, DMEMLIM=20480", help="Options for pan compiler. ")

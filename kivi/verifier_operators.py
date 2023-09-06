@@ -9,7 +9,7 @@ from result_parser import parse_pan_output, parse_spin_error_trail
 from cases.case_generator import case_generator
 from small_scale_finder import finding_smallest_scale, generate_case_json, str_setup
 
-intent_groups = {"never":[], "loop":["loop"], "assert":["no_feasiable_node", "kernel_panic", "checkOscillation", "checkMinReplicas", "checkExpReplicas"]}
+intent_groups = {"never":[], "loop":["loop"], "assert":["no_feasiable_node", "kernel_panic", "checkOscillation", "checkMinReplicas", "checkExpReplicas", "checkEvictionCycle"]}
 
 # intents can be seperated into subsets in this function.
 def analyze_divide_intents(json_config):
@@ -17,88 +17,138 @@ def analyze_divide_intents(json_config):
 
 	all_intents = deepcopy(json_config["intents"])
 	# first, the intents in different intent groups must be divided, as the are verified in different ways.
-	for intent_group_name in intent_groups:
-		for intents in all_intents:
-			if "name" in intents and intents["name"] in intent_groups[intent_group_name]:
-				current_group.append(deepcopy(intents))
+	group_to_intents = {}
+	group_count = {}
+	for k in intent_groups:
+		group_count[k] = 0
+	for intent in all_intents:
+		# put all of the str into one group
+		if isinstance(intent, str):
+			if "str_group" not in group_to_intents:
+				group_to_intents["str_group"] = []
+			group_to_intents["str_group"].append(deepcopy(intent))
+		else:
+			for ig in intent_groups:
+				if intent["name"] in intent_groups[ig]:
+					# never needs to be seperated
+					if ig == "never":
+						group_to_intents["never_"+str(group_count[ig])] = []
+						group_to_intents["never_"+str(group_count[ig])].append(deepcopy(intents))
+						group_count[ig] += 1
+					else:
+						cur_group = ig+"_"+str(group_count[ig])
+						if cur_group not in group_to_intents:
+							group_to_intents[cur_group] = []
 
+						# user can define how many intents to be verified at the same time. Default is all possible intents at the same time, and will skip the following. 
+						if args.intents_group > 0 and len(group_to_intents[cur_group]) >= args.intents_group:
+							group_count[ig] += 1
+							cur_group = ig+"_"+str(group_count[ig])
+							group_to_intents[cur_group] = []
+
+						group_to_intents[cur_group].append(deepcopy(intent))
+
+	intent_group_list = list(group_to_intents.values())
+
+	print(all_intents)
+	print("======")
+	print(intent_group_list)
+	print("======")
+
+	return intent_group_list
 
 # TODO: keep steam the output from the ./pan, and if see "max search depth too small", we could just stop the execuation and adjust the running configs for pan
 def verifier_operator_one(json_config, case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base, queue_size_default):
-	main_filename = model_generator(json_config, pml_base_path, file_base + "/kivi/templates", queue_size_default=queue_size_default)
+	intent_group_list = analyze_divide_intents(json_config)
+	new_failures = []
+	for intents in intent_group_list:
+		# TODO: may need to process loop seperately. 
+		cur_json_config = deepcopy(json_config)
+		cur_json_config["intents"] = intents
+		logger.critical("Currently working on the following intents:")
+		logger.critical(intents)
+		main_filename = model_generator(cur_json_config, pml_base_path, file_base + "/kivi/templates", queue_size_default=queue_size_default)
 
-	if queue_size_default is not None:
-		queue_size = queue_size_default
-	else:
-		queue_size = 0
-
-	success, stdout, stderr = run_script([file_base + '/libs/Spin/Src/spin', '-a', pml_base_path + "/" + main_filename], True)
-	myprint(stdout, logger.debug)
-
-	success, stdout, stderr = run_script(['gcc'] + pan_compile, True)
-
-	result_log = ""
-
-	success = False
-	if args.random:
-		while not success:
-			timeout = args.timeout if args.timeout is not None else default_timeout
-			rand = random.randint(1, 1000)
-			success, stdout, stderr = run_script(['./pan']+pan_runtime+['-RS'+str(rand)], False, timeout)
-	else:
-		if args.timeout:
-			success, stdout, stderr = run_script(['./pan']+pan_runtime, False, args.timeout)
+		if queue_size_default is not None:
+			queue_size = queue_size_default
 		else:
-			success, stdout, stderr = run_script(['./pan']+pan_runtime, False)
+			queue_size = 0
 
-	# with open(file_base + "/bin/eval/results/" + case_name.split("_")[0].strip() + "/pan_" + str(queue_size), "w") as fr:
-	# 		fr.write(str(datetime.datetime.now()))
-	# 		fr.write(stdout.decode())
+		success, stdout, stderr = run_script([file_base + '/libs/Spin/Src/spin', '-a', pml_base_path + "/" + main_filename], True)
+		myprint(stdout, logger.debug)
 
-	if args.file_debug > 0:
-		with open(result_base_path + "/raw_data/exec_" + case_name + "_" + str(queue_size), "w") as fr:
-			fr.write(stdout.decode())
+		success, stdout, stderr = run_script(['gcc'] + pan_compile, True)
 
-	failure_type, failure_details, error_trail_name, total_mem, elapsed_time = parse_pan_output(stdout.decode())
+		result_log = ""
 
-	if args.file_debug > 0:
-		with open(result_base_path + "/" + case_name + "_" + str(queue_size), "w") as fw:
-			fw.write(str(failure_type) + " " + str(total_mem) + " " + str(elapsed_time) + '\n')
+		success = False
+		if args.random:
+			while not success:
+				timeout = args.timeout if args.timeout is not None else default_timeout
+				rand = random.randint(1, 1000)
+				success, stdout, stderr = run_script(['./pan']+pan_runtime+['-RS'+str(rand)], False, timeout)
+		else:
+			if args.timeout:
+				success, stdout, stderr = run_script(['./pan']+pan_runtime, False, args.timeout)
+			else:
+				success, stdout, stderr = run_script(['./pan']+pan_runtime, False)
 
-	logger.critical(str(failure_type) + " " + str(total_mem) + " " + str(elapsed_time))
-	myprint(failure_details)
+		# with open(file_base + "/bin/eval/results/" + case_name.split("_")[0].strip() + "/pan_" + str(queue_size), "w") as fr:
+		# 		fr.write(str(datetime.datetime.now()))
+		# 		fr.write(stdout.decode())
 
-	if error_trail_name != None:
-		success, stdout, stderr = run_script(['./pan', '-r', error_trail_name], False)
 		if args.file_debug > 0:
-			with open(result_base_path + "/raw_data/error_" + case_name + "_" + str(queue_size), "w") as fr:
+			with open(result_base_path + "/raw_data/exec_" + case_name + "_" + str(queue_size), "w") as fr:
 				fr.write(stdout.decode())
-		result_log, failure_details = parse_spin_error_trail(stdout.decode(), log_level, failure_type)
-		myprint(result_log, logger.debug)
+
+		failure_type, failure_details, error_trail_name, total_mem, elapsed_time = parse_pan_output(stdout.decode())
+
 		if args.file_debug > 0:
 			with open(result_base_path + "/" + case_name + "_" + str(queue_size), "w") as fw:
-				fw.write(result_log)
+				fw.write(str(failure_type) + " " + str(total_mem) + " " + str(elapsed_time) + '\n')
 
-	return failure_type, result_log, failure_details, total_mem, elapsed_time
+		logger.critical(str(failure_type) + " " + str(total_mem) + " " + str(elapsed_time))
+		myprint(failure_details)
+
+		if error_trail_name != None:
+			success, stdout, stderr = run_script(['./pan', '-r', error_trail_name], False)
+			if args.file_debug > 0:
+				with open(result_base_path + "/raw_data/error_" + case_name + "_" + str(queue_size), "w") as fr:
+					fr.write(stdout.decode())
+			result_log, failure_details = parse_spin_error_trail(stdout.decode(), log_level, failure_type)
+			myprint(result_log, logger.debug)
+			if args.file_debug > 0:
+				with open(result_base_path + "/" + case_name + "_" + str(queue_size), "w") as fw:
+					fw.write(result_log)
+
+		new_failures.append((failure_type, result_log, failure_details, total_mem, elapsed_time))
+		if failure_type != "None":
+			logger.critical("Failure found at intent " + str(intents))
+			if not args.all_violation:
+				break
+
+	return new_failures
 
 def verifier_operator_adjust_queue(json_config, case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base):
 	queue_size = 10
-	failure_type, result_log, failure_details, total_mem, elapsed_time = verifier_operator_one(deepcopy(json_config), case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base, None)
+	new_failures = verifier_operator_one(deepcopy(json_config), case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base, None)
 
 	while queue_size < 500:
+		for failure in new_failures:
+			failure_details = failure[2]
 		if len(failure_details.split("\n")) > 1 and "Queue is full!" in failure_details.split("\n")[1]:
 			logger.critical("trying queue size "+str(queue_size))
-			failure_type, result_log, failure_details, total_mem, elapsed_time = verifier_operator_one(deepcopy(json_config), case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base, queue_size)
+			new_failures = verifier_operator_one(deepcopy(json_config), case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base, queue_size)
 			queue_size *= 2
 		else:
 			break
 
 	if queue_size > 500:
 		logger.critical("Queue size exceed limit!")
-		return "None", result_log, failure_details, total_mem, elapsed_time
+		return []
 		#failure_type, result_log, failure_details, total_mem, elapsed_time = verifier_operator_one(deepcopy(json_config), case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base, None)
 
-	return failure_type, result_log, failure_details, total_mem, elapsed_time
+	return new_failures
 
 def verifier_operator(json_config, case_name, file_base, result_base_path, pml_base_path):
 	pan_runtime = ["-" + o.strip() for o in args.pan_runtime.split(",")]
@@ -119,7 +169,6 @@ def verifier_operator(json_config, case_name, file_base, result_base_path, pml_b
 			pan_compile.append("-DP_RAND")
 
 	print(args)
-
 	if not args.original:
 		# Note: if the sort_favor for finding_smallest_scale is not "Nodes", will need to change the below arg.extreamly_high_confidence line to find the right break point.
 		all_setup, json_config_template = finding_smallest_scale(json_config, pml_base_path)
@@ -132,20 +181,24 @@ def verifier_operator(json_config, case_name, file_base, result_base_path, pml_b
 			logger.critical("===========================")
 			logger.critical("Working on setup: " + str_setup(s))
 
-			failure_type, result_log, failure_details, total_mem, elapsed_time = verifier_operator_adjust_queue(new_json_config, case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base)
+			new_failures = verifier_operator_adjust_queue(new_json_config, case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base)
 
-			if failure_type != "None":
-				failures.append((failure_type, result_log, failure_details, total_mem, elapsed_time))
-				logger.critical("Failure found at scale " + str_setup(s))
-				if not args.all_violation:
-					break
+			failure_found = False
+			for failure in new_failures:
+				if failure[0] != "None":
+					failures.append(deepcopy(failure))
+					logger.critical("Failure found at scale " + str_setup(s))
+					failure_found = True
+			if not args.all_violation and failure_found:
+				break
 
 	else:
-		failure_type, result_log, failure_details, total_mem, elapsed_time = verifier_operator_adjust_queue(json_config, case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base)
+		new_failures = verifier_operator_adjust_queue(json_config, case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base)
 
-		if failure_type != "None":
-			failures.append((failure_type, result_log, failure_details, total_mem, elapsed_time))
-			logger.critical("Failure found!")
+		for failure in new_failures:
+			if failure[0] != None:
+				failures.append(deepcopy(failure))
+				logger.critical("Failure found!")
 
 	return failures
 

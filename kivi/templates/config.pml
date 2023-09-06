@@ -98,4 +98,6 @@
 #define UNDEFINED_VALUE 0
 
 /*--------- ifdef ----------*/
+// Intents: NO_FEASIABLE_NODE, 
+// Data structure: MORE_PODS
 [$IFDEF]

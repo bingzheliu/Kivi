@@ -78,11 +78,12 @@ inline selectHost()
 	if
 	:: max == -1 -> 
 		printf("[*][Scheduler] No feasiable node!\n");
+#ifdef NO_FEASIABLE_NODE
 		assert(false);
+#endif
 	:: else->;
-	fi;
-
-	printf("[*][Scheduler] scheduled; %d; %d; Pod %d is scheduled on node %d, with score %d\n", curPod, selectedNode, curPod, selectedNode, max);
+		printf("[*][Scheduler] scheduled; %d; %d; Pod %d is scheduled on node %d, with score %d\n", curPod, selectedNode, curPod, selectedNode, max);
+	fi;	
 }
 
 
@@ -105,7 +106,10 @@ inline checkIfUnschedulable()
 {
 	if
 	:: selectedNode == 0 && podsStable[curPod].important == 1 ->
+#ifdef NO_FEASIABLE_NODE
 		assert(false);
+#endif
+		skip
 	:: else->;
 	fi;
 }

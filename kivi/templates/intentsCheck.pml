@@ -18,18 +18,58 @@
 
 
 // Check for H1
-proctype checkH1()
+proctype checkOscillation(byte did)
 {
 endCH11:	if 
-			:: d[1].hpaSpec.maxReplicas != d[1].hpaSpec.minReplicas && d[1].replicas == d[1].hpaSpec.maxReplicas ->
+			:: d[did].hpaSpec.maxReplicas != d[did].hpaSpec.minReplicas && d[did].replicas == d[did].hpaSpec.maxReplicas && !loadChange ->
 		 	printf("[**] Entering stage 2 for check!\n")
-endCH12:		if 
-		 		:: d[1].replicas == d[1].hpaSpec.minReplicas || d[1].replicas <= d[1].hpaSpec.maxReplicas - 3 ->
-		 			printf("[*] The number of replicas was oscillating, now %d\n", d[1].replicas)
+endCH12:	if 
+		 		:: d[did].replicas == d[did].hpaSpec.minReplicas || d[did].replicas <= d[did].hpaSpec.maxReplicas - 3 ->
+		 			printf("[*] The number of replicas was oscillating, now %d\n", d[did].replicas)
 		 			assert(false)
-		 	fi;
+		 		fi;
+			fi;
+}
+
+proctype checkMinReplicas(byte did)
+{
+	if 
+		// if it's invalid end state at the following sentence, it's a violation as well, meaning the replicas is never more than the minReplicas
+		:: init_status == 1 && ((d[did].hpaSpec.isEnabled && d[did].replicas >= d[did].hpaSpec.minReplicas) || (!d[did].hpaSpec.isEnabled && d[did].replicas >= d[did].specReplicas)) ->
+			printf("[**] Entering stage 2 for check! The deployment is table...\n")
+endCMR1:	if 
+				:: ((d[did].hpaSpec.isEnabled && d[did].replicas < d[did].hpaSpec.minReplicas) || (!d[did].hpaSpec.isEnabled && d[did].replicas < d[did].specReplicas)) ->
+					printf("[*] The number of replicas in deployment %d is less than the minium/spec replicas! Now %d.\n", did, d[did].replicas);
+					assert(false)
+			fi;
 	fi;
 }
+
+proctype checkExpReplicas(byte did)
+{
+	if 
+		// if it's invalid end state at the following sentence, it's a violation as well, meaning the replicas is never more than the minReplicas
+		:: init_status == 1 && (d[did].replicas >= [$expReplicas]) ->
+			printf("[**] Entering stage 2 for check! The deployment is table...\n")
+endCER1:	if 
+				::d[did].replicas < [$expReplicas] ->
+					printf("[*] The number of replicas in deployment %d is less than the expected replicas! Now %d, expected %d.\n", did, d[did].replicas, [$expReplicas]);
+					assert(false)
+			fi;
+	fi;
+}
+
+// if no enviromental change, the # of replicas should not reach the upper bound.
+// This can be checked for H1
+// never  {    /* ([](!q -> !p))  q-> envchange, p -> (d[1].replicas == d[1].maxReplicas)*/
+// accept_init:
+// T0_init:
+// 	do
+// 	:: ((!envChange) || (d[1].replicas == d[1].hpaSpec.maxReplicas)) -> goto T0_init
+// 	od;
+// }
+
+
 
 // check for S6
 // proctype checkS6()
@@ -46,23 +86,23 @@ endCH12:		if
 // }
 
 // check for H2
-proctype checkH2()
-{
-endCH21:	if 
-			::  init_status == 1 && d[1].replicas == d[1].hpaSpec.maxReplicas && d[1].hpaSpec.maxReplicas != d[1].hpaSpec.minReplicas->
-		 		printf("[**] Entering stage 2 for check!\n")
-endCH22:		if 
-			 		::d[1].replicas < d[1].hpaSpec.maxReplicas ->
-			 			printf("[**] Entering stage 3 for check!\n")
-endCH23:			 	if 
-			 				:: d[1].replicas == d[1].hpaSpec.maxReplicas ->
-					 			// printf("[*] The number of replicas %d below the minReplicas %d\n", d[1].replicas, d[1].hpaSpec.minReplicas)
-					 			printf("[*] The number of replicas was oscillating, now %d\n", d[1].replicas)
-					 			assert(false)
-					 	fi;
-			 	fi;
-	fi;
-}
+// proctype checkH2()
+// {
+// endCH21:	if 
+// 			::  init_status == 1 && d[1].replicas == d[1].hpaSpec.maxReplicas && d[1].hpaSpec.maxReplicas != d[1].hpaSpec.minReplicas->
+// 		 		printf("[**] Entering stage 2 for check!\n")
+// endCH22:		if 
+// 			 		::d[1].replicas < d[1].hpaSpec.maxReplicas ->
+// 			 			printf("[**] Entering stage 3 for check!\n")
+// endCH23:			 	if 
+// 			 				:: d[1].replicas == d[1].hpaSpec.maxReplicas ->
+// 					 			// printf("[*] The number of replicas %d below the minReplicas %d\n", d[1].replicas, d[1].hpaSpec.minReplicas)
+// 					 			printf("[*] The number of replicas was oscillating, now %d\n", d[1].replicas)
+// 					 			assert(false)
+// 					 	fi;
+// 			 	fi;
+// 	fi;
+// }
 
 proctype checkS1()
 {

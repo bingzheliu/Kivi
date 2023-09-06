@@ -11,6 +11,9 @@
 from util import *
 import sys, json
 
+default_intent_parameters = {"checkExpReplicas": {"[$expReplicas]":1}}
+default_intent_ifdef = {"kernel_panic":"KERNEL_PANIC", "no_feasiable_node":"NO_FEASIABLE_NODE"}
+
 # A list of field in the typedef, need to be synced with dataType.pml. TODO: could auto-populate this.
 # TODO: adding the process on affinityrules, noschedulenodes, etc.
 elements_required = {"nodes" : ["id", "name", "cpu", "cpuLeft", "memory", "memLeft", "status", "numPod", "labels", "score", "curScore", "curAffinity", "curTaint", "maintained"], \

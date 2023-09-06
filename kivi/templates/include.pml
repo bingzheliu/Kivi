@@ -44,6 +44,8 @@ podTypeStable podsStable[POD_NUM+1]
 bit init_status = 0;
 bit first_proc = 0
 short time = 0;
+// loadChange can be changed if we model load in the future 
+bit loadChange = 0;
 
 // // This is a counter that could be used for all the forloop in nested functions
 // hidden short gi = 0;

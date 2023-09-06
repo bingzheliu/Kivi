@@ -297,7 +297,7 @@ def generate_event_user_command(json_config, s_event_uc, s_proc_after_stable, s_
 	return s_event_uc, s_proc_after_stable, s_first_proc
 
 # Intent can be define with just run xxx
-# It can also be defined with {"name": xx, "para":{}}.
+# It can also be defined with {"name": xx, "para":{}, "run":true/false, "flag": true/false}.
 # It can also be just enabled by add #define, e.g. the no feasiable node
 def generate_intent(json_config, pml_intent, s_main_intent, ifdef):
 	if "intents" in json_config:
@@ -308,9 +308,9 @@ def generate_intent(json_config, pml_intent, s_main_intent, ifdef):
 				else:
 					pml_intent += (intent + "\n")
 			else:
-				if intent["name"] in default_intent_ifdef:
+				if intent["name"] in default_intent_ifdef and intent["flag"]:
 					ifdef += ("#define " + default_intent_ifdef[intent["name"]] + " 1\n")
-					continue
+
 				did = ""
 				if "para" in intent:
 					for para in intent["para"]:
@@ -319,7 +319,8 @@ def generate_intent(json_config, pml_intent, s_main_intent, ifdef):
 						else:
 							pml_intent = pml_intent.replace("[$"+para+"]", str(intent["para"][para]))
 
-				s_main_intent += ("run " + intent["name"] + "(" + str(did) + ");\n")
+				if intent["run"]:
+					s_main_intent += ("run " + intent["name"] + "(" + str(did) + ");\n")
 
 	return pml_intent, s_main_intent, ifdef
 

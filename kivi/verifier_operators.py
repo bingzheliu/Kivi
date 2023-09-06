@@ -9,6 +9,13 @@ from result_parser import parse_pan_output, parse_spin_error_trail
 from cases.case_generator import case_generator
 from small_scale_finder import finding_smallest_scale, generate_case_json, str_setup
 
+# all_intents = {"never":[], "loop":[], "assert":["no_feasiable_node", "kernel_panic", "checkOscillation", "checkMinReplicas", "checkExpReplicas"]}
+
+# # intents can be seperated into subsets in this function.
+# def analyze_intents(json_config):
+# 	new_intents = []
+# 	for intents in deepcopy(json_config["intents"]):
+
 # TODO: keep steam the output from the ./pan, and if see "max search depth too small", we could just stop the execuation and adjust the running configs for pan
 def verifier_operator_one(json_config, case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base, queue_size_default):
 	main_filename = model_generator(json_config, pml_base_path, file_base + "/kivi/templates", queue_size_default=queue_size_default)

@@ -222,7 +222,8 @@ def generate_S1(num_node, non_violation=False):
 
 	case_config["intents"] = []
 	
-	case_config["intents"].append("run checkS1()\n")
+	#case_config["intents"].append("run checkS1()\n")
+	case_config["intents"].append({"name":"checkEvictionCycle", "flag":True, "run": True, "para":{"did":1}})
 
 	return case_config
 
@@ -354,7 +355,8 @@ def generate_S9(num_node, non_violation=False):
 
 	case_config["intents"] = []
 	
-	case_config["intents"].append("run checkS1()\n")
+	#case_config["intents"].append("run checkS1()\n")
+	case_config["intents"].append({"name":"checkEvictionCycle", "flag":True, "run": True, "para":{"did":1}})
 
 	return case_config
 
@@ -844,7 +846,7 @@ def generate_S6(num_node, non_violation=False):
 		# TODO: check why never not work
 		#case_config["intents"].append("\nnever \n{\n do\n  :: init_status == 1 && d[1].replicas == d[1].specReplicas -> \n if\n :: d[1].replicas < d[1].specReplicas - " + str(p) +  " -> break\n  fi\n   :: else\nod;\n}\n")
 		#case_config["intents"].append("\nactive proctype checkS6() \n{\nendCS61: if\n  		:: init_status == 1 && d[1].replicas == d[1].specReplicas -> \nendCS62:   		if\n :: d[1].replicas < d[1].specReplicas - " + str(p) +  ' -> printf("[*] Replicas below expatation!\\n")\n assert(false)\n    		fi\n     fi;\n}\n')
-		case_config["intents"].append({"name":"checkExpReplicas", "para":{"did": 1, "expReplicas": "d[did].specReplicas-1"}})
+		case_config["intents"].append({"name":"checkExpReplicas", "flag":False, "run":True, "para":{"did": 1, "expReplicas": "d[did].specReplicas-1"}})
 	return case_config
 
 
@@ -1238,7 +1240,7 @@ def generate_S4(num_node, non_violation=False):
 	case_config["events"].append({"name" : "kernelPanic"})
 
 	case_config["intents"] = []
-	case_config["intents"].append({"name": "kernel_panic", "para":{}})
+	case_config["intents"].append({"name": "kernel_panic", "flag":True, "run":False, "para":{}})
 	return case_config
 
 ## HPA + scheduler (pod spreading) + deployment controller
@@ -1397,7 +1399,7 @@ def generate_S3_woCPU(num_node, non_violation=False):
 	case_config["userCommand"].append(cur_json_uc)
 
 	case_config["intents"] = []
-	case_config["intents"].append({"name":"no_feasiable_node", "para":{}})
+	case_config["intents"].append({"name":"no_feasiable_node", "flag":True, "run": False, "para":{}})
 
 	return case_config
 

@@ -28,6 +28,10 @@ endK:	do
 							if 
 								:: pods[i].workloadType == 1 ->
 									j = pods[i].workloadId;
+									#ifdef CHECK_EVICTION_CYCLE
+										d[j].added = 1;
+										printf("[***] Adding added flag to deployment %d\n", j)
+									#endif
 									// d[j].replicas ++;
 									// k = d[j].replicaSets[d[j].curVersion].replicas;
 									replicasetAddPod(d[j].replicaSets[d[j].curVersion], i)
@@ -62,6 +66,10 @@ endK:	do
 
 							if 
 								:: pods[i].workloadType == 1 ->
+								#ifdef CHECK_EVICTION_CYCLE
+									d[pods[i].workloadId].evicted = 1
+									printf("[***] Adding eviction flag to deployment %d\n", pods[i].workloadId)
+								#endif
 									printf("[******] Enqueue in kubelet\n")
 									updateQueue(dcQueue, dcTail, dcIndex, pods[i].workloadId, MAX_DEP_QUEUE)
 									updateQueue(hpaQueue, hpaTail, hpaIndex, pods[i].workloadId, MAX_HPA_QUEUE)

@@ -253,6 +253,10 @@ typedef deploymentType {
 	bit added;
 #endif
 
+#ifdef CHECK_BALANCE_NODE
+	bit added_for_check_balance;
+#endif
+
 	/*-----omitting-----*/
 	// short progressDeadlineSeconds;
 	// short minReadySeconds;

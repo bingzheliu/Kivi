@@ -9,7 +9,8 @@ from result_parser import parse_pan_output, parse_spin_error_trail
 from cases.case_generator import case_generator
 from small_scale_finder import finding_smallest_scale, generate_case_json, str_setup
 
-intent_groups = {"never":[], "loop":["loop"], "assert":["no_feasiable_node", "kernel_panic", "checkOscillation", "checkMinReplicas", "checkExpReplicas", "checkEvictionCycle"]}
+intent_groups = {"never":[], "loop":["loop"], "assert":["no_feasiable_node", "kernel_panic", "checkOscillation", \
+				"checkMinReplicas", "checkExpReplicas", "checkEvictionCycle", "checkBalanceNode"]}
 
 # intents can be seperated into subsets in this function.
 def analyze_divide_intents(json_config):
@@ -50,10 +51,10 @@ def analyze_divide_intents(json_config):
 
 	intent_group_list = list(group_to_intents.values())
 
-	print(all_intents)
-	print("======")
-	print(intent_group_list)
-	print("======")
+	# print(all_intents)
+	# print("======")
+	# print(intent_group_list)
+	# print("======")
 
 	return intent_group_list
 

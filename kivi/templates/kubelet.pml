@@ -32,6 +32,10 @@ endK:	do
 										d[j].added = 1;
 										printf("[***] Adding added flag to deployment %d\n", j)
 									#endif
+									#ifdef CHECK_BALANCE_NODE
+										d[j].added_for_check_balance = 1;
+										printf("[***] Adding added flag to deployment %d\n", j)
+									#endif 
 									// d[j].replicas ++;
 									// k = d[j].replicaSets[d[j].curVersion].replicas;
 									replicasetAddPod(d[j].replicaSets[d[j].curVersion], i)

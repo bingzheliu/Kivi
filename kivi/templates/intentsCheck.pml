@@ -11,8 +11,10 @@ endCH11:	if
 		 	printf("[**] Entering stage 2 for check!\n")
 endCH12:	if 
 		 		:: d[did].replicas == d[did].hpaSpec.minReplicas || d[did].replicas <= d[did].hpaSpec.maxReplicas - 3 ->
-		 			printf("[*] The number of replicas was oscillating, now %d\n", d[did].replicas)
-		 			assert(false)
+		 			atomic{
+			 			printf("[*] The number of replicas was oscillating, now %d\n", d[did].replicas);
+			 			assert(false)
+		 			}
 		 		fi;
 			fi;
 }
@@ -26,8 +28,10 @@ proctype checkMinReplicas(byte did)
 			printf("[**] Entering stage 2 for check! The deployment is table...\n")
 endCMR1:	if 
 				:: ((d[did].hpaSpec.isEnabled && d[did].replicas < d[did].hpaSpec.minReplicas) || (!d[did].hpaSpec.isEnabled && d[did].replicas < d[did].specReplicas)) ->
-					printf("[*] The number of replicas in deployment %d is less than the minium/spec replicas! Now %d.\n", did, d[did].replicas);
-					assert(false)
+					atomic{
+						printf("[*] The number of replicas in deployment %d is less than the minium/spec replicas! Now %d.\n", did, d[did].replicas);
+						assert(false)
+					}
 			fi;
 	fi;
 }
@@ -41,8 +45,10 @@ proctype checkExpReplicas(byte did)
 			printf("[**] Entering stage 2 for check! The deployment is table...\n")
 endCER1:	if 
 				::d[did].replicas < [$expReplicas] ->
-					printf("[*] The number of replicas in deployment %d is less than the expected replicas! Now %d, expected %d.\n", did, d[did].replicas, [$expReplicas]);
-					assert(false)
+					atomic{
+						printf("[*] The number of replicas in deployment %d is less than the expected replicas! Now %d, expected %d.\n", did, d[did].replicas, [$expReplicas]);
+						assert(false)
+					}
 			fi;
 	fi;
 }
@@ -58,18 +64,64 @@ endCEC11:	if
 					d[did].evicted = 0;
 endCEC12:			if 
 						:: d[did].added == 1 ->
-							printf("[**] times %d the pod on deployment %d has been added\n", count, did);
-							d[did].added = 0;
-							count ++;
-							if 
-								:: count >= LOOP_TIMES ->
-									printf("[*] Pods are being scheduled and descheduled in deployment %d!\n", did)
-									assert(false)
-								:: else->;
-							fi;
-							goto endCEC11;
+							atomic{
+								printf("[**] times %d the pod on deployment %d has been added\n", count, did);
+								d[did].added = 0;
+								count ++;
+								if 
+									:: count >= LOOP_TIMES ->
+										printf("[*] Pods are being scheduled and descheduled in deployment %d!\n", did)
+										assert(false)
+									:: else->;
+								fi;
+								goto endCEC11;
+							}
 					fi;
 			fi;
+}
+#endif
+
+#ifdef CHECK_BALANCE_NODE
+proctype checkBalanceNode(byte did)
+{
+	if 
+		:: init_status == 1 && d[did].replicas >= d[did].specReplicas ->
+endCBN1:		if 
+					:: d[did].added_for_check_balance ->
+						atomic{
+							byte podNode[NODE_NUM+1], minNum = 0;
+							short i = 0;
+							for (i : 1 .. NODE_NUM) {
+								podNode[i] = 0
+							}
+							for (i : 1 .. POD_NUM ) {
+								if 
+									:: pods[i].status == 1 ->
+										podNode[pods[i].loc] ++
+									:: else->;
+								fi
+							}
+							minNum = POD_NUM;
+							for (i : 1 .. NODE_NUM) {
+								if 
+									:: minNum > podNode[i] && nodes[i].status == 1->
+										minNum = podNode[i]
+									:: else->
+								fi
+							}
+							for (i : 1 .. NODE_NUM) {
+								if 
+									:: podNode[i] - minNum > [$maxSkew] && nodes[i].status == 1 ->
+										printf("[*] The pods are unbalanced on Node! With a skew %d\n",  podNode[i] - minNum)
+										assert(false);
+									:: else->
+								fi
+							}
+							d[did].added_for_check_balance = 0
+							goto endCBN1;
+						}
+				fi;
+	fi;
 }
 #endif
 

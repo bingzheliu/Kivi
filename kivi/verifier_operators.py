@@ -9,12 +9,19 @@ from result_parser import parse_pan_output, parse_spin_error_trail
 from cases.case_generator import case_generator
 from small_scale_finder import finding_smallest_scale, generate_case_json, str_setup
 
-# all_intents = {"never":[], "loop":[], "assert":["no_feasiable_node", "kernel_panic", "checkOscillation", "checkMinReplicas", "checkExpReplicas"]}
+intent_groups = {"never":[], "loop":["loop"], "assert":["no_feasiable_node", "kernel_panic", "checkOscillation", "checkMinReplicas", "checkExpReplicas"]}
 
-# # intents can be seperated into subsets in this function.
-# def analyze_intents(json_config):
-# 	new_intents = []
-# 	for intents in deepcopy(json_config["intents"]):
+# intents can be seperated into subsets in this function.
+def analyze_divide_intents(json_config):
+	new_intents = []
+
+	all_intents = deepcopy(json_config["intents"])
+	# first, the intents in different intent groups must be divided, as the are verified in different ways.
+	for intent_group_name in intent_groups:
+		for intents in all_intents:
+			if "name" in intents and intents["name"] in intent_groups[intent_group_name]:
+				current_group.append(deepcopy(intents))
+
 
 # TODO: keep steam the output from the ./pan, and if see "max search depth too small", we could just stop the execuation and adjust the running configs for pan
 def verifier_operator_one(json_config, case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base, queue_size_default):

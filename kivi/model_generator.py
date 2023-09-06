@@ -6,7 +6,7 @@
 
 from util import *
 from config import *
-from processing_default import check_for_completion_add_default, default_controllers, event_uc_default_str, default_intent_parameters, default_intent_ifdef, default_parameter_order, descheduler_args_default, controller_para_default, descheduler_plugins_maps
+from processing_default import check_for_completion_add_default, default_controllers, event_uc_default_str, default_intent_parameters, default_intent_library, default_intent_ifdef, default_parameter_order, descheduler_args_default, controller_para_default, descheduler_plugins_maps
 import json
 
 index_starts_at_one = {"pods", "nodes", "d", "podTemplates", "deploymentTemplates", "nodesStable"}
@@ -302,25 +302,43 @@ def generate_event_user_command(json_config, s_event_uc, s_proc_after_stable, s_
 def generate_intent(json_config, pml_intent, s_main_intent, ifdef):
 	if "intents" in json_config:
 		for intent in json_config["intents"]:
+			# This str is only used rarely (internally) when we directly put intents with str.
 			if isinstance(intent, str):
 				if "run" in intent:
 					s_main_intent += (intent + "\n")
 				else:
 					pml_intent += (intent + "\n")
 			else:
-				if intent["name"] in default_intent_ifdef and intent["flag"]:
-					ifdef += ("#define " + default_intent_ifdef[intent["name"]] + " 1\n")
+				if intent["name"] not in default_intent_library:
+					logger.critical("Unknow intent " + intent["name"] + "!")
+				else:
+					cur_name = intent["name"]
+					cur_intent_def = default_intent_library[cur_name]
+					if cur_name in default_intent_ifdef and cur_intent_def["flag"]:
+						ifdef += ("#define " + default_intent_ifdef[intent["name"]] + " 1\n")
 
-				did = ""
-				if "para" in intent:
-					for para in intent["para"]:
-						if para == "did":
-							did = str(intent["para"][para])
-						else:
-							pml_intent = pml_intent.replace("[$"+para+"]", str(intent["para"][para]))
+					did = ""
+					contained_para = set()
+					if "para" in intent:
+						for para in intent["para"]:
+							contained_para.add(para)
+							if para == "did":
+								did = str(intent["para"][para])
+							else:
+								pml_intent = pml_intent.replace("[$"+para+"]", str(intent["para"][para]))
+					
+					# go through the default values if they are not defined by the users. 
+					# can raise error instead rather than filling the value by default
+					for para in cur_intent_def["para"]:
+						if para not in contained_para:
+							logger.critical("The parameter " + para + " is not defined for intent "+cur_name+"! Replcaed with default value and may not work as user expected!")
+							if para == "did":
+								did = str(cur_intent_def["para"][para])
+							else:
+								pml_intent = pml_intent.replace("[$"+para+"]", str(cur_intent_def["para"][para]))
 
-				if intent["run"]:
-					s_main_intent += ("run " + intent["name"] + "(" + str(did) + ");\n")
+					if cur_intent_def["run"]:
+						s_main_intent += ("run " + cur_name + "(" + str(did) + ");\n")
 
 	return pml_intent, s_main_intent, ifdef
 

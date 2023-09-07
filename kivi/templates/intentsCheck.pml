@@ -157,13 +157,13 @@ endCBN1:		if
 
 
 
-never
-{
-	do
-	:: d[1].replicas < d[1].hpaSpec.minReplicas -> break
-	:: else
-	od;
-}
+// never
+// {
+// 	do
+// 	:: d[1].replicas < d[1].hpaSpec.minReplicas -> break
+// 	:: else
+// 	od;
+// }
 
 // check for S6
 // proctype checkS6()

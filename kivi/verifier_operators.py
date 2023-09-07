@@ -197,16 +197,7 @@ def verifier_operator(json_config, case_name, file_base, result_base_path, pml_b
 				if not args.all_violation and failure_found:
 					break
 
-				logger.critical("===========================")
-				logger.critical("Working on setup: " + str_setup(s))
-
-				failure_type, result_log, failure_details, total_mem, elapsed_time = verifier_operator_adjust_queue(new_json_config, case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base)
-
-				if failure_type != "None":
-					failures.append((failure_type, result_log, failure_details, total_mem, elapsed_time))
-					logger.critical("Failure found at scale " + str_setup(s))
-					if not args.all_violation:
-						break
+				if failure_found:
 					msg = str(len(failures)) + " failure(s) are found!\n"
 					msg += (failures[-1][1] + "\n")
 
@@ -214,7 +205,7 @@ def verifier_operator(json_config, case_name, file_base, result_base_path, pml_b
 					fw.write(str(num_node) + " " + str(s["d"][0]) + " 0\n")
 				else:
 					fw.write(str(num_node) + " " + str(s["d"][0]) + " 1\n")
-					success, stdout, stderr = run_script(['cp'] + ['-r'] + [pml_base_path] + [file_base + '/bin/eval/results/heatmap/non_violation_pml/'+case_name], False)
+					#success, stdout, stderr = run_script(['cp'] + ['-r'] + [pml_base_path] + [file_base + '/bin/eval/results/heatmap/non_violation_pml/'+case_name], False)
 
 	else:
 		new_failures = verifier_operator_adjust_queue(json_config, case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base)

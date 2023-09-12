@@ -110,6 +110,11 @@ def deduct_cpu_nodes(json_config):
 
 	return json_config
 
+# Generating templates from a running cluster log, which does not have types defined.
+# In this mode, user can't define the upper bound and lower bound of their types, as they don't know this in advance. 
+# Instead, they can give us a default bound for all nodes, and a default for all deployments.
+# Anything defined in the maxReplicas and minReplicas in HPA or sepcReplicas will only be used as a proptional factor when scale up propotionally
+# If user choose the propotion, the propotion will be set according the current proption of node and pods
 def template_generator(json_config, user_defined=None):
 	#print(json.dumps(json_config, indent=2))
 	if user_defined is None:
@@ -127,8 +132,6 @@ def template_generator(json_config, user_defined=None):
 		spec_replicas = []
 		for n in json_config["setup"][t]:
 			new_flag = True
-			# if t == "d":
-			# 	cur_max = find_max_replicas_d(n)
 
 			for i in range(0, len(type_setup)):
 				if compare_template(n, type_setup[i]["template"], equal_templates[t]):
@@ -149,8 +152,6 @@ def template_generator(json_config, user_defined=None):
 				new_type["template"] = {}
 				assign_template(n, new_type["template"], equal_templates[t])
 				if t == "nodes":
-					# new_type["template"]["cpuLeft"] = n["cpu"]
-					# new_type["template"]["memLeft"] = n["memory"]
 					new_type["template"]["numPod"] = 0
 				if t == "d":
 					new_type["template"]["status"] = 0
@@ -162,7 +163,9 @@ def template_generator(json_config, user_defined=None):
 						min_count_replicas.append(n["specReplicas"])
 					spec_replicas.append(n["specReplicas"])
 				new_type["template"]["name"] = n["name"]
+				# Now all types have the same number of upper and lower in our cases; but it can actually be anything if user directly define the templates 
 				new_type["lowerBound"] = user_defined[t+"_default"]["lowerBound"]
+				new_type["upperBound"] = user_defined[t+"_default"]["upperBound"]
 				if "minHPAReplicas" in user_defined[t+"_default"]:
 					new_type["minHPAReplicas"] = user_defined[t+"_default"]["minHPAReplicas"]
 					max_count_replicas[-1] = max(new_type["minHPAReplicas"], max_count_replicas[-1])
@@ -175,16 +178,20 @@ def template_generator(json_config, user_defined=None):
 		for i in range(0, len(type_setup)):
 			if user_defined[t+"_default"]["ScaleType"] == "proportion":
 				type_setup[i]["proportion"] = propotion[i]
-			if t == "d":
-				#type_setup[i]["proportionHPA"] = user_defined[t+"_default"]["proportionHPA"]
-				if "hpaSpec" in type_setup[i]["template"]:
-					type_setup[i]["proportionNodeMin"] = min_count_replicas[i]*1.0/len(json_config["setup"]["nodes"])
-					type_setup[i]["proportionNodeMax"] = max_count_replicas[i]*1.0/len(json_config["setup"]["nodes"])
-				type_setup[i]["proportionNodeSpec"] = spec_replicas[i]*1.0/len(json_config["setup"]["nodes"])
-				type_setup[i]["upperBound"] = max_count_replicas[i]
 
-			if t == "nodes":
-				type_setup[i]["upperBound"] = count[i]
+				if t == "d":
+					if "hpaSpec" in type_setup[i]["template"]:
+						type_setup[i]["proportionNodeMin"] = min_count_replicas[i]*1.0/len(json_config["setup"]["nodes"])
+						type_setup[i]["proportionNodeMax"] = max_count_replicas[i]*1.0/len(json_config["setup"]["nodes"])
+					type_setup[i]["proportionNodeSpec"] = spec_replicas[i]*1.0/len(json_config["setup"]["nodes"])
+					#type_setup[i]["upperBound"] = max_count_replicas[i]
+
+			if user_defined[t+"_default"]["ScaleType"] == "free":
+				if t == "d":
+					type_setup[i]["upperBoundNode"] = user_defined[t+"_default"]["upperBoundNode"]
+
+			# if t == "nodes":
+			# 	type_setup[i]["upperBound"] = max(count[i], type_setup[i]["upperBound"])
 
 		json_config["userDefined"][t+"Types"] = deepcopy(type_setup)
 		json_config["userDefined"][t+"ScaleType"] = user_defined[t+"_default"]["ScaleType"]
@@ -233,7 +240,10 @@ def generate_case_json(json_config, cur_setup):
 	for i in range(0, len(json_config["userDefined"]["dTypes"])):		
 		cur_d_json = json_config["userDefined"]["dTypes"][i]
 		d = deepcopy(json_config["userDefined"]["dTypes"][i]["template"])
-		cur_spec = adjust_replicas(min(cur_setup["d"][i], math.ceil(total_nodes*cur_d_json["proportionNodeSpec"])), cur_d_json)
+		if json_config["userDefined"]["dScaleType"] == "propotion":
+			cur_spec = adjust_replicas(min(cur_setup["d"][i], math.ceil(total_nodes*cur_d_json["proportionNodeSpec"])), cur_d_json)
+		else:
+			cur_spec = adjust_replicas(cur_setup["d"][i], cur_d_json)
 		d["id"] = cur_id
 		if "name" not in d:
 			d["name"] = cur_id
@@ -264,8 +274,13 @@ def generate_case_json(json_config, cur_setup):
 		max_replicas = d["specReplicas"]
 		if "hpaSpec" in d:
 			if d["hpaSpec"]["isEnabled"] == 1:
-				d["hpaSpec"]["minReplicas"] = adjust_replicas(min(math.ceil(total_nodes*cur_d_json["proportionNodeMin"]), math.floor(cur_setup["d"][i]*1.0*cur_d_json["proportionNodeMin"]/cur_d_json["proportionNodeSpec"])), cur_d_json)
-				d["hpaSpec"]["maxReplicas"] = adjust_replicas(max(cur_d_json["minHPAReplicas"], min(math.ceil(total_nodes*cur_d_json["proportionNodeMax"]), math.ceil(cur_setup["d"][i]*1.0*cur_d_json["proportionNodeMax"]/cur_d_json["proportionNodeSpec"]))), cur_d_json)
+				if json_config["userDefined"]["dScaleType"] == "propotion":
+					d["hpaSpec"]["minReplicas"] = adjust_replicas(min(math.ceil(total_nodes*cur_d_json["proportionNodeMin"]), math.floor(cur_setup["d"][i]*1.0*cur_d_json["proportionNodeMin"]/cur_d_json["proportionNodeSpec"])), cur_d_json)
+					d["hpaSpec"]["maxReplicas"] = adjust_replicas(max(cur_d_json["minHPAReplicas"], min(math.ceil(total_nodes*cur_d_json["proportionNodeMax"]), math.ceil(cur_setup["d"][i]*1.0*cur_d_json["proportionNodeMax"]/cur_d_json["proportionNodeSpec"]))), cur_d_json)
+				else:
+					# TBC after clear about heatmap
+					d["hpaSpec"]["minReplicas"] = cur_d_json["lowerBound"]
+					d["hpaSpec"]["maxReplicas"] = cur_d_json["upperBound"]
 				max_replicas = max(max_replicas, d["hpaSpec"]["maxReplicas"])
 
 		new_json_config["setup"]["d"].append(d)
@@ -319,9 +334,13 @@ def check_duplicate(all_setup, cur_setup):
 
 def generate_list_setup_dfs(json_config, i, cur_type, cur_setup, all_setup, count, cur_base=None):
 	if cur_type == "nodes" and i == len(json_config["userDefined"]["nodesTypes"]):
+		if count["nodes"] == 0:
+			return 
 		generate_list_setup_dfs(json_config, 0, "d", cur_setup, all_setup, count, cur_base)
 		return
 	if cur_type == "d" and i == len(json_config["userDefined"]["dTypes"]):
+		if count["nodes"] == 0 or count["d"] == 0:
+			return 
 		if not check_duplicate(all_setup, cur_setup):
 			all_setup.append(deepcopy(cur_setup))
 		#generate_case_json(cur_setup, json_config)
@@ -342,11 +361,14 @@ def generate_list_setup_dfs(json_config, i, cur_type, cur_setup, all_setup, coun
 	elif json_config["userDefined"][cur_type+"ScaleType"] == "free":
 		j = cur_json_config["lowerBound"]
 		while (j <= cur_json_config["upperBound"]):
-			if (cur_type == "d" and j > (count["nodes"] * cur_json_config["proportionNode"])):
+			if (cur_type == "d" and j > (cur_json_config["upperBoundNode"]*count["nodes"])):
 				break
+			# if (cur_type == "d" and j > (count["nodes"] * cur_json_config["proportionNode"])):
+			# 	break
 			cur_setup[cur_type][i] = j
 			count[cur_type] += j
 			generate_list_setup_dfs(json_config, i+1, cur_type, cur_setup, all_setup, count, cur_base)
+			count[cur_type] -= j
 			j = get_next_num(j)
 
 	else:

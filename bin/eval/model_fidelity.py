@@ -6,11 +6,11 @@ from math import *
 from itertools import permutations
 from copy import deepcopy
 
-sys_path = os.path.abspath(sys.argv[3])
+#sys_path = os.path.abspath(sys.argv[3])
 
-sys.path.insert(0, sys_path+"/src")
+#sys.path.insert(0, sys_path+"/src")
 
-from util import *
+#from util import *
 
 
 class Action():
@@ -196,6 +196,7 @@ class Model_Fidelity:
 				with open(path+"/"+fn) as f:
 					self.spod_cpu = f.read()
 
+			self.scommand = None
 			if "command" in fn:
 				with open(path+"/"+fn) as f:
 					self.scommand = f.read()
@@ -208,6 +209,10 @@ class Model_Fidelity:
 		self.print_veri_events(veri_events)
 
 		return self.compare_events(log_events, veri_events)
+
+	def print_log_events(self):
+		log_events = self.log_parser()
+		self.print_events(log_events)
 
 	def compare_events(self, log_events, veri_events):
 		log_name = self.get_names_mapping(log_events)
@@ -402,7 +407,9 @@ class Model_Fidelity:
 		events = []
 		events = self.parse_event_log(events)
 		events = self.parse_pod_cpu(events)
-		events = self.parse_command(events)
+
+		if self.scommand is not None:
+			events = self.parse_command(events)
 
 		events.sort(key=self.event_sort)
 
@@ -619,10 +626,11 @@ class Model_Fidelity:
 
 
 if __name__ == '__main__':
-	with open(sys_path+"/results/"+sys.argv[2]+"_3") as f:
-		veri_logs = f.read()
+	# with open(sys_path+"/results/"+sys.argv[2]+"_3") as f:
+	# 	veri_logs = f.read()
 
 	mf = Model_Fidelity(sys.argv[1])
-	mf.check_model_fidelity(veri_logs)
+	mf.print_log_events()
+	#mf.check_model_fidelity(veri_logs)
 
 

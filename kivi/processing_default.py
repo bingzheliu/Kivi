@@ -19,6 +19,9 @@ default_intent_library = {"kernel_panic": {"flag":True, "run":False, "para":{}},
 						  "checkOscillation": {"flag":False, "run": True, "para":{"did":0}}, "checkMinReplicas": {"flag":False, "run": True, "para":{"did":0}}, \
 						  "checkExpReplicas": {"flag":False, "run": True, "para":{"expReplicas":0}}, "checkEvictionCycle":{"flag":True, "run": True, "para":{"did":0}}, \
 						  "checkBalanceNode": {"flag":True, "run": True, "para":{"maxSkew":2}}}
+# This is the default intents:
+default_intents = [{"name":"no_feasiable_node"}]
+
 
 # A list of field in the typedef, need to be synced with dataType.pml. TODO: could auto-populate this.
 # TODO: adding the process on affinityrules, noschedulenodes, etc.

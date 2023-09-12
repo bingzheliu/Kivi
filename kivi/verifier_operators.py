@@ -177,6 +177,7 @@ def verifier_operator(json_config, case_name, file_base, result_base_path, pml_b
 		if args.case_non_violation:
 			heatmap_name = heatmap_name + "_cn"
 		with open(heatmap_name, "w") as fw:
+			#all_setup = [{'nodes': {0: 14}, 'd': {0: 40}}]
 			for s in all_setup:
 				new_json_config, num_node, num_pod = generate_case_json(json_config_template, s)
 				if not args.extreamly_high_confidence and num_node > high_confidence_node:
@@ -189,22 +190,37 @@ def verifier_operator(json_config, case_name, file_base, result_base_path, pml_b
 				new_failures = verifier_operator_adjust_queue(new_json_config, case_name, log_level, pan_compile, pan_runtime, result_base_path, pml_base_path, file_base)
 
 				failure_found = False
+				no_fesiable_node = False
 				for failure in new_failures:
 					if failure[0] != "None":
 						failures.append(deepcopy(failure))
 						logger.critical("Failure found at scale " + str_setup(s))
 						failure_found = True
+						if "No feasiable node!" in failure[1]:
+							no_fesiable_node = True
 				if not args.all_violation and failure_found:
 					break
 
+				node_str = ""
+				d_str = ""
+				for n in s["nodes"]:
+					node_str += (str(s["nodes"][n]) + " ")
+				for d in s["d"]:
+					d_str += (str(s["d"][d]) + " ")
+
+				index = node_str + d_str
+				
 				if failure_found:
 					msg = str(len(failures)) + " failure(s) are found!\n"
 					msg += (failures[-1][1] + "\n")
 
 					logger.critical(msg)
-					fw.write(str(num_node) + " " + str(s["d"][0]) + " 0\n")
+					if no_fesiable_node:
+						fw.write(index + " 3\n")
+					else:
+						fw.write(index + " 0\n")
 				else:
-					fw.write(str(num_node) + " " + str(s["d"][0]) + " 1\n")
+					fw.write(index + " 1\n")
 					#success, stdout, stderr = run_script(['cp'] + ['-r'] + [pml_base_path] + [file_base + '/bin/eval/results/heatmap/non_violation_pml/'+case_name], False)
 
 	else:

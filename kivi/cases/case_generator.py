@@ -1758,8 +1758,8 @@ user_defined_all = {"s4" : {"nodes_default" : {"upperBound":10, "lowerBound":2, 
 						"d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion", "proportionHPA" : 2}}}
 
 def get_case_user_defined(case_id, scale):
-	user_defined_all = {"default" : {"nodes_default" : {"upperBound":scale, "lowerBound":1, "ScaleType":"proportion"}, \
-									"d_default" : {"upperBound":scale*3, "lowerBound":2, "ScaleType":"proportion", "minHPAReplicas":6}},\
+	user_defined_all = {"default" : {"nodes_default" : {"upperBound":scale, "lowerBound":1, "ScaleType":"free"}, \
+									"d_default" : {"upperBound":scale*3, "lowerBound":2, "ScaleType":"free", "minHPAReplicas":6}},\
 						"s6" : {"nodes_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}, \
 							    "d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}}, \
 						"s4" : {"nodes_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}, \
@@ -1774,5 +1774,5 @@ def get_case_user_defined(case_id, scale):
 	if case_id in user_defined_all:
 		return user_defined_all[case_id]
 
-	return None
+	return user_defined_all["default"]
 

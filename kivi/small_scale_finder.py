@@ -8,6 +8,7 @@ from copy import deepcopy
 from util import *
 from config import resource_difference_tolerance
 
+# This is not currently used for our cases. 
 user_defined_default = {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
 						"d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion", "minHPAReplicas":6}}
 

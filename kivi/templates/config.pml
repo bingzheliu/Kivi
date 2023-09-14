@@ -67,17 +67,18 @@
 
 /*----------- Time Config ------------*/
 // TODO: all the time can be config along with the event by the users
+// 1 = 0.1s
 #define HPA_RUN_TIME 1
-#define HPA_WAIT_TIME 15
+#define HPA_WAIT_TIME 150
 #define SCHEDULER_RUN_TIME 1
 #define DEP_RUN_TIME 1
 #define KUBELET_RUN_TIME 1
 #define NODEC_RUN_TIME 1
-#define MAINTENANCE_WAIT_TIME 60
-#define KERNEL_RECOVER_TIME 60
-#define EVENT_CPU_TIME 60
+#define MAINTENANCE_WAIT_TIME 600
+#define KERNEL_RECOVER_TIME 600
+#define EVENT_CPU_TIME 600
 // Default descheduler interval is 5min
-#define DESCHEDULER_WAIT_TIME 300
+#define DESCHEDULER_WAIT_TIME 3000
 
 
 /*--------- Descheduler Config -----------*/

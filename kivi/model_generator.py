@@ -6,7 +6,7 @@
 
 from util import *
 from config import *
-from processing_default import check_for_completion_add_default, default_controllers, event_uc_default_str, default_parameter_order, descheduler_args_default, controller_para_default, descheduler_plugins_maps
+from processing_default import check_for_completion_add_default, default_controllers, event_uc_default_str, default_intent_parameters, default_intent_library, default_intent_ifdef, default_parameter_order, descheduler_args_default, controller_para_default, descheduler_plugins_maps
 import json
 
 index_starts_at_one = {"pods", "nodes", "d", "podTemplates", "deploymentTemplates", "nodesStable"}
@@ -296,15 +296,51 @@ def generate_event_user_command(json_config, s_event_uc, s_proc_after_stable, s_
 
 	return s_event_uc, s_proc_after_stable, s_first_proc
 
-def generate_intent(json_config, s_intentscheck_intent, s_main_intent):
+# Intent can be define with just run xxx
+# It can also be defined with {"name": xx, "para":{}, "run":true/false, "flag": true/false}.
+# It can also be just enabled by add #define, e.g. the no feasiable node
+def generate_intent(json_config, pml_intent, s_main_intent, ifdef):
 	if "intents" in json_config:
 		for intent in json_config["intents"]:
-			if "run" in intent:
-				s_main_intent += (intent + "\n")
+			# This str is only used rarely (internally) when we directly put intents with str.
+			if isinstance(intent, str):
+				if "run" in intent:
+					s_main_intent += (intent + "\n")
+				else:
+					pml_intent += (intent + "\n")
 			else:
-				s_intentscheck_intent += (intent + "\n")
+				if intent["name"] not in default_intent_library:
+					logger.critical("Unknow intent " + intent["name"] + "!")
+				else:
+					cur_name = intent["name"]
+					cur_intent_def = default_intent_library[cur_name]
+					if cur_name in default_intent_ifdef and cur_intent_def["flag"]:
+						ifdef += ("#define " + default_intent_ifdef[intent["name"]] + " 1\n")
 
-	return s_intentscheck_intent, s_main_intent
+					did = ""
+					contained_para = set()
+					if "para" in intent:
+						for para in intent["para"]:
+							contained_para.add(para)
+							if para == "did":
+								did = str(intent["para"][para])
+							else:
+								pml_intent = pml_intent.replace("[$"+para+"]", str(intent["para"][para]))
+					
+					# go through the default values if they are not defined by the users. 
+					# can raise error instead rather than filling the value by default
+					for para in cur_intent_def["para"]:
+						if para not in contained_para:
+							logger.critical("The parameter " + para + " is not defined for intent "+cur_name+"! Replcaed with default value and may not work as user expected!")
+							if para == "did":
+								did = str(cur_intent_def["para"][para])
+							else:
+								pml_intent = pml_intent.replace("[$"+para+"]", str(cur_intent_def["para"][para]))
+
+					if cur_intent_def["run"]:
+						s_main_intent += ("run " + cur_name + "(" + str(did) + ");\n")
+
+	return pml_intent, s_main_intent, ifdef
 
 def generate_other_event(json_config, s_main_event, pml_event, s_proc_after_stable):
 	# Processing pod CPU change pattern
@@ -431,6 +467,13 @@ def remove_id(cur_json):
 			else:
 				model_logger.critical("Unknown types of data structure!")
 
+def default_for_intent(pml_intent):
+	# adding the trivial value to the intent to make it able to compile.
+	for intent in default_intent_parameters:
+		for s in default_intent_parameters[intent]:
+			pml_intent = pml_intent.replace(s, str(default_intent_parameters[intent][s]))
+	return pml_intent
+
 def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, template_path, queue_size_default):
 	userDefinedConstraints = check_for_completion_add_default(json_config)
 	process_node_affinity(json_config)
@@ -441,6 +484,7 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 	remove_id(json_config)
 
 	s_proc_after_stable = ""
+	ifdef = ""
 
 	s_init = ""
 	s_init, pod_num, node_num, deployment_num, pt_num, dt_num = generate_init(json_config["setup"], s_init)
@@ -452,9 +496,9 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 	s_first_proc = ""
 	s_event_uc, s_proc_after_stable, s_first_proc = generate_event_user_command(json_config, s_event_uc, s_proc_after_stable, s_first_proc)
 
-	s_intentscheck_intent = ""
 	s_main_intent = ""
-	s_intentscheck_intent, s_main_intent = generate_intent(json_config, s_intentscheck_intent, s_main_intent)
+	pml_intent, s_main_intent, ifdef = generate_intent(json_config, pml_intent, s_main_intent, ifdef)
+	pml_intent = default_for_intent(pml_intent)
 
 	s_main_event = ""
 	s_main_event, pml_event, s_proc_after_stable = generate_other_event(json_config, s_main_event, pml_event, s_proc_after_stable)
@@ -474,7 +518,6 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 
 	max_no_schedule_node, max_no_prefer_schedule_node, max_affinity_rules, max_matched_node, max_topo_con, max_cpu_pattern = get_max_pod_template(json_config)
 
-	ifdef = ""
 	if pod_num-1 > 255:
 		ifdef += "#define MORE_PODS 1\n"
 	if max_value > 255:
@@ -514,10 +557,7 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 
 						   #.replace("[$MAX_POD]", str(pod_num+3)) \
 						   #.replace("[$MAX_NODE]", str(node_num+3)) \
-						   #.replace("[$MAX_DEPLOYMENT]", str(deployment_num+3)) \
-
-	pml_intent += s_intentscheck_intent
-						   
+						   #.replace("[$MAX_DEPLOYMENT]", str(deployment_num+3)) \						   
 
 	return pml_config, pml_main, pml_intent, pml_event
 

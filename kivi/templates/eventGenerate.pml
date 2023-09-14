@@ -117,7 +117,9 @@ endKP:	do
 					
 					if 
 						:: times >= LOOP_TIMES ->
+#ifdef KERNEL_PANIC
 							assert(false)
+#endif
 						:: else->;
 					fi;
 				}	

@@ -25,7 +25,7 @@ default_intent_library = {"kernel_panic": {"flag":True, "run":False, "para":{}},
 elements_required = {"nodes" : ["id", "name", "cpu", "cpuLeft", "memory", "memLeft", "status", "numPod", "labels", "score", "curScore", "curAffinity", "curTaint", "maintained"], \
 					 "pods" : ["id", "loc", "status", "cpu", "memory", "workloadType", "workloadId", "podTemplateId", "score", "important", "curCpuIndex", "startTime"], \
 					 "d" : ["id", "name", "status", "replicaSets", "curVersion", "specReplicas", "replicas",  "maxSurge", "maxUnavailable", "strategy", "podTemplateId", "hpaSpec"], \
-					"podTemplates" : ["cpuRequested", "memRequested", "numRules", "nodeName", "numNoScheduleNode", "numPreferNoScheduleNode", "numTopoSpreadConstraints", \
+					"podTemplates" : ["cpuRequested", "memRequested", "numRules", "nodeName", "numNoExecuteNode", "numNoScheduleNode", "numPreferNoScheduleNode", "numTopoSpreadConstraints", \
 									"topoSpreadConstraints", "maxCpuChange"],\
 					"deploymentTemplates" : ["name", "maxSurge", "maxUnavailable", "specReplicas", "strategy"]}
 
@@ -40,7 +40,7 @@ default_values = {
 	# https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/#internal-default-constraints
 	# The definiation is in plugin.go, variable systemDefaultConstraints 
 	# The default selector for topoSpreadConstraints should be the same as the pod labels in metadata.
-	"podTemplates" : {"numRules" : 0, "nodeName" : 0,  "numNoScheduleNode" : 0, "numPreferNoScheduleNode" : 0, "topoSpreadSystemDefaulted": 1, "numTopoSpreadConstraints" : 2, \
+	"podTemplates" : {"numRules" : 0, "nodeName" : 0,  "numNoExecuteNode":0, "numNoScheduleNode" : 0, "numPreferNoScheduleNode" : 0, "topoSpreadSystemDefaulted": 1, "numTopoSpreadConstraints" : 2, \
 					  "cpuRequested": 0, "memRequested": 0, "topoSpreadConstraints" : [{"maxSkew" : 3, "topologyKey" : "hostname", "whenUnsatisfiable" : 1, "labels" : None}, \
 					  {"maxSkew" : 5, "topologyKey" : "zone", "whenUnsatisfiable" : 1, "labels" : None}], "maxCpuChange" : 0}, \
 	"deploymentTemplates" : {"maxSurge" : 25, "maxUnavailable" : 25, "specReplicas" : 1, "strategy" : 1}

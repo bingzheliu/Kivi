@@ -11,7 +11,7 @@ from config import resource_difference_tolerance
 user_defined_default = {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
 						"d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion", "minHPAReplicas":6}}
 
-equal_templates = {"nodes":["cpu", "memory", "cpuLeft", "memLeft", "status", "labels"], "d":["podTemplateId", "hpaSpec"]}
+equal_templates = {"nodes":["cpu", "memory", "cpuLeft", "memLeft", "status", "labels", "taint"], "d":["podTemplateId", "hpaSpec"]}
 
 # definition of userDefined
 # {

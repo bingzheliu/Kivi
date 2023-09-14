@@ -80,6 +80,88 @@ def generate_a_simple_deployment(case_config, cur_id, spec_replicas, pod_templat
 
 	return case_config, cur_id
 
+def generate_D1(num_node, non_violation=False):
+	case_config = {}
+	cur_id = 1
+	case_config["setup"] = {}
+
+	# Generate podTemplate
+	case_config["setup"]["podTemplates"] = []
+	pt = {}
+	pt["labels"] = {"name" : "app"}
+	pt["cpuRequested"] = 8
+	pt["memRequested"] = 8
+	pt["maxCpuChange"] = 1
+	pt["curCpuRequest"] = []
+	pt["curCpuRequest"].append(8)
+	pt["timeCpuRequest"] = []
+	pt["timeCpuRequest"].append(0)
+	pt["nodeName"] = 1
+	case_config["setup"]["podTemplates"].append(pt)
+
+	## Generate Nodes and pods
+	## Three types of nodes, 1 pod (*3), 3 pods (*1), and 5 pods (*1)
+	case_config["setup"]["nodes"] = []
+	deployment_to_pod = {}
+	deployment_to_pod[1] = []
+	case_config["setup"]["pods"] = []
+	num_pod = 0
+	
+	## Generate nodes
+	cur_node = {}
+	cur_node["id"] = cur_id
+	cur_node["name"] = cur_id
+	cur_id += 1
+	
+	cur_node["cpu"] = 64
+	cur_node["memory"] = 64
+	cur_node["cpuLeft"] = 64
+	cur_node["memLeft"] = 64
+
+	if not non_violation:
+		cur_node["taint"] = ["key1=value1:NoExecute"]
+
+	cur_node["status"] = 1
+	case_config["setup"]["nodes"].append(cur_node)
+
+	for i in range(0, num_node-1):
+		cur_node = {}
+		cur_node["id"] = cur_id
+		cur_node["name"] = cur_id
+		cur_id += 1
+		
+		cur_node["cpu"] = 64
+		cur_node["memory"] = 64
+		cur_node["cpuLeft"] = 64
+		cur_node["memLeft"] = 64
+
+		cur_node["status"] = 1
+		case_config["setup"]["nodes"].append(cur_node)
+
+	for i in range(0, num_node):
+		case_config, cur_id = generate_a_pod(case_config, cur_id, 0, 8, 8, 1)
+
+	## Generate Deployment
+	case_config["setup"]["d"] = []
+	case_config, cur_id = generate_a_simple_deployment(case_config, cur_id, num_node, 1, 0)
+
+	case_config["userCommand"] = []
+	case_config["userCommand"].append({"name" : "createTargetDeployment", "para" : 1})
+
+	case_config["controllers"] = {}
+	case_config["controllers"]["scheduler"] = {}
+	case_config["controllers"]["hpa"] = {}
+	case_config["controllers"]["deployment"] = {}
+
+	case_config["events"] = []
+
+	case_config["intents"] = []
+	
+	#case_config["intents"].append("run checkS1()\n")
+	case_config["intents"].append({"name":"checkEvictionCycle", "para":{"did":1}})
+
+	return case_config
+
 def generate_S1(num_node, non_violation=False):
 	case_config = {}
 	cur_id = 1
@@ -1571,7 +1653,7 @@ def generate_S3(num_node, non_violation=False):
 #case_fun = {False: {"s4": generate_S4, "s3" : generate_S3, "h2": generate_H2, "s6" : generate_S6, "h1" : generate_H1, "s1" : generate_S1, "s9" : generate_S9}, \
 # These template does not support verification at scale, and has a fixed upperbound. So we do not it use it for now.
 #True: {"h1": generate_H1_template, "s3":generate_S3_template}}
-case_fun = {"s4": generate_S4, "s3" : generate_S3_woCPU, "h2": generate_H2, "s6" : generate_S6, "h1" : generate_H1, "s1" : generate_S1, "s9" : generate_S9}
+case_fun = {"s4": generate_S4, "s3" : generate_S3_woCPU, "h2": generate_H2, "s6" : generate_S6, "h1" : generate_H1, "s1" : generate_S1, "s9" : generate_S9, "d1": generate_D1}
 
 
 def generate_case_json(case_id, scale, from_template=False, filename=None):

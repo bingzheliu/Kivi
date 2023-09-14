@@ -21,6 +21,7 @@
 #define MAX_HPA_QUEUE [$DEP_QUEUE]
 #define MAX_DEP_QUEUE [$DEP_QUEUE]
 #define MAX_DESCHEDULER_QUEUE [$POD_QUEUE]
+#define MAX_TAINT_MANAGER_QUEUE [$POD_QUEUE]
 /*----------- deployment Config ------------*/
 
 #define SlowStartInitialBatchSize 1
@@ -55,6 +56,7 @@
 
 /*----------- Array Config ------------*/
 #define MAX_NUM_METRICS [$MAX_NUM_METRICS]
+#define MAX_NO_EXECUTE_NODE [$MAX_NO_EXECUTE_NODE]
 #define MAX_NO_SCHEDULE_NODE [$MAX_NO_SCHEDULE_NODE]
 #define MAX_PEFER_NO_CHEDULE_NODE [$MAX_PEFER_NO_CHEDULE_NODE]
 #define MAX_TOPO_CON [$MAX_TOPO_CON]

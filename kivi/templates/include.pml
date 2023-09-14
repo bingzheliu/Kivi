@@ -22,6 +22,12 @@ byte ncQueue[MAX_NODE_CONTROLLER_QUEUE];
 short ncTail = 0;
 short ncIndex = 0;
 
+#ifdef TAINT
+byte tmQueue[MAX_NODE_CONTROLLER_QUEUE];
+short tmTail = 0;
+short tmIndex = 0;
+#endif
+
 byte kblQueue[MAX_KUBELET_QUEUE];
 short kblTail = 0;
 short kblIndex = 0;

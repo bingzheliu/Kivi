@@ -6,7 +6,7 @@
 
 from util import *
 from config import *
-from processing_default import check_for_completion_add_default, default_controllers, event_uc_default_str, default_intent_parameters, default_intent_library, default_intent_ifdef, default_parameter_order, descheduler_args_default, controller_para_default, descheduler_plugins_maps
+from processing_default import *
 import json
 
 index_starts_at_one = {"pods", "nodes", "d", "podTemplates", "deploymentTemplates", "nodesStable"}
@@ -386,11 +386,11 @@ def get_max_pod_template(json_config):
 	for pt in json_config["setup"]["podTemplates"]:
 		if pt["numRules"] > max_affinity_rules:
 			max_affinity_rules = pt["numRules"]
-		if pt["numNoExecuteNode"] > max_no_execute_node:
+		if "numNoExecuteNode" in pt and pt["numNoExecuteNode"] > max_no_execute_node:
 			max_no_execute_node = pt["numNoExecuteNode"]
-		if pt["numNoScheduleNode"] > max_no_schedule_node:
+		if "numNoScheduleNode" in pt and pt["numNoScheduleNode"] > max_no_schedule_node:
 			max_no_schedule_node = pt["numNoScheduleNode"]
-		if pt["numPreferNoScheduleNode"] > max_no_prefer_schedule_node:
+		if "numPreferNoScheduleNode" in pt and pt["numPreferNoScheduleNode"] > max_no_prefer_schedule_node:
 			max_no_prefer_schedule_node = pt["numPreferNoScheduleNode"]
 		if int(pt["numRules"]) > 0:
 			for ar in pt["affinityRules"]:
@@ -564,9 +564,26 @@ def process_taint(json_config, ifdef):
 			if "taint" in json_config["setup"]["nodes"][i]:
 				del json_config["setup"]["nodes"][i]["taint"]
 
-	print(json.dumps(json_config, indent=2))
+	#print(json.dumps(json_config, indent=2))
 
 	return json_config, ifdef
+
+def compare_intents(i1, i2):
+	if i1["name"] != i2["name"]:
+		return False
+
+	#not comparing para for now as default ones does not have it.
+	return True
+
+def add_default_intents(json_config):
+	for i in default_intents:
+		exist = False
+		for j_intent in json_config["intents"]:
+			if compare_intents(i, j_intent):
+				exist = True
+		if exist:
+			break
+		json_config["intents"].append(deepcopy(i))
 
 def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, template_path, queue_size_default):
 	ifdef = ""
@@ -575,6 +592,7 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 	json_config, ifdef = process_taint(json_config, ifdef)
 	process_node_affinity(json_config)
 	max_label, max_value = process_labels(json_config)
+	add_default_intents(json_config)
 
 	# The following helps to improve prerformance; can remove then if id will be used in the future. 
 	json_config = process_stable_variables(json_config)

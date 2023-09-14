@@ -98,6 +98,7 @@ inline examTargetNodes(q)
 			:: else->;
 		fi;
 
+#ifdef TAINT
 		// First check tolerence
 		// Only skip TaintEffectNoSchedule and TaintEffectNoExecute
 		for (n : 0 .. podTemplates[d[q].podTemplateId].numNoScheduleNode - 1)
@@ -108,6 +109,7 @@ inline examTargetNodes(q)
 				:: else->;
 			fi;
 		}
+#endif
 
 		// check on node selector and affinity
 		// If node selector is defined, then it should equal to the current node. 

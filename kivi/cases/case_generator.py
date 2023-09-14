@@ -6,6 +6,7 @@
 from util import *
 import math
 import json
+from config import case_free
 from small_scale_finder import template_generator, compare_template, equal_templates
 
 def generate_a_pod(case_config, cur_id, loc, cpu, memory, status, deployment_to_pod=None):
@@ -1758,8 +1759,8 @@ user_defined_all = {"s4" : {"nodes_default" : {"upperBound":10, "lowerBound":2, 
 						"d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion", "proportionHPA" : 2}}}
 
 def get_case_user_defined(case_id, scale):
-	user_defined_all = {"default" : {"nodes_default" : {"upperBound":scale, "lowerBound":1, "ScaleType":"free"}, \
-									"d_default" : {"upperBound":scale*3, "lowerBound":2, "ScaleType":"free", "minHPAReplicas":6}},\
+	user_defined_prop = {"default" : {"nodes_default" : {"upperBound":scale, "lowerBound":1, "ScaleType":"proportion"}, \
+									"d_default" : {"upperBound":scale*3, "lowerBound":2, "ScaleType":"proportion", "minHPAReplicas":6}},\
 						"s6" : {"nodes_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}, \
 							    "d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}}, \
 						"s4" : {"nodes_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}, \
@@ -1768,11 +1769,32 @@ def get_case_user_defined(case_id, scale):
 							    "d_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion", "minHPAReplicas":6}},\
 						"h2" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
 							    "d_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion", "minHPAReplicas":6}}
-						# "h2" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
+					# "h2" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
 						# 			"d_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion", "proportionHPA" : 2}} \
 					 	}
-	if case_id in user_defined_all:
-		return user_defined_all[case_id]
 
-	return user_defined_all["default"]
+	user_defined_free = {"default" : {"nodes_default" : {"upperBound":scale, "lowerBound":0, "ScaleType":"free"}, \
+                 					  "d_default" : {"upperBound":scale*8, "lowerBound":0, "ScaleType":"free", "HPAfactor":3}},\
+                 		# because in s6, there is maintanece, only make sense if n > 2
+						"s6" : {"nodes_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"free"}, \
+							    "d_default" : {"upperBound":10, "lowerBound":0, "ScaleType":"free"}}, \
+						# because in s1, there is node can only hold one pod. So need to bound all type of node to be at least 1
+						"s1" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"free"}, \
+							    "d_default" : {"upperBound":10, "lowerBound":0, "ScaleType":"free"}}
+						# "h1" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
+						# 	    "d_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion", "minHPAReplicas":6}},\
+						# "h2" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
+						# 	    "d_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion", "minHPAReplicas":6}}
+					   }
+	if case_free:
+		if case_id in user_defined_free:
+			return user_defined_free[case_id]
+		else:
+			return user_defined_free["default"]
+
+						
+	if case_id in user_defined_prop:
+		return user_defined_prop[case_id]
+	else:
+		return user_defined_prop["default"]
 

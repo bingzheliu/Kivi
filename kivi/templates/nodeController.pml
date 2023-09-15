@@ -70,6 +70,8 @@ endTM: do
 	   				:: (pods[i].status == 1) && (pods[i].loc != 0) ->
 	   					bit flag;
 	   					flag = 0;
+	   					// Taint manger only consider the noExecute taint. 
+	   					// In the handleNodeUpdate (when creating or update nodes), it only record the noExecute taint in its map.
 	   					for (j : 0 .. podTemplates[pods[i].podTemplateId].numNoExecuteNode - 1) {
 	   						if 
 	   							:: nodesStable[pods[i].loc].taintType == podTemplates[pods[i].podTemplateId].noExecuteNode[j] ->

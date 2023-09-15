@@ -140,7 +140,7 @@ def generate_D1(num_node, non_violation=False):
 		case_config["setup"]["nodes"].append(cur_node)
 
 	for i in range(0, num_node):
-		case_config, cur_id = generate_a_pod(case_config, cur_id, 0, 8, 8, 1)
+		case_config, cur_id = generate_a_pod(case_config, cur_id, 0, 8, 8, 0)
 
 	## Generate Deployment
 	case_config["setup"]["d"] = []
@@ -335,7 +335,7 @@ def generate_S9(num_node, non_violation=False):
 	pt["topoSpreadConstraints"] = []
 	ptcon = {}
 	ptcon["maxSkew"] = 1
-	ptcon["minDomains"] = 2
+	#ptcon["minDomains"] = 1
 	# based on node name
 	ptcon["topologyKey"] = "hostname"
 	ptcon["whenUnsatisfiable"] = 1
@@ -529,7 +529,7 @@ def generate_S3_template(num_node, non_violation=False):
 	pt["topoSpreadConstraints"] = []
 	ptcon = {}
 	ptcon["maxSkew"] = 1
-	ptcon["minDomains"] = 2
+	#ptcon["minDomains"] = 2
 	# based on node name
 	ptcon["topologyKey"] = "hostname"
 	ptcon["whenUnsatisfiable"] = 0
@@ -797,8 +797,8 @@ def generate_H1(num_node, non_violation=False):
 	case_config["events"] = []
 
 	case_config["intents"] = []
-	#case_config["intents"].append("run checkOscillation(1)\n")
-	case_config["intents"].append({"name":"checkOscillation", "para":{"did":1}})
+	#case_config["intents"].append("run checkOscillationReplicaNum(1)\n")
+	case_config["intents"].append({"name":"checkOscillationReplicaNum", "para":{"did":1}})
 
 	return case_config
 
@@ -899,7 +899,7 @@ def generate_S6(num_node, non_violation=False):
 	pt["topoSpreadConstraints"] = []
 	ptcon = {}
 	ptcon["maxSkew"] = 1
-	ptcon["minDomains"] = 2
+	ptcon["minDomains"] = 1
 	# based on node name
 	ptcon["topologyKey"] = "hostname"
 	ptcon["whenUnsatisfiable"] = 1
@@ -933,6 +933,8 @@ def generate_S6(num_node, non_violation=False):
 		
 		case_config["intents"].append({"name":"checkExpReplicas", "para":{"did": 1, "expReplicas": "d[did].specReplicas-1"}})
 		#case_config["intents"].append({"name":"checkBalanceNode", "para":{"did": 1, "maxSkew": 1}})
+	else:
+		case_config["intents"].append({"name":"checkExpReplicas", "para":{"did": 1, "expReplicas": "0"}})
 	return case_config
 
 
@@ -1241,8 +1243,6 @@ def generate_S4(num_node, non_violation=False):
 
 	## Generate Pods
 	total_pod = 2*num_node+2
-	if non_violation:
-		total_pod = 2*num_node
 
 	case_config["setup"]["pods"] = []
 	for i in range(0, total_pod):
@@ -1309,8 +1309,12 @@ def generate_S4(num_node, non_violation=False):
 	case_config["setup"]["podTemplates"] = []
 	pt = {}
 	pt["labels"] = {"name" : "app"}
-	pt["cpuRequested"] = 21
-	pt["memRequested"] = 21
+	if non_violation:
+		pt["cpuRequested"] = 8
+		pt["memRequested"] = 8
+	else:
+		pt["cpuRequested"] = 21
+		pt["memRequested"] = 21
 
 	#pt["numTopoSpreadConstraints"] = 0
 	case_config["setup"]["podTemplates"].append(pt)
@@ -1442,7 +1446,7 @@ def generate_S3_woCPU(num_node, non_violation=False):
 	pt["topoSpreadConstraints"] = []
 	ptcon = {}
 	ptcon["maxSkew"] = 1
-	ptcon["minDomains"] = 2
+	#ptcon["minDomains"] = 1
 	# based on node name
 	ptcon["topologyKey"] = "hostname"
 	ptcon["whenUnsatisfiable"] = 0
@@ -1774,13 +1778,16 @@ def get_case_user_defined(case_id, scale):
 					 	}
 
 	user_defined_free = {"default" : {"nodes_default" : {"upperBound":scale, "lowerBound":0, "ScaleType":"free"}, \
-                 					  "d_default" : {"upperBound":scale*8, "lowerBound":0, "ScaleType":"free", "HPAfactor":3}},\
+                 					  "d_default" : {"upperBound":scale*8, "lowerBound":0, "ScaleType":"free", "HPAfactor":2}},\
                  		# because in s6, there is maintanece, only make sense if n > 2
 						"s6" : {"nodes_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"free"}, \
 							    "d_default" : {"upperBound":10, "lowerBound":0, "ScaleType":"free"}}, \
 						# because in s1, there is node can only hold one pod. So need to bound all type of node to be at least 1
 						"s1" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"free"}, \
-							    "d_default" : {"upperBound":10, "lowerBound":0, "ScaleType":"free"}}
+							    "d_default" : {"upperBound":10, "lowerBound":0, "ScaleType":"free"}}, \
+						# because in s3, need to have at least 1 node per domain to be an interesting case. 
+						# "s3" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"free"}, \
+						# 	    "d_default" : {"upperBound":10, "lowerBound":0, "ScaleType":"free", "HPAfactor":2}}
 						# "h1" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
 						# 	    "d_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion", "minHPAReplicas":6}},\
 						# "h2" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \

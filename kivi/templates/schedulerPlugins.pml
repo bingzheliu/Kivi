@@ -280,6 +280,7 @@ stopo1: 	i++;
 			fi;
 		}
 		tpKeyToCriticalPaths[i] = curMin;
+		printf("tpKeyToCriticalPaths %d, %d\n", tpKeyToCriticalPaths[i], i)
 		curMin = 0;
 	}
 }
@@ -363,6 +364,7 @@ stopo4:		i++;
 // a few potential issue with their impl: 
 // 1) if the  enableNodeInclusionPolicyInPodTopologySpread is false, they did not process the taint. 
 // 2) when filtering nodes (calculate their pods count), the nodes need to contains all topoKeys in order to be counted, which can cause confusing problem.
+// TODO: check if there is only one node in the domain, what to do?
 inline podTopologySpreadFiltering(curPod, podSpec)
 {
 	/*----- preFilter ----*/

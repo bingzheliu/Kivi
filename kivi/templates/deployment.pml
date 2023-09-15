@@ -97,6 +97,7 @@ inline enqueuePods(batchSize)
 		j = 1;
 		do
 		:: j < POD_NUM+1 -> 
+			printf("!!%d\n", pods[j].status);
 			if
 			:: pods[j].status == 0 ->
 				copyDeploymentInfoToPod(pods[j], podsStable[j], curD);

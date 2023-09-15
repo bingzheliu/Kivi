@@ -568,23 +568,6 @@ def process_taint(json_config, ifdef):
 
 	return json_config, ifdef
 
-def compare_intents(i1, i2):
-	if i1["name"] != i2["name"]:
-		return False
-
-	#not comparing para for now as default ones does not have it.
-	return True
-
-def add_default_intents(json_config):
-	for i in default_intents:
-		exist = False
-		for j_intent in json_config["intents"]:
-			if compare_intents(i, j_intent):
-				exist = True
-		if exist:
-			break
-		json_config["intents"].append(deepcopy(i))
-
 def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, template_path, queue_size_default):
 	ifdef = ""
 
@@ -592,7 +575,6 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 	json_config, ifdef = process_taint(json_config, ifdef)
 	process_node_affinity(json_config)
 	max_label, max_value = process_labels(json_config)
-	add_default_intents(json_config)
 
 	# The following helps to improve prerformance; can remove then if id will be used in the future. 
 	json_config = process_stable_variables(json_config)

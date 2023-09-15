@@ -374,7 +374,6 @@ def generate_list_setup_dfs(json_config, i, cur_type, cur_setup, all_setup, coun
 				break
 			#print(cur_type, j, confident_node_size)
 			if (cur_type == "nodes" and j  > confident_node_size):
-				print("more than confidence!")
 				break
 			# if (cur_type == "d" and j > (count["nodes"] * cur_json_config["proportionNode"])):
 			# 	break

@@ -29,7 +29,7 @@ case_scale=(3 4 5 6 8 10 13 16 20 25 32 40 50 64 80 100)
 case_id=(d1 s4 s9 s6 s3 h2 s1 h1)
 count=3
 #case_scale=(10)
-#case_id=(h1)
+case_id=(s4 s1 s9)
 
 mkdir "eval/results/"
 cur_per_file_all_violation="eval/results/perf_all_violation"
@@ -120,9 +120,9 @@ do
 
 			if [ $1 -gt 0 ] && [ $2 -gt 0 ]
 			then
-				echo "python3 kivi_runner.py -c $case -s $i -o -cn >> ${cur_log_base_file}_cn_o"
+				echo "python3 kivi_runner.py -c $case -s $i -o -cn -r -to 300 >> ${cur_log_base_file}_cn_o"
 				start_time="$(gdate -u +%s.%N)"
-				python3 kivi_runner.py -c $case -s $i -o -cn >> ${cur_log_base_file}_cn_o
+				python3 kivi_runner.py -c $case -s $i -o -cn -r -to 300 >> ${cur_log_base_file}_cn_o
 				end_time="$(gdate -u +%s.%N)"
 				elapsed="$(bc <<<"$end_time-$start_time")"
 				elapsed_all_non_vio_o="$(bc <<<"$elapsed+$elapsed_all_non_vio_o")"

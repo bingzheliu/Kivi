@@ -69,7 +69,13 @@ def parse_pan_output(output):
 		elif "pan:1:" in s:
 			failure_type = s
 
-		if "error:" in s:
+		elif "VECTORSZ too small" in s:
+			failure_type = "VECTORSZ too small"
+
+		elif "max search depth too small" in s:
+			failure_type = "max search depth too small"
+
+		elif "error:" in s:
 			failure_type = analyze_assert(s)
 
 		if "pan: wrote" in s:

@@ -104,39 +104,53 @@ def verifier_operator_one(json_config, case_name, log_level, pan_compile, pan_ru
 		success, stdout, stderr = run_script([file_base + '/libs/Spin/Src/spin', '-a', pml_base_path + "/" + main_filename], True)
 		myprint(stdout, logger.debug)
 
-		success, stdout, stderr = run_script(['gcc'] + pan_compile, True)
-
-		result_log = ""
-
-		success = False
-		if args.random:
-			while not success:
-				timeout = args.timeout if args.timeout is not None else default_timeout
-				rand = random.randint(1, 1000)
-				success, stdout, stderr = run_script(['./pan']+pan_runtime+['-RS'+str(rand)], False, timeout)
-		else:
+		while True:
+			success, stdout, stderr = run_script(['gcc'] + pan_compile, True)
 			if args.timeout:
 				success, stdout, stderr = run_script(['./pan']+pan_runtime, False, args.timeout)
 			else:
 				success, stdout, stderr = run_script(['./pan']+pan_runtime, False)
 
-		# with open(file_base + "/bin/eval/results/" + case_name.split("_")[0].strip() + "/pan_" + str(queue_size), "w") as fr:
-		# 		fr.write(str(datetime.datetime.now()))
-		# 		fr.write(stdout.decode())
+			# if args.file_debug > 0:
+			# 	with open(result_base_path + "/raw_data/exec_" + case_name + "_" + str(queue_size), "w") as fr:
+			# 		fr.write(stdout.decode())
 
-		if args.file_debug > 0:
-			with open(result_base_path + "/raw_data/exec_" + case_name + "_" + str(queue_size), "w") as fr:
-				fr.write(stdout.decode())
+			failure_type, failure_details, error_trail_name, total_mem, elapsed_time = parse_pan_output(stdout.decode())
 
-		failure_type, failure_details, error_trail_name, total_mem, elapsed_time = parse_pan_output(stdout.decode())
+			# if args.file_debug > 0:
+			# 	with open(result_base_path + "/" + case_name + "_" + str(queue_size), "w") as fw:
+			# 		fw.write(str(failure_type) + " " + str(total_mem) + " " + str(elapsed_time) + '\n')
 
-		if args.file_debug > 0:
-			with open(result_base_path + "/" + case_name + "_" + str(queue_size), "w") as fw:
-				fw.write(str(failure_type) + " " + str(total_mem) + " " + str(elapsed_time) + '\n')
+			logger.critical(str(failure_type) + " " + str(total_mem) + " " + str(elapsed_time))
+			myprint(failure_details)
 
-		logger.critical(str(failure_type) + " " + str(total_mem) + " " + str(elapsed_time))
-		myprint(failure_details)
+			if failure_type == "max search depth too small":
+				for i in range(0, len(pan_runtime)):
+					if "-m" in pan_runtime[i]:
+						pan_runtime[i] = "-m" + str(int(pan_runtime[i][2:])*10)
+						logger.critical("Adding more depth, now " + str(pan_runtime[i]))
+						break
+			elif failure_type == "VECTORSZ too small":
+				logger.critical("Adding more vector size...")
+				for i in range(0, len(pan_compile)):
+					if "DVECTORSZ" in pan_compile[i]:
+						pan_compile[i] += "0"
+						break
+			elif (not success) and args.random:
+				rand_count = 0
+				while not success and rand_count <= random_limit:
+					timeout = args.timeout if args.timeout is not None else default_timeout
+					rand = random.randint(1, 1000)
+					success, stdout, stderr = run_script(['./pan']+pan_runtime+['-RS'+str(rand)], False, timeout)
+					if success:
+						failure_type, failure_details, error_trail_name, total_mem, elapsed_time = parse_pan_output(stdout.decode())
+						break
+					rand_count += 1
+				break
+			else:
+				break
 
+		result_log = ""
 		if error_trail_name != None:
 			success, stdout, stderr = run_script(['./pan', '-r', error_trail_name], False)
 			if args.file_debug > 0:

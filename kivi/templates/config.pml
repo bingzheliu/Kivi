@@ -21,6 +21,7 @@
 #define MAX_HPA_QUEUE [$DEP_QUEUE]
 #define MAX_DEP_QUEUE [$DEP_QUEUE]
 #define MAX_DESCHEDULER_QUEUE [$POD_QUEUE]
+#define MAX_TAINT_MANAGER_QUEUE [$POD_QUEUE]
 /*----------- deployment Config ------------*/
 
 #define SlowStartInitialBatchSize 1
@@ -55,6 +56,7 @@
 
 /*----------- Array Config ------------*/
 #define MAX_NUM_METRICS [$MAX_NUM_METRICS]
+#define MAX_NO_EXECUTE_NODE [$MAX_NO_EXECUTE_NODE]
 #define MAX_NO_SCHEDULE_NODE [$MAX_NO_SCHEDULE_NODE]
 #define MAX_PEFER_NO_CHEDULE_NODE [$MAX_PEFER_NO_CHEDULE_NODE]
 #define MAX_TOPO_CON [$MAX_TOPO_CON]
@@ -65,17 +67,18 @@
 
 /*----------- Time Config ------------*/
 // TODO: all the time can be config along with the event by the users
+// 1 = 0.1s
 #define HPA_RUN_TIME 1
-#define HPA_WAIT_TIME 15
+#define HPA_WAIT_TIME 150
 #define SCHEDULER_RUN_TIME 1
 #define DEP_RUN_TIME 1
 #define KUBELET_RUN_TIME 1
 #define NODEC_RUN_TIME 1
-#define MAINTENANCE_WAIT_TIME 60
-#define KERNEL_RECOVER_TIME 60
-#define EVENT_CPU_TIME 60
+#define MAINTENANCE_WAIT_TIME 600
+#define KERNEL_RECOVER_TIME 600
+#define EVENT_CPU_TIME 600
 // Default descheduler interval is 5min
-#define DESCHEDULER_WAIT_TIME 300
+#define DESCHEDULER_WAIT_TIME 3000
 
 
 /*--------- Descheduler Config -----------*/

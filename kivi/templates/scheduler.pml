@@ -19,7 +19,9 @@ inline filtering()
 	// All these filter are AND logic
 	nodeNameFilter(podTemplates[pods[curPod].podTemplateId]);
 	nodeAffinityFilter(podTemplates[pods[curPod].podTemplateId]);
+#ifdef TAINT
 	taintTolerationFilter(podTemplates[pods[curPod].podTemplateId]);
+#endif
 	nodeResourcesFitFilter(podTemplates[pods[curPod].podTemplateId]);
 	// this plugin needs to execute after nodeAffinity and taint as it uses their results.
 	podTopologySpreadFiltering(curPod, podTemplates[pods[curPod].podTemplateId]);
@@ -28,7 +30,9 @@ inline filtering()
 inline scoring()
 {	
 	nodeAffinityScore(podTemplates[pods[curPod].podTemplateId]);
+#ifdef TAINT
 	taintTolerationScore(podTemplates[pods[curPod].podTemplateId]);
+#endif
 	nodeResourceFitScore(podTemplates[pods[curPod].podTemplateId]);
 	podTopologySpreadScoring(podTemplates[pods[curPod].podTemplateId]);
 }	

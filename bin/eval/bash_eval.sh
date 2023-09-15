@@ -26,12 +26,25 @@ echo $path
 # 2.0 100.0000000000001
 
 case_scale=(3 4 5 6 8 10 13 16 20 25 32 40 50 64 80 100)
-#case_id=(s4 s9 s6 s3 h2 s1 h1)
-count=1
+case_id=(d1 s4 s9 s6 s3 h2 s1 h1)
+count=3
 #case_scale=(10)
-case_id=(h1)
+case_id=(s4 s1 s9)
 
 mkdir "eval/results/"
+cur_per_file_all_violation="eval/results/perf_all_violation"
+cur_per_file_all_non_violation="eval/results/perf_all_non_violation"
+
+if [ $1 != 1 ] && [ $2 != 1 ]
+then
+	> $cur_per_file_all_violation
+fi
+
+if [ $1 -gt 0 ] && [ $2 != 1 ]
+then
+	> $cur_per_file_all_non_violation
+fi
+
 for case in "${case_id[@]}"	
 do
 	mkdir "eval/results/${case}"
@@ -60,29 +73,10 @@ do
 		echo "-------------------------"
 		echo "Working on (case $case, scale $i)..."
 		elapsed_all=0
-		elapsed_non_violation_all=0
-
-		if [ $1 != 1 ] && [ $2 -gt 0 ]
-		then
-			echo "first bench mark the actual result for the cases.."
-			echo "python3 kivi_runner.py -c $case -s $i -o -r -f 1 >> ${cur_log_base_file}_o"
-			start_time="$(gdate -u +%s.%N)"
-			python3 kivi_runner.py -f 1 -c $case -s $i -o >> ${cur_log_base_file}_o
-			end_time="$(gdate -u +%s.%N)"
-			elapsed="$(bc <<<"$end_time-$start_time")"
-			elapsed_all="$(bc <<<"$elapsed+$elapsed_all")"
-			echo "Runtime #$j $elapsed"
-		fi
-
-		if [ $1 -gt 0 ] && [ $2 -gt 0 ]
-		then
-			echo "python3 kivi_runner.py -f 1 -c $case -s $i -o -cn -r >> ${cur_log_base_file}_cn_o"
-			start_time="$(gdate -u +%s.%N)"
-			python3 kivi_runner.py -f 1 -c $case -s $i -o -cn -r >> ${cur_log_base_file}_cn_o
-			end_time="$(gdate -u +%s.%N)"
-			elapsed="$(bc <<<"$end_time-$start_time")"
-			echo "Runtime #$j $elapsed"
-		fi
+		elapsed_all_vio=0
+		elapsed_all_vio_o=0
+		elapsed_all_non_vio=0
+		elapsed_all_non_vio_o=0
 
 		for j in $(seq $count)
 		do
@@ -90,26 +84,49 @@ do
 			if [ $1 != 1 ] && [ $2 != 1 ]
 			then
 				echo "Working on violation cases"
-				echo "python3 kivi_runner.py -f 1 -c $case -s $i >> $cur_log_base_file"
+				echo "python3 kivi_runner.py -c $case -s $i >> $cur_log_base_file"
 				# mac support gdate; for linux, may need to change to date
 				start_time="$(gdate -u +%s.%N)"
-				python3 kivi_runner.py -f 1 -c $case -s $i >> $cur_log_base_file
+				python3 kivi_runner.py -c $case -s $i >> $cur_log_base_file
 				end_time="$(gdate -u +%s.%N)"
 				elapsed="$(bc <<<"$end_time-$start_time")"
-				elapsed_all="$(bc <<<"$elapsed+$elapsed_all")"
+				elapsed_all_vio="$(bc <<<"$elapsed+$elapsed_all_vio")"
 				echo "Runtime #$j $elapsed"
 			fi
 
 			if [ $1 -gt 0 ] && [ $2 != 1 ]
 			then
 				echo "Working on non-violation cases"
-				echo "python3 kivi_runner.py -f 2 -c $case -s $i -cn -eh -to 180 >> ${cur_log_base_file}_cn"
+				echo "python3 kivi_runner.py -c $case -s $i -cn >> ${cur_log_base_file}_cn"
 				start_time="$(gdate -u +%s.%N)"
-				python3 kivi_runner.py -f 2 -c $case -s $i -cn -eh -to 180 >> ${cur_log_base_file}_cn
+				python3 kivi_runner.py -c $case -s $i -cn >> ${cur_log_base_file}_cn
 				end_time="$(gdate -u +%s.%N)"
 				elapsed="$(bc <<<"$end_time-$start_time")"
-				elapsed_non_violation_all="$(bc <<<"$elapsed+$elapsed_non_violation_all")"
+				elapsed_all_non_vio="$(bc <<<"$elapsed+$elapsed_all_non_vio")"
 				echo "Runtime non-violation #$j $elapsed"
+			fi
+
+			if [ $1 != 1 ] && [ $2 -gt 0 ]
+			then
+				echo "first bench mark the actual result for the cases.."
+				echo "python3 kivi_runner.py -c $case -s $i -o >> ${cur_log_base_file}_o"
+				start_time="$(gdate -u +%s.%N)"
+				python3 kivi_runner.py -c $case -s $i -o >> ${cur_log_base_file}_o
+				end_time="$(gdate -u +%s.%N)"
+				elapsed="$(bc <<<"$end_time-$start_time")"
+				elapsed_all_vio_o="$(bc <<<"$elapsed+$elapsed_all_vio_o")"
+				echo "Runtime #$j $elapsed"
+			fi
+
+			if [ $1 -gt 0 ] && [ $2 -gt 0 ]
+			then
+				echo "python3 kivi_runner.py -c $case -s $i -o -cn -r -to 300 >> ${cur_log_base_file}_cn_o"
+				start_time="$(gdate -u +%s.%N)"
+				python3 kivi_runner.py -c $case -s $i -o -cn -r -to 300 >> ${cur_log_base_file}_cn_o
+				end_time="$(gdate -u +%s.%N)"
+				elapsed="$(bc <<<"$end_time-$start_time")"
+				elapsed_all_non_vio_o="$(bc <<<"$elapsed+$elapsed_all_non_vio_o")"
+				echo "Runtime #$j $elapsed"
 			fi
 
 			# echo "../src/model_generator.py $case $i"
@@ -126,18 +143,33 @@ do
 			# echo "Total of $elapsed1 seconds elapsed for process"
 			# echo "$i $elapsed1 $elapsed2" >> "results/exec_time_$case._$1 "
 		done
-		if [ $1 != 1 ]
+		if [ $1 != 1 ] && [ $2 != 1 ]
 		then
-			elapsed_avg=$(echo "scale=5; $elapsed_all / $count" | bc)
+			elapsed_avg=$(echo "scale=5; $elapsed_all_vio / $count" | bc)
 			echo "Avg runtime $elapsed_avg"
-			echo "$i $elapsed_avg" >> $cur_per_file
+			echo "$case $i $elapsed_avg" >> $cur_per_file_all_violation
 		fi
 
-		if [ $1 -gt 0 ]
+		if [ $1 -gt 0 ] && [ $2 != 1 ]
 		then
-			elapsed_non_violation_avg=$(echo "scale=5; $elapsed_non_violation_all / $count" | bc)
+			elapsed_non_violation_avg=$(echo "scale=5; $elapsed_all_non_vio / $count" | bc)
 			echo "Avg runtime $elapsed_non_violation_avg"
-			echo "$i $elapsed_avg $elapsed_non_violation_avg" >> $cur_per_cn_file
+			#echo "$i $elapsed_avg $elapsed_non_violation_avg" >> $cur_per_cn_file
+			echo "$case $i $elapsed_non_violation_avg" >> $cur_per_file_all_non_violation
+		fi
+
+		if [ $1 != 1 ] && [ $2 -gt 0 ]
+		then
+			elapsed_violation_avg=$(echo "scale=5; $elapsed_all_vio_o / $count" | bc)
+			echo "Avg runtime $elapsed_violation_avg"
+			echo "$i $elapsed_violation_avg" >> $cur_per_file
+		fi
+
+		if [ $1 -gt 0 ] && [ $2 -gt 0 ]
+		then
+			elapsed_non_violation_avg=$(echo "scale=5; $elapsed_all_non_vio_o / $count" | bc)
+			echo "Avg runtime $elapsed_non_violation_avg"
+			echo "$i $elapsed_non_violation_avg" >> $cur_per_cn_file
 		fi
 	done
 done

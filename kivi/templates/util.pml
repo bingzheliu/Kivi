@@ -1,5 +1,13 @@
 
 
+
+inline deleteAPodUpdate(curD, podSelected)
+{
+	d[curD].replicasInDeletion ++;
+	pods[podSelected].status = 3;
+	updateQueue(kblQueue, kblTail, kblIndex, podSelected, MAX_KUBELET_QUEUE)	
+}
+
 inline test_duplication()
 {
 	atomic {

@@ -39,13 +39,6 @@ inline scorePods()
 	od;
 }
 
-inline deleteAPodUpdate()
-{
-	d[curD].replicasInDeletion ++;
-	pods[podSelected].status = 3;
-	updateQueue(kblQueue, kblTail, kblIndex, podSelected, MAX_KUBELET_QUEUE)	
-}
-
 // TODO: check on if a pod has not been scheduled, will it be considered in deletion?
 inline deleteAPod()
 {
@@ -73,7 +66,7 @@ inline deleteAPod()
 
 	printf("[**][Deployment] Deleting pod %d\n", podSelected);
 	// TODO: deal with the scenairo that the deletion failed. 
-	deleteAPodUpdate();
+	deleteAPodUpdate(curD, podSelected);
 
 	cur_max = 0;
 }
@@ -104,12 +97,21 @@ inline enqueuePods(batchSize)
 		j = 1;
 		do
 		:: j < POD_NUM+1 -> 
+			printf("!!%d\n", pods[j].status);
 			if
 			:: pods[j].status == 0 ->
 				copyDeploymentInfoToPod(pods[j], podsStable[j], curD);
 				pods[j].status = 2;
 				printf("[*][Deployment] create; %d; Adding a new pod %d to deployment %d\n", curD, j, curD)
-				updateQueue(sQueue, sTail, sIndex, j, MAX_SCHEDULER_QUEUE)
+				if 
+					:: podTemplates[d[curD].podTemplateId].nodeName != 0->
+						// When the nodeName is defined, the kubelet will be triggered directly, according to the Kubernetes design. 
+						printf("[*][Deployment] The nodeName has been defined in the deployment %d, enqueue to kubelet directly\n", j);
+						pods[j].loc = podTemplates[d[curD].podTemplateId].nodeName;
+						updateQueue(kblQueue, kblTail, kblIndex, j, MAX_KUBELET_QUEUE);
+					:: else->
+						updateQueue(sQueue, sTail, sIndex, j, MAX_SCHEDULER_QUEUE)
+				fi;
 				break;
 			:: else->;
 			fi;

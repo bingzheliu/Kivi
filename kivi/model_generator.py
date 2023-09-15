@@ -6,7 +6,7 @@
 
 from util import *
 from config import *
-from processing_default import check_for_completion_add_default, default_controllers, event_uc_default_str, default_intent_parameters, default_intent_library, default_intent_ifdef, default_parameter_order, descheduler_args_default, controller_para_default, descheduler_plugins_maps
+from processing_default import *
 import json
 
 index_starts_at_one = {"pods", "nodes", "d", "podTemplates", "deploymentTemplates", "nodesStable"}
@@ -376,6 +376,7 @@ def get_max_num_metrics(json_config):
 	return max_num_metrics
 
 def get_max_pod_template(json_config):
+	max_no_execute_node = 1
 	max_no_schedule_node = 1
 	max_no_prefer_schedule_node = 1
 	max_affinity_rules = 1
@@ -385,9 +386,11 @@ def get_max_pod_template(json_config):
 	for pt in json_config["setup"]["podTemplates"]:
 		if pt["numRules"] > max_affinity_rules:
 			max_affinity_rules = pt["numRules"]
-		if pt["numNoScheduleNode"] > max_no_schedule_node:
+		if "numNoExecuteNode" in pt and pt["numNoExecuteNode"] > max_no_execute_node:
+			max_no_execute_node = pt["numNoExecuteNode"]
+		if "numNoScheduleNode" in pt and pt["numNoScheduleNode"] > max_no_schedule_node:
 			max_no_schedule_node = pt["numNoScheduleNode"]
-		if pt["numPreferNoScheduleNode"] > max_no_prefer_schedule_node:
+		if "numPreferNoScheduleNode" in pt and pt["numPreferNoScheduleNode"] > max_no_prefer_schedule_node:
 			max_no_prefer_schedule_node = pt["numPreferNoScheduleNode"]
 		if int(pt["numRules"]) > 0:
 			for ar in pt["affinityRules"]:
@@ -398,7 +401,7 @@ def get_max_pod_template(json_config):
 		if pt["maxCpuChange"] > max_cpu_pattern:
 			max_cpu_pattern = pt["maxCpuChange"]
 
-	return max_no_schedule_node, max_no_prefer_schedule_node, max_affinity_rules, max_matched_node, max_topo_con, max_cpu_pattern
+	return max_no_execute_node, max_no_schedule_node, max_no_prefer_schedule_node, max_affinity_rules, max_matched_node, max_topo_con, max_cpu_pattern
 
 def process_node_affinity(json_config):
 	for pt in json_config["setup"]["podTemplates"]:
@@ -420,7 +423,7 @@ def process_node_affinity(json_config):
 				pt["affinityRules"][i]["numMatchedNode"] = len(pt["affinityRules"][i]["matchedNode"])
 				del pt["affinityRules"][i]["labels"]
 
-stable_variables = {"nodes" : ["id", "name", "labelKeyValue", "score", "curScore", "curAffinity", "curTaint"], 
+stable_variables = {"nodes" : ["id", "name", "labelKeyValue", "score", "curScore", "curAffinity", "curTaint", "taintType"], 
 					"pods":["name", "namespace", "score", "important", "critical", "cpu", "memory", "labelKeyValue"]} 
 
 def process_stable_variables(json_config):
@@ -474,8 +477,102 @@ def default_for_intent(pml_intent):
 			pml_intent = pml_intent.replace(s, str(default_intent_parameters[intent][s]))
 	return pml_intent
 
+def taint_match(taint, toleration):
+	tolerate_taint_type = set()
+
+	taint_type_map = {}
+	for _taint in taint:
+		effect = _taint.split(":")[1].strip()
+		if effect not in taint_type_map:
+			taint_type_map[effect] = []
+		taint_type_map[effect].append(_taint.split(":")[0])
+
+	for effect in taint_type_map:
+		flag = True
+		# every taint need to find a toleration
+		for _taint in taint_type_map[effect]:
+			tolerate_flag = False
+			for _toleration in toleration:
+				cur_effect = _toleration.split(":")[1].strip()
+				if cur_effect == effect:
+					if _toleration.split(":")[0] == _taint:
+						tolerate_flag = True
+						break
+			if not tolerate_flag:
+				flag = False
+				break
+		if not flag:
+			tolerate_taint_type.add(effect)
+
+	return tolerate_taint_type
+
+def add_node_type(node_type, taint, i):
+	flag = False
+	for nt in node_type:
+		if n["taint"] == taint:
+			n["nodes"].append(i)
+			flag = True
+	if not flag:
+		node_type.append({"taint":taint, "nodes":[i]})
+
+def process_taint(json_config, ifdef):
+	tolerate_type_map = {"NoExecute":"noExecuteNode", "NoSchedule":"noScheduleNode", "PreferNoSchedule":"preferNoScheduleNode"}
+	taint_flag = False
+	node_type = []
+	for i in range(0, len(json_config["setup"]["nodes"])):
+		n = json_config["setup"]["nodes"][i]
+		if "taint" in n:
+			taint_flag = True
+			add_node_type(node_type, n["taint"], i)
+
+	if taint_flag:
+		ifdef += ("#define TAINT 1\n")
+
+		tainted = set()
+		for i in range(0, len(node_type)):
+			for n in node_type[i]["nodes"]:
+				json_config["setup"]["nodes"][n]["taintType"] = i+1
+				tainted.add(n)
+
+		# nodes without taint
+		for i in range(0, len(json_config["setup"]["nodes"])):
+			if i not in tainted:
+				json_config["setup"]["nodes"][i]["taintType"] = 0
+
+		for pt in json_config["setup"]["podTemplates"]:
+			pt["noExecuteNode"] = []
+			pt["noScheduleNode"] = []
+			pt["preferNoScheduleNode"] = []
+	
+			cur_toleration = []
+			if "toleration" in pt:
+				cur_toleration = pt["toleration"]
+			for i in range(0, len(node_type)):
+				tolerate_taint_type = taint_match(node_type[i]["taint"], cur_toleration)
+				for effect in tolerate_taint_type:
+					pt[tolerate_type_map[effect]].append(i+1)
+
+			pt["numNoExecuteNode"] = len(pt["noExecuteNode"])
+			pt["numNoScheduleNode"] = len(pt["noScheduleNode"])
+			pt["numPreferNoScheduleNode"] = len(pt["preferNoScheduleNode"])
+
+		for i in range(0, len(json_config["setup"]["podTemplates"])):
+			if "toleration" in json_config["setup"]["podTemplates"][i]:
+				del json_config["setup"]["podTemplates"][i]["toleration"]
+
+		for i in range(0, len(json_config["setup"]["nodes"])):
+			if "taint" in json_config["setup"]["nodes"][i]:
+				del json_config["setup"]["nodes"][i]["taint"]
+
+	#print(json.dumps(json_config, indent=2))
+
+	return json_config, ifdef
+
 def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, template_path, queue_size_default):
+	ifdef = ""
+
 	userDefinedConstraints = check_for_completion_add_default(json_config)
+	json_config, ifdef = process_taint(json_config, ifdef)
 	process_node_affinity(json_config)
 	max_label, max_value = process_labels(json_config)
 
@@ -484,7 +581,7 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 	remove_id(json_config)
 
 	s_proc_after_stable = ""
-	ifdef = ""
+
 
 	s_init = ""
 	s_init, pod_num, node_num, deployment_num, pt_num, dt_num = generate_init(json_config["setup"], s_init)
@@ -516,7 +613,7 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 					   .replace("[$PROC_AFTER_STABLE]", str(s_proc_after_stable)) \
 					   .replace("[$FIRST_PROC]", str(s_first_proc))
 
-	max_no_schedule_node, max_no_prefer_schedule_node, max_affinity_rules, max_matched_node, max_topo_con, max_cpu_pattern = get_max_pod_template(json_config)
+	max_no_execute_node, max_no_schedule_node, max_no_prefer_schedule_node, max_affinity_rules, max_matched_node, max_topo_con, max_cpu_pattern = get_max_pod_template(json_config)
 
 	if pod_num-1 > 255:
 		ifdef += "#define MORE_PODS 1\n"
@@ -545,6 +642,7 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 					   	   .replace("[$POD_QUEUE]", str(pod_queue)) \
 					   	   .replace("[$NODE_QUEUE]", str(node_queue)) \
 					   	   .replace("[$MAX_NUM_METRICS]", str(get_max_num_metrics(json_config))) \
+					   	   .replace("[$MAX_NO_EXECUTE_NODE]", str(max_no_execute_node)) \
 					   	   .replace("[$MAX_NO_SCHEDULE_NODE]", str(max_no_schedule_node)) \
 					   	   .replace("[$MAX_PEFER_NO_CHEDULE_NODE]", str(max_no_prefer_schedule_node)) \
 					   	   .replace("[$MAX_AFFINITY_RULE]", str(max_affinity_rules)) \

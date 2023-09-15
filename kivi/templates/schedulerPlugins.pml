@@ -120,13 +120,20 @@ inline nodeAffinityFilter(podSpec)
 	flag = 0
 }
 
+#ifdef TAINT
 inline taintTolerationFilter(podSpec)
 {
 	j = 0;
 	do
 	:: j < podSpec.numNoScheduleNode ->
-	   nodesStable[podSpec.noScheduleNode[j]].score = -1;
-	   nodesStable[podSpec.noScheduleNode[j]].curTaint = 1;
+		for (i : 1 .. NODE_NUM) {
+			if 
+				:: nodesStable[i].taintType == podSpec.noScheduleNode[j] ->
+					nodesStable[i].score = -1;
+	  				nodesStable[i].curTaint = 1;
+				:: else->;
+		  	fi;
+		}	 
 	   j++;
 	:: else -> break;
 	od;
@@ -134,6 +141,7 @@ inline taintTolerationFilter(podSpec)
 	printf("[***][SchedulerPlugins] Finished taintTolerationFilter.\n")
 	printfNodeScore();
 }
+#endif
 
 // helper function for pod spreading policy
 inline findMatchedPod(i, j, podSpec)
@@ -272,6 +280,7 @@ stopo1: 	i++;
 			fi;
 		}
 		tpKeyToCriticalPaths[i] = curMin;
+		printf("tpKeyToCriticalPaths %d, %d\n", tpKeyToCriticalPaths[i], i)
 		curMin = 0;
 	}
 }
@@ -355,6 +364,7 @@ stopo4:		i++;
 // a few potential issue with their impl: 
 // 1) if the  enableNodeInclusionPolicyInPodTopologySpread is false, they did not process the taint. 
 // 2) when filtering nodes (calculate their pods count), the nodes need to contains all topoKeys in order to be counted, which can cause confusing problem.
+// TODO: check if there is only one node in the domain, what to do?
 inline podTopologySpreadFiltering(curPod, podSpec)
 {
 	/*----- preFilter ----*/
@@ -491,18 +501,20 @@ inline nodeAffinityScore(podSpec)
 	printfNodeScore();
 }
 
+#ifdef TAINT
 // TODO: check if without taint defined, do they still have score?
 inline taintTolerationScore(podSpec)
 {
 	j = 0;
 	do
 	:: j < podSpec.numPreferNoScheduleNode ->
-		k = podSpec.preferNoScheduleNode[j];
-		if 
-		:: nodesStable[k].score != -1 ->
-			nodesStable[k].curScore++;
-		:: else->;
-	  	fi;
+		for (i : 1 .. NODE_NUM) {
+			if 
+				:: nodesStable[i].taintType == podSpec.preferNoScheduleNode[j] && nodesStable[i].score != -1 ->
+					nodesStable[i].curScore++;
+				:: else->;
+		  	fi;
+		}
 	   j++;
 	:: else -> break;
 	od;
@@ -512,7 +524,7 @@ inline taintTolerationScore(podSpec)
 	printf("[***][SchedulerPlugins] Finished taintTolerationScore.\n")
 	printfNodeScore();
 }
-
+#endif
 
 /*
 	Note:

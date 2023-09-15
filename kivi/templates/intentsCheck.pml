@@ -4,13 +4,13 @@
 
 // Check for H1
 // run checkOscillation([did])
-proctype checkOscillation(byte did)
+proctype checkOscillationReplicaNum(byte did)
 {
 endCH11:	if 
 			:: d[did].hpaSpec.maxReplicas != d[did].hpaSpec.minReplicas && d[did].replicas == d[did].hpaSpec.maxReplicas && !loadChange ->
 		 	printf("[**] Entering stage 2 for check!\n")
 endCH12:	if 
-		 		:: d[did].replicas == d[did].hpaSpec.minReplicas || d[did].replicas <= d[did].hpaSpec.maxReplicas - 3 ->
+		 		:: d[did].replicas == d[did].hpaSpec.minReplicas || d[did].replicas <= d[did].hpaSpec.maxReplicas - 3 && !loadChange ->
 		 			atomic{
 			 			printf("[*] The number of replicas was oscillating, now %d\n", d[did].replicas);
 			 			assert(false)

@@ -16,16 +16,16 @@ default_intent_parameters = {"checkExpReplicas": {"[$expReplicas]":0}}
 default_intent_ifdef = {"kernel_panic":"KERNEL_PANIC", "no_feasiable_node":"NO_FEASIABLE_NODE","checkEvictionCycle":"CHECK_EVICTION_CYCLE", "checkBalanceNode":"CHECK_BALANCE_NODE"}
 # the para are default parameters, only enabled if it's not defined
 default_intent_library = {"kernel_panic": {"flag":True, "run":False, "para":{}}, "no_feasiable_node": {"flag":True, "run": False, "para":{}}, \
-						  "checkOscillation": {"flag":False, "run": True, "para":{"did":0}}, "checkMinReplicas": {"flag":False, "run": True, "para":{"did":0}}, \
+						  "checkOscillationReplicaNum": {"flag":False, "run": True, "para":{"did":0}}, "checkMinReplicas": {"flag":False, "run": True, "para":{"did":0}}, \
 						  "checkExpReplicas": {"flag":False, "run": True, "para":{"expReplicas":0}}, "checkEvictionCycle":{"flag":True, "run": True, "para":{"did":0}}, \
 						  "checkBalanceNode": {"flag":True, "run": True, "para":{"maxSkew":2}}}
-
+default_intents = [{"name":"no_feasiable_node"}]
 # A list of field in the typedef, need to be synced with dataType.pml. TODO: could auto-populate this.
 # TODO: adding the process on affinityrules, noschedulenodes, etc.
-elements_required = {"nodes" : ["id", "name", "cpu", "cpuLeft", "memory", "memLeft", "status", "numPod", "labels", "score", "curScore", "curAffinity", "curTaint", "maintained"], \
+elements_required = {"nodes" : ["id", "name", "cpu", "cpuLeft", "memory", "memLeft", "status", "labels", "score", "curScore", "curAffinity", "curTaint", "maintained"], \
 					 "pods" : ["id", "loc", "status", "cpu", "memory", "workloadType", "workloadId", "podTemplateId", "score", "important", "curCpuIndex", "startTime"], \
 					 "d" : ["id", "name", "status", "replicaSets", "curVersion", "specReplicas", "replicas",  "maxSurge", "maxUnavailable", "strategy", "podTemplateId", "hpaSpec"], \
-					"podTemplates" : ["cpuRequested", "memRequested", "numRules", "nodeName", "numNoScheduleNode", "numPreferNoScheduleNode", "numTopoSpreadConstraints", \
+					"podTemplates" : ["cpuRequested", "memRequested", "numRules", "nodeName", "numTopoSpreadConstraints", \
 									"topoSpreadConstraints", "maxCpuChange"],\
 					"deploymentTemplates" : ["name", "maxSurge", "maxUnavailable", "specReplicas", "strategy"]}
 
@@ -40,7 +40,7 @@ default_values = {
 	# https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/#internal-default-constraints
 	# The definiation is in plugin.go, variable systemDefaultConstraints 
 	# The default selector for topoSpreadConstraints should be the same as the pod labels in metadata.
-	"podTemplates" : {"numRules" : 0, "nodeName" : 0,  "numNoScheduleNode" : 0, "numPreferNoScheduleNode" : 0, "topoSpreadSystemDefaulted": 1, "numTopoSpreadConstraints" : 2, \
+	"podTemplates" : {"numRules" : 0, "nodeName" : 0, "topoSpreadSystemDefaulted": 1, "numTopoSpreadConstraints" : 2, \
 					  "cpuRequested": 0, "memRequested": 0, "topoSpreadConstraints" : [{"maxSkew" : 3, "topologyKey" : "hostname", "whenUnsatisfiable" : 1, "labels" : None}, \
 					  {"maxSkew" : 5, "topologyKey" : "zone", "whenUnsatisfiable" : 1, "labels" : None}], "maxCpuChange" : 0}, \
 	"deploymentTemplates" : {"maxSurge" : 25, "maxUnavailable" : 25, "specReplicas" : 1, "strategy" : 1}

@@ -45,6 +45,11 @@ endK:	do
 								:: else ->;
 							fi;
 
+							#ifdef TAINT
+							printf("here!!!! %d", i)
+							updateQueue(tmQueue, tmTail, tmIndex, i, MAX_TAINT_MANAGER_QUEUE);
+							#endif
+
 							printf("[*][Kubelet] start; %d; %d; Created pod %d on node %d, deployment %d now have %d replicas\n", i, selectedNode, i, selectedNode, pods[i].workloadId, d[pods[i].workloadId].replicas);
 							selectedNode = 0;
 							

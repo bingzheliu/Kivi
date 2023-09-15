@@ -30,6 +30,10 @@ typedef nodeTypeStable {
 	// index is the key, and each index store its value, only 1 value for 1 key
 	byte labelKeyValue[MAX_LABEL];
 
+#ifdef TAINT
+	byte taintType;
+#endif
+
 	/*----internal---*/
 	// used by scheduler
 	short score;
@@ -183,11 +187,17 @@ typedef podTemplateType {
 		Taint: we assume taint and toleration won't be modified; and with that, we do not model NoExecute
 		noScheduleNode: stores a list of node name that is noSchedulable.
 		preferNoScheduleNode: stores a list of node name (can be duplicated, meaning there's multiple taint for that node) that is preferNoScheduleNode. Assuming # of preferred taint is less than 2 in average for node. 
+		
+		We store the type of node in the following
 	*/
+#ifdef TAINT
+	byte numNoExecuteNode;
+	byte noExecuteNode[MAX_NO_EXECUTE_NODE];
 	byte numNoScheduleNode;
 	byte noScheduleNode[MAX_NO_SCHEDULE_NODE];
 	byte numPreferNoScheduleNode;
 	byte preferNoScheduleNode[MAX_PEFER_NO_CHEDULE_NODE];
+#endif
 
 	//// Pod Spreading Policy
 	byte numTopoSpreadConstraints;

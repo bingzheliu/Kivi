@@ -106,7 +106,7 @@ inline enqueuePods(batchSize)
 				if 
 					:: podTemplates[d[curD].podTemplateId].nodeName != 0->
 						// When the nodeName is defined, the kubelet will be triggered directly, according to the Kubernetes design. 
-						printf("[*][Deployment] The nodeName has been defined in the deployment %d, enqueue to kubelet directly\n", j);
+						printf("[**][Deployment] The nodeName has been defined in the deployment %d, enqueue to kubelet directly\n", j);
 						pods[j].loc = podTemplates[d[curD].podTemplateId].nodeName;
 						updateQueue(kblQueue, kblTail, kblIndex, j, MAX_KUBELET_QUEUE);
 					:: else->

@@ -6,11 +6,37 @@ from math import *
 from itertools import permutations
 from copy import deepcopy
 
-sys_path = os.path.abspath(sys.argv[3])
+import logging
 
-sys.path.insert(0, sys_path+"/src")
+sys_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+system_name = "Kivi"
+# print("Initilizing " + system_name)
 
-from util import *
+formatter = logging.Formatter("[%(asctime)s;%(filename)s;%(levelname)s;%(funcName)s() ] %(message)s", "%Y-%m-%d %H:%M:%S")
+
+def setup_logger(name, level=logging.INFO, handler_type="stream", filename=None):
+    """To setup as many loggers as you want"""
+
+    if handler_type == "file" and filename is not None:
+    	handler = logging.FileHandler(filename)
+    else:
+    	handler = logging.StreamHandler(sys.stdout)   
+
+    handler.setFormatter(formatter)
+
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.addHandler(handler)
+
+    return logger
+
+logger = setup_logger('verifier_logger', logging.DEBUG)
+
+# sys_path = os.path.abspath(sys.argv[2])
+
+# sys.path.insert(0, sys_path+"/kivi")
+
+# from util import *
 
 
 class Action():
@@ -43,6 +69,13 @@ class Action():
 		if d1_s[:-1] == d2_s or d1_s == d2_s[:-1] or d1_s == d2_s:
 			return True
 		return False
+
+
+class Descheduler(Action):
+	# objs is the dep name
+	def __init__(self, name, objs, _str):
+		super().__init__(name, objs, _str)
+		self.objs_type = ["dep"]
 
 class CPU_Change(Action):
 	# objs is the pod name
@@ -155,6 +188,13 @@ class Deployment(Action):
 		return self.name == other.name and self.direction == other.direction
 
 
+class Taint(Action):
+	# objs: evict pod objs[0]
+	# name: start_container
+	def __init__(self, name, objs, _str):
+		super().__init__(name, objs, _str)
+		self.objs_type = ["dep"]
+
 class Kubelet(Action):
 	# objs: place pod objs[0] on node objs[1]
 	# name: start_container
@@ -169,7 +209,8 @@ class Apply_Dep(Action):
 		self.objs_type = ["dep"]
 
 class Model_Fidelity:
-	cpu_threshold = 10
+	cpu_prop_threshold = 10
+	cpu_abs_threshold = 10
 	related_t = ["firstTimestamp", "lastTimestamp", "creationTimestamp"]
 	ignored_event = {"kubelet":["Pulled", "Created"], "horizontal-pod-autoscaler":[], "deployment-controller" : [], "default-scheduler" : []}
 
@@ -185,6 +226,7 @@ class Model_Fidelity:
 						self.st = l.split(",")[2] + "Z"
 					if l.startswith("end_time"):
 						self.et = l.split(",")[2] + "Z"
+				logger.info("Time: " + str(datetime.strptime(self.et, "%Y-%m-%dT%H:%M:%S%z")) + " " + str(datetime.strptime(self.st, "%Y-%m-%dT%H:%M:%S%z")))
 
 			if "events" in fn:
 				with open(path+"/"+fn) as f:
@@ -196,6 +238,7 @@ class Model_Fidelity:
 				with open(path+"/"+fn) as f:
 					self.spod_cpu = f.read()
 
+			self.scommand = None
 			if "command" in fn:
 				with open(path+"/"+fn) as f:
 					self.scommand = f.read()
@@ -209,12 +252,16 @@ class Model_Fidelity:
 
 		return self.compare_events(log_events, veri_events)
 
+	def print_log_events(self):
+		log_events = self.log_parser()
+		self.print_events(log_events)
+
 	def compare_events(self, log_events, veri_events):
 		log_name = self.get_names_mapping(log_events)
 		veri_name = self.get_names_mapping(veri_events)
 
 		print("Starting the comparision...")
-		print(log_name, veri_name)
+		#print(log_name, veri_name)
 
 		type_list = list(log_name.keys())
 		type_perm = {}
@@ -240,6 +287,7 @@ class Model_Fidelity:
 						event = e[1]
 						for i in range(0, len(event.objs)):
 							cur_objs_type = event.objs_type[i]
+							#print(cur_objs_type, event)
 							for value_index in range(0, len(veri_name[cur_objs_type])):
 								if veri_name[cur_objs_type][value_index] == event.objs[i]:
 									#print(event.objs[i], value_index, log_name[cur_objs_type][cur_perm[cur_objs_type][value_index]])
@@ -283,8 +331,11 @@ class Model_Fidelity:
 			while (log_event != veri_event or matched[j] == 1):
 				j += 1
 				if j == len(log_events):
+					logger.debug("Not find matched!")
 					break
 				log_event = log_events[j][1]
+
+			logger.debug(log_event)
 
 			logger.debug(str(last_index) + " " + str(j) + " " + str(i) + " " + str(unmatched_i) + " " + str(unmatched_j))
 			if j == len(log_events):
@@ -316,6 +367,8 @@ class Model_Fidelity:
 		all_events = last_index + len(veri_events)
 		logger.debug("&&&&&&&&&&")
 		logger.debug(all_events)
+
+		logger.info(str(all_events)+" unmatched_i:" +str(unmatched_i)+" unmatched_j:"+str(unmatched_j))
 
 		return (all_events - unmatched_i - unmatched_j)*1.0/all_events
 			
@@ -361,6 +414,20 @@ class Model_Fidelity:
 					direction = "increase" if int(cur) - int(exp) < 0 else "decrease"
 					veri_events.append((count, HPA("rescale", [items[1].strip()],\
 					 			items[-1].strip(), direction, exp)))
+
+			elif "DeScheduler" in log_main_info:
+				veri_events.append((count, Descheduler("evict", [items[1].strip()], items[-1].strip())))
+
+			elif "taint" in log_main_info:
+				veri_events.append((count, Taint("taint_eviction", [items[1].strip()], items[-1].strip())))
+
+			elif "applyDeployment" in log_main_info:
+				veri_events.append((count, Apply_Dep("apply_dep", [items[1].strip()], items[-1].strip())))
+
+			elif "createTargetDeployment" in log_main_info:
+				# The create can be treated the same as apply
+				veri_events.append((count, Apply_Dep("apply_dep", [items[1].strip()], items[-1].strip())))
+				
 			elif "Deployment" in log_main_info:
 				if "scale" in log_main_info:
 					veri_events.append((count, Deployment("scale", [items[1].strip()], items[-1].strip(), items[2].strip(), items[3].strip())))
@@ -376,9 +443,6 @@ class Model_Fidelity:
 					veri_events.append((count, Kubelet("start", [items[1].strip(), items[2].strip()], items[-1].strip())))
 				elif "delete" in log_main_info:
 					veri_events.append((count, Deployment("delete", [items[1].strip()], items[-1].strip())))
-
-			elif "applyDeployment" in log_main_info:
-				veri_events.append((count, Apply_Dep("apply_dep", [items[1].strip()], items[-1].strip())))
 
 			elif "CPU Change" in log_main_info:
 				direction = "increase" if int(items[2]) > 0 else "decrease"
@@ -402,7 +466,9 @@ class Model_Fidelity:
 		events = []
 		events = self.parse_event_log(events)
 		events = self.parse_pod_cpu(events)
-		events = self.parse_command(events)
+
+		if self.scommand is not None:
+			events = self.parse_command(events)
 
 		events.sort(key=self.event_sort)
 
@@ -426,6 +492,16 @@ class Model_Fidelity:
 				else:
 					logger.info("Ingnoring unrelated events in " + component + ": " + event_str)
 		return None
+
+	def extract_dep_name_from_pods(self, obj_name):
+		dash_count = 0
+		for i in range(len(obj_name)-1, 0, -1):
+			if obj_name[i] == "-":
+				dash_count += 1
+				if dash_count == 2:
+					obj_name = obj_name[:i]
+					break
+		return obj_name
 
 	def convert_event_class(self, event):
 		#print(json.dumps(item, indent = 1))
@@ -465,13 +541,19 @@ class Model_Fidelity:
 				else:
 					logger.critical("Unknown message type in deployment controller, ignored: " + event_str)
 					return None
-				return Deployment("scale", [event["involvedObject"]["name"]], event_str, direction, value)
+				if "descheduler" in event["involvedObject"]["name"]:
+					logger.critical("Skipping the deployment events as it's related the deployment of descheduler: "+ event_str)
+				else:
+					return Deployment("scale", [event["involvedObject"]["name"]], event_str, direction, value)
 			else:
 				return self.process_unrelated_event(component, event, event_str)
 
 		elif component == "replicaset-controller":
 			if event["reason"] == "SuccessfulCreate":
-				return Deployment("create", [event["involvedObject"]["name"]], event_str)
+				if "descheduler" in event["involvedObject"]["name"]:
+					logger.critical("Skipping the deployment events as it's related the deployment of descheduler: "+ event_str)
+				else:
+					return Deployment("create", [event["involvedObject"]["name"]], event_str)
 			elif event["reason"] == "SuccessfulDelete":
 				return Deployment("delete", [event["involvedObject"]["name"]], event_str)
 			else:
@@ -480,13 +562,35 @@ class Model_Fidelity:
 		elif component == "default-scheduler":
 			if event["reason"] == "Scheduled":
 				node_name = event["message"].split(" to ")[-1].strip()
-				return Scheduler("scheduled", [event["involvedObject"]["name"], node_name], event_str) 
+				if "descheduler" in event["involvedObject"]["name"]:
+					logger.critical("Skipping the deployment events as it's related the deployment of descheduler: "+ event_str)
+				else:
+					return Scheduler("scheduled", [event["involvedObject"]["name"], node_name], event_str) 
+			elif event["reason"] == "FailedScheduling":
+				node_name = event["message"].split(" to ")[-1].strip()
+				return Scheduler("NoFeasibleNode", [event["involvedObject"]["name"], node_name], event_str) 
 			else:
 				return self.process_unrelated_event(component, event, event_str)
 
+		elif component == "taint-controller":
+			if event["reason"] == "TaintManagerEviction":
+				obj_name = self.extract_dep_name_from_pods(event["involvedObject"]["name"])
+				return Taint("taint_eviction", [obj_name], event_str)
+
+		elif "descheduler" in component:
+			if "evict" in event["message"] and (event["reason"] == "RemovePodsViolatingTopologySpreadConstraint" or event["reason"] == "Remove"):
+				obj_name = self.extract_dep_name_from_pods(event["involvedObject"]["name"])
+				return Descheduler("evict", [obj_name], event_str)
+			else:
+				logger.critical("Unknown reason for descheduler: " + event["reason"])
+
 		elif component == "kubelet":
+			#print(event_str)
 			if event["reason"] == "Started":
-				return Kubelet("start", [event["involvedObject"]["name"], event["source"]["host"]], event_str)
+				if "descheduler" in event["involvedObject"]["name"]:
+					logger.critical("Skipping the deployment events as it's related the deployment of descheduler: "+ event_str)
+				else:
+					return Kubelet("start", [event["involvedObject"]["name"], event["source"]["host"]], event_str)
 
 		else:
 			return self.process_unrelated_event(component, event, event_str)
@@ -566,7 +670,7 @@ class Model_Fidelity:
 	def test_cpu(self, last_cpu, cur_cpu):
 		if last_cpu == 0:
 			return None
-		if abs((last_cpu - cur_cpu)*100/last_cpu) >= self.cpu_threshold:
+		if abs((last_cpu - cur_cpu)*100/last_cpu) >= self.cpu_prop_threshold and abs((last_cpu-cur_cpu)) >= self.cpu_abs_threshold:
 			if last_cpu > cur_cpu:
 				return "decrease"
 			else:
@@ -619,10 +723,16 @@ class Model_Fidelity:
 
 
 if __name__ == '__main__':
-	with open(sys_path+"/results/"+sys.argv[2]+"_3") as f:
-		veri_logs = f.read()
+	# with open(sys_path+"/results/"+sys.argv[2]+"_3") as f:
+	# 	veri_logs = f.read()
+
+	if len(sys.argv) > 2:
+		with open(sys.argv[2]) as f:
+			veri_logs = f.read()
 
 	mf = Model_Fidelity(sys.argv[1])
-	mf.check_model_fidelity(veri_logs)
+	mf.print_log_events()
+	if len(sys.argv) > 2:
+		mf.check_model_fidelity(veri_logs)
 
 

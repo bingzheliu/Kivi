@@ -68,7 +68,7 @@ inline evictPod(q)
 			printf("[**][Descheduler] Exceeded maxNoOfPodsToEvictPerNode or maxNoOfPodsToEvictPerNamespace for pod %d\n", q)
 			flag = 1
 		:: else ->
-			printf("[*][Descheduler] Pod %d (status %d) on node %d pending for deletion!\n", q, pods[q].status, pods[q].loc)
+			printf("[**][Descheduler] Pod %d (status %d) on node %d pending for deletion!\n", q, pods[q].status, pods[q].loc)
 			// call into kubernetes client to evict the pod. We use the same way that deployment evict the pods. 
 			d[pods[q].workloadId].replicasInDeletion ++;
 			pods[q].status = 3;
@@ -266,7 +266,7 @@ DRMD1:	skip;
 												// printf("node%d: %d, %d\n", j, count, duplicatePods[i].nodePods[j].numPods - (upperAvg - 1))
 												if 
 													:: duplicatePods[i].nodePods[j].pods[k] == 1 ->
-														printf("[*][Descheduler] Duplicated Pod %d (status %d) on node %d pending for deletion!\n", k, pods[k].status, pods[k].loc)
+														printf("[*][Descheduler] evict; %d; Duplicated Pod %d (status %d) on node %d pending for deletion!\n", pods[k].workloadId, k, pods[k].status, pods[k].loc)
 														flag = 0
 														// Imp in evictions/evictions.go/EvictPod
 														evictPod(k)
@@ -519,7 +519,7 @@ inline removePodsViolatingTopologySpreadConstraint()
 										:: topologyValueToPods[sortedDomains[k].index].pods[p] == 1 ->
 											podsForEviction[p] = 1
 											count++
-											printf("[*][DeScheduler] For constraint topoKey %d, Pod %d pending for deletion\n", podTemplates[i].topoSpreadConstraints[j].topologyKey, p)
+											printf("[*][DeScheduler] evict; %d; For constraint topoKey %d, Pod %d pending for deletion\n", pods[p].workloadId, podTemplates[i].topoSpreadConstraints[j].topologyKey, p)
 										:: else->
 									fi;
 								}

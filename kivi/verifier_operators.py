@@ -158,8 +158,10 @@ def verifier_operator_one(json_config, case_name, log_level, pan_compile, pan_ru
 			if args.file_debug > 0:
 				with open(result_base_path + "/raw_data/error_" + case_name + "_" + str(queue_size), "w") as fr:
 					fr.write(stdout.decode())
-			result_log, failure_details = parse_spin_error_trail(stdout.decode(), log_level, failure_type)
+			original_log, result_log, failure_details = parse_spin_error_trail(stdout.decode(), log_level, failure_type)
 			myprint(result_log, logger.debug)
+			with open(result_base_path+"/"+case_name, "w") as fw:
+				fw.write(original_log)
 			if args.file_debug > 0:
 				with open(result_base_path + "/" + case_name + "_" + str(queue_size), "w") as fw:
 					fw.write(result_log)

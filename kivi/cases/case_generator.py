@@ -145,7 +145,9 @@ def generate_D1(num_node, non_violation=False):
 
 	## Generate Deployment
 	case_config["setup"]["d"] = []
-	case_config, cur_id = generate_a_simple_deployment(case_config, cur_id, num_node*5, 1, 0)
+
+	# changing the specPods to 1 as that's what is reproduced
+	case_config, cur_id = generate_a_simple_deployment(case_config, cur_id, 1, 1, 0)
 
 	case_config["userCommand"] = []
 	case_config["userCommand"].append({"name" : "createTargetDeployment", "para" : 1})

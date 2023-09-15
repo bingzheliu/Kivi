@@ -156,7 +156,7 @@ proctype createTargetDeployment(short deploymentId)
 					d[deploymentId].status = 1;
 					printf("[******] Enqueue in createTargetDeployment\n")
 					updateQueue(dcQueue, dcTail, dcIndex, deploymentId, MAX_DEP_QUEUE)		
-					printf("[*][createTargetDeployment] Created deployment %d\n", deploymentId)
+					printf("[*][createTargetDeployment] create; %d; Created deployment %d\n", deploymentId, deploymentId)
 				:: else ->;
 			fi;
 			first_proc = 1;

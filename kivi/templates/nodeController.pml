@@ -95,7 +95,7 @@ endTM: do
 	   					}
 	   					if 
 	   						:: flag == 1 ->
-	   							printf("[*][taintManger] The pod %d is pending for eviction as it cannot tolerate the taint on node %d\n", i, pods[i].loc);
+	   							printf("[*][taintManger] taint_eviction; %d; The pod %d in deployment %d is pending for eviction as it cannot tolerate the taint on node %d\n", pods[i].workloadId, i, pods[i].workloadId, pods[i].loc);
 	   							evictNoneToleratePod(i)
 	   						:: else->;
 	   					fi;

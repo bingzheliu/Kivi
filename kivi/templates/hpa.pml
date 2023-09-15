@@ -112,7 +112,7 @@ hpa2:		j++;
 				:: curMetricType == 1 ->
 					// replicaCountProposal = currentUsage * totalReplicas / curMetricTarget + 1;
 					int temp1, temp2;
-					temp1 = metricsTotal * 100 * totalReplicas;
+					temp1 = metricsTotal * 100 * totalReplicas + 10;
 					temp2 = requestTotal * curMetricTarget
 					ceil(replicaCountProposal, temp1, temp2);
 					temp1 = 0;

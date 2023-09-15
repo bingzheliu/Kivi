@@ -7,6 +7,7 @@ def parse_spin_error_trail(output, log_level, failure_type=None):
 	result_log = ""
 	failure_details = ""
 	output_lines = output.splitlines()
+	original_log = ""
 
 	for i in range(0, len(output_lines)):
 		s = output_lines[i].strip()
@@ -23,6 +24,7 @@ def parse_spin_error_trail(output, log_level, failure_type=None):
 					controller = s.split("]")[0].strip() + "]"
 					msg = s.split("]")[1].split(";")[-1].strip()
 				result_log += (controller + " " + msg + "\n")
+				original_log += (s+"\n")
 
 		if "START OF CYCLE" in s:
 			result_log += (s + "\n")
@@ -36,7 +38,7 @@ def parse_spin_error_trail(output, log_level, failure_type=None):
 				s = output_lines[i]
 			#result_log += failure_details
 
-	return 	result_log, failure_details
+	return 	original_log, result_log, failure_details
 				
 
 def analyze_end_state(file_error_trail):

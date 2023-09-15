@@ -55,7 +55,12 @@ endK:	do
 							updateQueue(tmQueue, tmTail, tmIndex, i, MAX_TAINT_MANAGER_QUEUE);
 							#endif
 
-							printf("[*][Kubelet] start; %d; %d; Created pod %d on node %d, deployment %d now have %d replicas\n", i, selectedNode, i, selectedNode, pods[i].workloadId, d[pods[i].workloadId].replicas);
+							if 
+								// kubelet only print logs when nodeName is not defined.
+								:: podTemplates[pods[i].podTemplateId].nodeName == 0 -> 
+									printf("[*][Kubelet] start; %d; %d; Created pod %d on node %d, deployment %d now have %d replicas\n", i, selectedNode, i, selectedNode, pods[i].workloadId, d[pods[i].workloadId].replicas);
+								:: else->;
+							fi
 							selectedNode = 0;
 							
 						:: pods[i].status == 3 ->
@@ -75,9 +80,15 @@ endK:	do
 									nodes[j].memLeft = nodes[j].memLeft + podsStable[i].memory;
 								:: else->
 							fi;
-							// TODO: move this message to Deployment
-							printf("[*][Kubelet] delete; %d; Deleted pod %d on node %d, deployment %d now have %d replicas\n", pods[i].workloadId, i, j, pods[i].workloadId, d[pods[i].workloadId].replicas);
 
+							if 
+								// kubelet only print logs when nodeName is not defined.
+								:: podTemplates[pods[i].podTemplateId].nodeName == 0 -> 
+									// TODO: move this message to Deployment
+									printf("[*][Kubelet] delete; %d; Deleted pod %d on node %d, deployment %d now have %d replicas\n", pods[i].workloadId, i, j, pods[i].workloadId, d[pods[i].workloadId].replicas);
+								:: else->;
+							fi;
+							
 							if 
 								:: pods[i].workloadType == 1 ->
 								#ifdef CHECK_EVICTION_CYCLE

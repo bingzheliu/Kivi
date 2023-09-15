@@ -146,6 +146,8 @@ def verifier_operator_one(json_config, case_name, log_level, pan_compile, pan_ru
 						failure_type, failure_details, error_trail_name, total_mem, elapsed_time = parse_pan_output(stdout.decode())
 						break
 					rand_count += 1
+				if not success:
+					logger.critical("Timeout!!")
 				break
 			else:
 				break

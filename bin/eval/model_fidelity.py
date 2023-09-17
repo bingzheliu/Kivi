@@ -31,6 +31,9 @@ def setup_logger(name, level=logging.INFO, handler_type="stream", filename=None)
     return logger
 
 logger = setup_logger('verifier_logger', logging.DEBUG)
+#logger = setup_logger('verifier_logger', logging.INFO)
+
+pod_equal = False
 
 # sys_path = os.path.abspath(sys.argv[2])
 
@@ -51,8 +54,16 @@ class Action():
 			#print(isinstance(other, self.__class__), other.__class__, self.__class__)
 			return False
 
-		if self.objs != other.objs:
-			return False
+		if pod_equal and (len(self.objs) == len(other.objs)) and len(self.objs) > 1:
+			# node name needs to be the same
+			if self.objs[1] != other.objs[1]:
+				return False
+			# pods only needs to belong to the same dep
+			if not self.compare_dep_name_for_pods(self.objs[0], other.objs[0]):
+				return False
+		else:
+			if self.objs != other.objs:
+				return False
 
 		return self.name == other.name 
 
@@ -61,6 +72,12 @@ class Action():
 		for obj in self.objs:
 			s += (" " + obj)
 		return s
+
+	def compare_dep_name_for_pods(self, n1, n2):
+		d1_s = n1.split("-")
+		d2_s = n2.split("-")
+
+		return d1_s[:-1] == d2_s[:-1]
 
 	def compare_dep_name(self, d1, d2):
 		d1_s = d1.split("-")
@@ -76,6 +93,16 @@ class Descheduler(Action):
 	def __init__(self, name, objs, _str):
 		super().__init__(name, objs, _str)
 		self.objs_type = ["dep"]
+
+	def __eq__(self, other):
+		if not isinstance(other, self.__class__):
+			#print(isinstance(other, self.__class__), other.__class__, self.__class__)
+			return False
+
+		if not self.compare_dep_name(self.objs[0], other.objs[0]):
+			return False
+
+		return self.name == other.name 
 
 class CPU_Change(Action):
 	# objs is the pod name
@@ -131,8 +158,8 @@ class HPA(Action):
 		if not self.compare_dep_name(self.objs[0], other.objs[0]):
 			#print(self.objs[0], other.objs[0])
 			return False
-			
-		return self.name == other.name and self.direction == other.direction
+
+		return self.name == other.name and self.direction == other.direction and self.value == other.value
 
 class Maintenance(Action):
 	# objs: node name
@@ -195,6 +222,16 @@ class Taint(Action):
 		super().__init__(name, objs, _str)
 		self.objs_type = ["dep"]
 
+	def __eq__(self, other):
+		if not isinstance(other, self.__class__):
+			#print(isinstance(other, self.__class__), other.__class__, self.__class__)
+			return False
+
+		if not self.compare_dep_name(self.objs[0], other.objs[0]):
+			return False
+
+		return self.name == other.name 
+
 class Kubelet(Action):
 	# objs: place pod objs[0] on node objs[1]
 	# name: start_container
@@ -256,6 +293,24 @@ class Model_Fidelity:
 		log_events = self.log_parser()
 		self.print_events(log_events)
 
+	def compare_events_onc(self, cur_perm, veri_events, veri_name, log_events, log_name):
+		cur_veri_events = deepcopy(veri_events)
+
+		for e in cur_veri_events:
+			event = e[1]
+			for i in range(0, len(event.objs)):
+				cur_objs_type = event.objs_type[i]
+				for value_index in range(0, len(veri_name[cur_objs_type])):
+					if veri_name[cur_objs_type][value_index] == event.objs[i]:
+						#print(event.objs[i], value_index, log_name[cur_objs_type][cur_perm[cur_objs_type][value_index]])
+						cur_value = log_name[cur_objs_type][cur_perm[cur_objs_type][value_index]]
+						if cur_value != -1:
+							event.objs[i] = log_name[cur_objs_type][cur_perm[cur_objs_type][value_index]]
+
+		cur_rate = self.compare_matching_rate(log_events, cur_veri_events)
+
+		return cur_rate
+
 	def compare_events(self, log_events, veri_events):
 		log_name = self.get_names_mapping(log_events)
 		veri_name = self.get_names_mapping(veri_events)
@@ -280,25 +335,20 @@ class Model_Fidelity:
 		total = len(type_perm["dep"]) * len(type_perm["node"]) * len(type_perm["pod"])
 		for dep_perm in type_perm["dep"]:
 			for node_perm in type_perm["node"]:
-				for pod_perm in type_perm["pod"]:
+				if pod_equal:
+					pod_perm = type_perm["pod"][0]
 					cur_perm = {"dep" : dep_perm, "node" : node_perm, "pod" : pod_perm}
-					cur_veri_events = deepcopy(veri_events)
-					for e in cur_veri_events:
-						event = e[1]
-						for i in range(0, len(event.objs)):
-							cur_objs_type = event.objs_type[i]
-							#print(cur_objs_type, event)
-							for value_index in range(0, len(veri_name[cur_objs_type])):
-								if veri_name[cur_objs_type][value_index] == event.objs[i]:
-									#print(event.objs[i], value_index, log_name[cur_objs_type][cur_perm[cur_objs_type][value_index]])
-									cur_value = log_name[cur_objs_type][cur_perm[cur_objs_type][value_index]]
-									if cur_value != -1:
-										event.objs[i] = log_name[cur_objs_type][cur_perm[cur_objs_type][value_index]]
-
-					cur_rate = self.compare_matching_rate(log_events, cur_veri_events)
+					cur_rate = self.compare_events_onc(cur_perm, veri_events, veri_name, log_events, log_name)
 					max_rate = max_rate if cur_rate < max_rate else cur_rate
 					print(index, total, cur_rate, max_rate)
 					index += 1
+				else:
+					for pod_perm in type_perm["pod"]:
+						cur_perm = {"dep" : dep_perm, "node" : node_perm, "pod" : pod_perm}
+						cur_rate = self.compare_events_onc(cur_perm, veri_events, veri_name, log_events, log_name)
+						max_rate = max_rate if cur_rate < max_rate else cur_rate
+						print(index, total, cur_rate, max_rate)
+						index += 1
 
 		print(max_rate)
 
@@ -318,6 +368,7 @@ class Model_Fidelity:
 		matched = [0 for i in range(0, len(log_events))]
 		#print(matched)
 
+		# logger.debug("@@*************")
 		# self.print_veri_events(veri_events)
 		# self.print_events(log_events)
 		
@@ -348,9 +399,10 @@ class Model_Fidelity:
 			matched[j] = 1
 			k = last_index
 			for k in range(last_index, j+1):
-				# give 1 sec delays...
-				if log_events[k][0][0] < log_events[j][0][0]:
+				# give 3 sec delays...
+				if log_events[k][0][0] + 3 < log_events[j][0][0]:
 					if matched[k] == 0:
+						print(log_events[k][1])
 						unmatched_j += 1
 				else:
 					break
@@ -432,6 +484,7 @@ class Model_Fidelity:
 				if "scale" in log_main_info:
 					veri_events.append((count, Deployment("scale", [items[1].strip()], items[-1].strip(), items[2].strip(), items[3].strip())))
 				elif "create" in log_main_info:
+					print(items)
 					veri_events.append((count, Deployment("create", [items[1].strip()], items[-1].strip())))
 
 			elif "Scheduler" in log_main_info:
@@ -566,9 +619,9 @@ class Model_Fidelity:
 					logger.critical("Skipping the deployment events as it's related the deployment of descheduler: "+ event_str)
 				else:
 					return Scheduler("scheduled", [event["involvedObject"]["name"], node_name], event_str) 
-			elif event["reason"] == "FailedScheduling":
-				node_name = event["message"].split(" to ")[-1].strip()
-				return Scheduler("NoFeasibleNode", [event["involvedObject"]["name"], node_name], event_str) 
+			# elif event["reason"] == "FailedScheduling":
+			# 	node_name = event["message"].split(" to ")[-1].strip()
+			# 	return Scheduler("NoFeasibleNode", [event["involvedObject"]["name"], node_name], event_str) 
 			else:
 				return self.process_unrelated_event(component, event, event_str)
 
@@ -616,12 +669,14 @@ class Model_Fidelity:
 					break
 
 			if related:
-				#print(all_time)
+				#print(all_time_timestamp)
 				all_time_timestamp = self.cut_redundant(all_time)
 				event_class = self.convert_event_class(item)
 				if event_class is not None:
-					for t in all_time_timestamp:
-						events.append(([t], event_class))
+					# for t in all_time_timestamp:
+					# 	events.append(([t], event_class))
+					# only add to the oldest one, otherwise can be mistakenly counted as not matched.
+					events.append(([all_time_timestamp[0]], event_class))
 
 				#print(event_str)
 

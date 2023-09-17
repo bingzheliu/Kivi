@@ -33,7 +33,9 @@ inline podCpuChangeWithPatternExec(i)
 
 		if 
 			:: pods[i].workloadType == 1 ->
+				#ifdef HPA_ENABLED
 				updateQueue(hpaQueue, hpaTail, hpaIndex,  pods[i].workloadId, MAX_HPA_QUEUE)
+				#endif
 			:: else ->;
 		fi;
 		if 

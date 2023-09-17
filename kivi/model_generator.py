@@ -568,10 +568,18 @@ def process_taint(json_config, ifdef):
 
 	return json_config, ifdef
 
+def check_HPA(json_config, ifdef):
+	for d in json_config["setup"]["d"]:
+		if d["hpaSpec"]["isEnabled"] == 1:
+			ifdef += "#define HPA_ENABLED 1"
+			break
+	return ifdef
+
 def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, template_path, queue_size_default):
 	ifdef = ""
 
 	userDefinedConstraints = check_for_completion_add_default(json_config)
+	ifdef = check_HPA(json_config, ifdef)
 	json_config, ifdef = process_taint(json_config, ifdef)
 	process_node_affinity(json_config)
 	max_label, max_value = process_labels(json_config)

@@ -82,7 +82,9 @@ endK:	do
 								#endif
 									printf("[******] Enqueue in kubelet\n")
 									updateQueue(dcQueue, dcTail, dcIndex, pods[i].workloadId, MAX_DEP_QUEUE)
+									#ifdef HPA_ENABLED
 									updateQueue(hpaQueue, hpaTail, hpaIndex, pods[i].workloadId, MAX_HPA_QUEUE)
+									#endif
 									updateQueue(dsQueue, dsTail, dsIndex, pods[i].workloadId, MAX_DESCHEDULER_QUEUE);
 								:: else->;
 							fi;

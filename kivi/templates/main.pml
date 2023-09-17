@@ -20,7 +20,9 @@ init{
 		:: first_proc == 1 ->
 			run deploymentController();
 			run scheduler();
+			#ifdef HPA_ENABLED
 			run hpa();
+			#endif
 			run nodeController();
 			run kubelet();
 
@@ -43,7 +45,9 @@ init{
 			[$AUTO_GENERATE_EVENT]
 
 			for (i : 1 .. DEP_NUM) {
+				#ifdef HPA_ENABLED
 				updateQueue(hpaQueue, hpaTail, hpaIndex, i, MAX_HPA_QUEUE);
+				#endif
 				updateQueue(dsQueue, dsTail, dsIndex, i, MAX_DESCHEDULER_QUEUE);
 			}
 

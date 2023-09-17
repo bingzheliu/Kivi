@@ -183,7 +183,9 @@ endSch2: do
 							// Only support HPA for deployment for now.
 							if 
 								:: pods[curPod].workloadType == 1 ->
+									#ifdef HPA_ENABLED
 									updateQueue(hpaQueue, hpaTail, hpaIndex, pods[curPod].workloadId, MAX_HPA_QUEUE)
+									#endif
 									// hpaQueue[hpaTail] = pods[curPod].workloadId;
 									// hpaTail ++;
 								:: else ->;

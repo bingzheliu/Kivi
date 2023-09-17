@@ -85,7 +85,10 @@ proctype eventCpuChange(short targetDeployment)
 				// Only support HPA for deployment for now.
 				if 
 					:: pods[pod_selected].workloadType == 1 ->
+						#ifdef HPA_ENABLED
 						updateQueue(hpaQueue, hpaTail, hpaIndex, pods[pod_selected].workloadId, MAX_HPA_QUEUE)
+						#endif
+						skip
 					:: else ->;
 				fi;
 

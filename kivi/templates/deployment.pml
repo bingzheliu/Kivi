@@ -221,7 +221,11 @@ proctype deploymentController()
 
 endDC:	atomic{
 endDC1:	do
+		#ifdef TRANSIT
+		:: (dcIndex != dcTail) ->
+		#else 
 		:: (dcIndex != dcTail && kblIndex == kblTail) ->
+		#endif
 					d_step {
 						short curD = dcQueue[dcIndex];
 						printf("[**][Deployment] Start to work on deployment %d\n", curD)

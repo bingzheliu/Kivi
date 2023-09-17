@@ -8,6 +8,7 @@ import math
 import json
 from config import case_free
 from small_scale_finder import template_generator, compare_template, equal_templates
+import random
 
 def generate_a_pod(case_config, cur_id, loc, cpu, memory, status, deployment_to_pod=None):
 	cur_pod = {}
@@ -144,7 +145,7 @@ def generate_D1(num_node, non_violation=False):
 
 	## Generate Deployment
 	case_config["setup"]["d"] = []
-	case_config, cur_id = generate_a_simple_deployment(case_config, cur_id, num_node, 1, 0)
+	case_config, cur_id = generate_a_simple_deployment(case_config, cur_id, num_node*5, 1, 0)
 
 	case_config["userCommand"] = []
 	case_config["userCommand"].append({"name" : "createTargetDeployment", "para" : 1})
@@ -781,7 +782,7 @@ def generate_H1(num_node, non_violation=False):
 	pt["curCpuRequest"].append(3)
 	pt["timeCpuRequest"] = []
 	pt["timeCpuRequest"].append(0)
-	pt["timeCpuRequest"].append(3000)
+	pt["timeCpuRequest"].append(300)
 
 	#pt["numTopoSpreadConstraints"] = 0
 	case_config["setup"]["podTemplates"].append(pt)

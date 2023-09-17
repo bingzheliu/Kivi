@@ -103,4 +103,5 @@
 /*--------- ifdef ----------*/
 // Intents: NO_FEASIABLE_NODE, 
 // Data structure: MORE_PODS
+#define TRANSIT 1
 [$IFDEF]

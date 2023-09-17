@@ -781,7 +781,7 @@ def generate_H1(num_node, non_violation=False):
 	pt["maxCpuChange"] = 2
 	pt["curCpuRequest"] = []
 	pt["curCpuRequest"].append(8)
-	pt["curCpuRequest"].append(3)
+	pt["curCpuRequest"].append(0)
 	pt["timeCpuRequest"] = []
 	pt["timeCpuRequest"].append(0)
 	pt["timeCpuRequest"].append(300)

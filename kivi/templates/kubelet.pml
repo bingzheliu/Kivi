@@ -7,10 +7,11 @@ proctype kubelet() {
 	bit flag = 0;
 	printf("[**]kubelet controller started.\n");
 
-	// TODO: deal with the scenairo that the deletion failed. 
+	// TODO: deal with the scenairo that the deletion failed.
+endK1:	atomic { 
 endK:	do
 		:: (kblIndex != kblTail) ->
-			atomic {
+			
 				d_step{
 					i = kblQueue[kblIndex];
 					if 
@@ -97,8 +98,7 @@ endK:	do
 					j = 0;
 					flag = 0;
 				}	
-			}
-	od;
-
-
+			
+		od;
+	}
 }

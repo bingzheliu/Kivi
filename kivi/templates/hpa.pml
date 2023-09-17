@@ -201,9 +201,11 @@ proctype hpa()
 {
 	short i = 0, j = 0, k = 0, p = 0;
 	short local_last_time = 0;
+
+endHPA1:atomic{
 endHPA:	do
 		:: (hpaIndex != hpaTail) && (time-local_last_time >= HPA_WAIT_TIME || (sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail && ncIndex == ncTail))-> 
-			atomic{
+			
 				d_step{
 					// TODO: check, potentially can have issue because the curD can be shared acrose the controller
 					short curD = hpaQueue[hpaIndex];
@@ -283,6 +285,7 @@ endHPA:	do
 					metric = 0;
 					printf("[****]time %d, local_last_time %d\n", time, local_last_time)
 				}
-			}
+			
 	od;
+	}
 }

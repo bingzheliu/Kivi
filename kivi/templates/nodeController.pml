@@ -12,10 +12,11 @@ proctype nodeController() {
 #ifdef TAINT
 	run taintManger()
 #endif
-
+		
+endNC1:	atomic{
 endNC:	do
 		:: (ncIndex != ncTail) ->
-			atomic{
+			
 				d_step{
 					i = ncQueue[ncIndex];
 					if 
@@ -42,8 +43,8 @@ endNC:	do
 					i = 0;
 					j = 0;
 				}
-			}
 		od;
+		}
 }
 
 

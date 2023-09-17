@@ -219,9 +219,9 @@ proctype deploymentController()
 {
 		short i = 0, j = 0, podSelected = 0;
 
-endDC:	do
+endDC:	atomic{
+endDC1:	do
 		:: (dcIndex != dcTail && kblIndex == kblTail) ->
-				atomic{
 					d_step {
 						short curD = dcQueue[dcIndex];
 						printf("[**][Deployment] Start to work on deployment %d\n", curD)
@@ -247,6 +247,7 @@ endDC:	do
 						podSelected = 0;
 						curD = 0;
 					}
-				}
+				
 		od;
+		}
 }

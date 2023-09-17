@@ -78,9 +78,10 @@ endDes:	do
 								fi;
 							}
 						}
-						updateQueueIndex(dsIndex, MAX_DESCHEDULER_QUEUE);
+						
 
-des1:					i = 0;
+des1:					updateQueueIndex(dsIndex, MAX_DESCHEDULER_QUEUE);
+						i = 0;
 						j = 0;
 						ii = 0;
 						jj = 0;

@@ -1,7 +1,7 @@
 import logging
 
 confident_node_size = 6
-confident_pod_size_factor = 3
+confident_pod_size_factor = 6
 
 # For small scale finder algorithm
 resource_difference_tolerance = 8

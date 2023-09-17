@@ -758,10 +758,10 @@ def generate_H1(num_node, non_violation=False):
 	d["hpaSpec"]["metricNames"] = []
 	d["hpaSpec"]["metricNames"].append(0)
 	d["hpaSpec"]["metricTargets"] = []
-	if non_violation:
-		d["hpaSpec"]["metricTargets"].append(100)
-	else:
-		d["hpaSpec"]["metricTargets"].append(50)
+	# if non_violation:
+	# 	d["hpaSpec"]["metricTargets"].append(100)
+	# else:
+	d["hpaSpec"]["metricTargets"].append(50)
 	d["hpaSpec"]["metricTypes"] = []
 	d["hpaSpec"]["metricTypes"].append(1)
 	d["hpaSpec"]["minReplicas"] =  1 if num_node/5 < 1 else int(num_node/5)
@@ -798,7 +798,8 @@ def generate_H1(num_node, non_violation=False):
 
 	case_config["intents"] = []
 	#case_config["intents"].append("run checkOscillationReplicaNum(1)\n")
-	case_config["intents"].append({"name":"checkOscillationReplicaNum", "para":{"did":1}})
+	if not non_violation:
+		case_config["intents"].append({"name":"checkOscillationReplicaNum", "para":{"did":1}})
 
 	return case_config
 
@@ -1205,16 +1206,17 @@ def generate_H2(num_node, non_violation=False):
 	case_config["controllers"]["deployment"] = {}
 
 	case_config["userCommand"] = []
-	if not non_violation:
-		# this is the id for the index of deploymentTemplates, not the deployment name
-		case_config["userCommand"].append({"name" : "applyDeployment", "para" : 1, "after_stable":True})
+	
+	# this is the id for the index of deploymentTemplates, not the deployment name
+	case_config["userCommand"].append({"name" : "applyDeployment", "para" : 1, "after_stable":True})
 
 	case_config["events"] = []
 
 	case_config["intents"] = []
 	#case_config["intents"].append( "never {\n do \n:: d[1].replicas < d[1].hpaSpec.minReplicas -> break\n :: else\n od;\n}")
 	#case_config["intents"].append("run checkMinReplicas(1)\n")
-	case_config["intents"].append({"name":"checkMinReplicas", "para":{"did":1}})
+	if not non_violation:
+		case_config["intents"].append({"name":"checkMinReplicas", "para":{"did":1}})
 	return case_config
 
 def generate_S4(num_node, non_violation=False):
@@ -1778,13 +1780,16 @@ def get_case_user_defined(case_id, scale):
 					 	}
 
 	user_defined_free = {"default" : {"nodes_default" : {"upperBound":scale, "lowerBound":0, "ScaleType":"free"}, \
-                 					  "d_default" : {"upperBound":scale*8, "lowerBound":0, "ScaleType":"free", "HPAfactor":2}},\
+                 					  "d_default" : {"upperBound":scale*8, "lowerBound":0, "ScaleType":"free", "HPAfactor":2},
+                 					  "max_pod_per_node": 7},\
                  		# because in s6, there is maintanece, only make sense if n > 2
-						"s6" : {"nodes_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"free"}, \
-							    "d_default" : {"upperBound":10, "lowerBound":0, "ScaleType":"free"}}, \
+						"s6" : {"nodes_default" : {"upperBound":scale, "lowerBound":2, "ScaleType":"free"}, \
+							    "d_default" : {"upperBound":scale*8, "lowerBound":0, "ScaleType":"free"},
+							    "max_pod_per_node": 7}, \
 						# because in s1, there is node can only hold one pod. So need to bound all type of node to be at least 1
-						"s1" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"free"}, \
-							    "d_default" : {"upperBound":10, "lowerBound":0, "ScaleType":"free"}}, \
+						"s1" : {"nodes_default" : {"upperBound":scale, "lowerBound":1, "ScaleType":"free"}, \
+							    "d_default" : {"upperBound":scale*8, "lowerBound":0, "ScaleType":"free"},
+							    "max_pod_per_node": 7}, \
 						# because in s3, need to have at least 1 node per domain to be an interesting case. 
 						# "s3" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"free"}, \
 						# 	    "d_default" : {"upperBound":10, "lowerBound":0, "ScaleType":"free", "HPAfactor":2}}

@@ -205,6 +205,9 @@ def template_generator(json_config, user_defined=None):
 		json_config["userDefined"][t+"Types"] = deepcopy(type_setup)
 		json_config["userDefined"][t+"ScaleType"] = user_defined[t+"_default"]["ScaleType"]
 
+	if "max_pod_per_node" in user_defined:
+		json_config["userDefined"]["max_pod_per_node"] = user_defined["max_pod_per_node"]
+
 	logger.debug(json.dumps(json_config, indent=2))
 	json_config["setup"].pop("d")
 	json_config["setup"].pop("pods")
@@ -253,6 +256,10 @@ def generate_case_json(json_config, cur_setup):
 			cur_spec = adjust_replicas(min(cur_setup["d"][i], math.ceil(total_nodes*cur_d_json["proportionNodeSpec"])), cur_d_json)
 		else:
 			cur_spec = adjust_replicas(cur_setup["d"][i], cur_d_json)
+			# eliminate the trivial failure cases.
+			if "max_pod_per_node" in json_config["userDefined"]:
+				cur_spec = min(cur_spec, json_config["userDefined"]["max_pod_per_node"]*total_nodes)
+			
 		d["id"] = cur_id
 		if "name" not in d:
 			d["name"] = cur_id
@@ -291,6 +298,8 @@ def generate_case_json(json_config, cur_setup):
 					d["hpaSpec"]["minReplicas"] = cur_spec
 					# This defines to set the HPA max propotional to the specReplicas, and it must exist for free style for now.
 					d["hpaSpec"]["maxReplicas"] = cur_spec*cur_d_json["HPAfactor"]
+					if "max_pod_per_node" in json_config["userDefined"]:
+						d["hpaSpec"]["maxReplicas"] = min(d["hpaSpec"]["maxReplicas"], json_config["userDefined"]["max_pod_per_node"]*total_nodes)
 				max_replicas = max(max_replicas, d["hpaSpec"]["maxReplicas"])
 		new_json_config["setup"]["d"].append(d)
 

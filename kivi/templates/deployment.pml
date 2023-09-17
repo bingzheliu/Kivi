@@ -219,6 +219,7 @@ proctype deploymentController()
 {
 		short i = 0, j = 0, podSelected = 0;
 
+#ifdef BACK_TO_BACK_OPT
 endDC:	atomic{
 endDC1:	do
 		#ifdef TRANSIT
@@ -226,6 +227,15 @@ endDC1:	do
 		#else 
 		:: (dcIndex != dcTail && kblIndex == kblTail) ->
 		#endif
+#else
+endDC1:	do
+		#ifdef TRANSIT
+		:: (dcIndex != dcTail) ->
+		#else 
+		:: (dcIndex != dcTail && kblIndex == kblTail) ->
+		#endif
+			atomic{
+#endif
 					d_step {
 						short curD = dcQueue[dcIndex];
 						printf("[**][Deployment] Start to work on deployment %d\n", curD)
@@ -234,13 +244,15 @@ endDC1:	do
 						:: (d[curD].specReplicas != d[curD].replicas + d[curD].replicasInCreation - d[curD].replicasInDeletion) -> 
 							printf("[***][Deployment] replicas spec: %d, cur: %d, in creation: %d, in deletion: %d\n", d[curD].specReplicas, d[curD].replicas, d[curD].replicasInCreation, d[curD].replicasInDeletion)
 							d[curD].replicaSets[d[curD].curVersion].specReplicas = d[curD].specReplicas;
-							scale(d[curD].replicaSets[d[curD].curVersion]);
-						// TODO: refine this rollout condition
+							if 
+								:: d[curD].strategy == 0 ->
+									scale(d[curD].replicaSets[d[curD].curVersion]);
+								:: else->
+									rollout();	
+							fi;
 						:: else-> ;
-							printf("[**][Deployment] Deployment %d specReplicas is the same as replicas\n", curD)
-							//rollout();
+							printf("[**][Deployment] Deployment %d specReplicas is the same as replicas\n", curD);		
 						fi;
-
 						//updateQueue(hpaQueue, hpaTail, hpaIndex, curD)
 						updateQueueIndex(dcIndex, MAX_DEP_QUEUE)
 
@@ -251,7 +263,12 @@ endDC1:	do
 						podSelected = 0;
 						curD = 0;
 					}
-				
+#ifdef BACK_TO_BACK_OPT				
 		od;
 		}
+#else
+			}
+		od;
+#endif
+		
 }

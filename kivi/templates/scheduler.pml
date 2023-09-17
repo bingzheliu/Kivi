@@ -159,9 +159,15 @@ proctype scheduler()
 	short i = 0, j = 0, k = 0, max = 0, p = 0;
 	printf("[**][Scheduler] Scheduler started.\n");
 
+#ifdef BACK_TO_BACK_OPT
 endSch1: atomic{
 endSch2: do
 		:: (sIndex != sTail) ->
+#else
+endSch2: do
+		:: (sIndex != sTail) ->
+			atomic{
+#endif
 				d_step{
 					short curPod = sQueue[sIndex];
 					short selectedNode = 0;
@@ -205,6 +211,11 @@ endSch2: do
 					max = 0;
 					curPod = 0;
 				}
-		od;
+#ifdef BACK_TO_BACK_OPT		
+	od;
 	}
+#else
+			}
+		od;
+#endif
 }

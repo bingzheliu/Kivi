@@ -100,8 +100,12 @@
 /*--------- Internal Config -----------*/
 #define UNDEFINED_VALUE 0
 
+/*--------- optimization ------*/
+// #define TRANSIT 1
+// By default we don't look into the failures in transit (kubelet hence always run first than deployment).
+#define BACK_TO_BACK_OPT 1
+
 /*--------- ifdef ----------*/
 // Intents: NO_FEASIABLE_NODE, 
 // Data structure: MORE_PODS
-#define TRANSIT 1
 [$IFDEF]

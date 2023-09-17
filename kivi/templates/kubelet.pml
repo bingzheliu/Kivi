@@ -8,10 +8,15 @@ proctype kubelet() {
 	printf("[**]kubelet controller started.\n");
 
 	// TODO: deal with the scenairo that the deletion failed.
+#ifdef BACK_TO_BACK_OPT
 endK1:	atomic { 
 endK:	do
 		:: (kblIndex != kblTail) ->
-			
+#else
+endK:	do
+		:: (kblIndex != kblTail) ->
+			atomic { 
+#endif
 				d_step{
 					i = kblQueue[kblIndex];
 					if 
@@ -100,7 +105,11 @@ endK:	do
 					j = 0;
 					flag = 0;
 				}	
-			
+#ifdef BACK_TO_BACK_OPT				
 		od;
-	}
+		}
+#else
+			}
+		od;
+#endif
 }

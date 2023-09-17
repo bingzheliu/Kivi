@@ -14,12 +14,17 @@ proctype descheduler()
 
 	printf("[**][Descheduler] Descheduler started!\n")
 
-endDes1:atomic{
-endDes:	do
 		// Estimation: it may interleave with other periodically controller (etc. HPA) in the wrong order, but it's over estimation, meaning we can cover more ways they iterleave with each other.
 		// It's an estimation, because when all other controllers (except for periodical controller) are idle, all periodic controller can decide to start its process, while in reality they will follow the periodic time, which we don't model precisely here.
+#ifdef BACK_TO_BACK_OPT
+endDes1:atomic{
+endDes:	do
 		:: (dsIndex != dsTail) && (time-local_last_time >= DESCHEDULER_WAIT_TIME || (sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail && ncIndex == ncTail))-> 
-			
+#else
+endDes:	do
+		:: (dsIndex != dsTail) && (time-local_last_time >= DESCHEDULER_WAIT_TIME || (sIndex == sTail && kblIndex == kblTail && dcIndex == dcTail && ncIndex == ncTail))-> 
+				atomic{
+#endif
 						printf("[***][Descheduler] Checking for descheduling...\n")
 						// If number of ready node is less or equal to 1, then shoudn't do anything
 						i = 1;
@@ -89,7 +94,11 @@ des1:					updateQueueIndex(dsIndex, MAX_DESCHEDULER_QUEUE);
 						p = 0;
 						count = 0;
 						flag = 0;
-
+#ifdef BACK_TO_BACK_OPT
 		od;
 	}
+#else
+			}
+		od;
+#endif
 }

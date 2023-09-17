@@ -36,14 +36,14 @@ default_values = {
 	# curCpuIndex is set to 1 because the first value is always the initial CPU value and shouldn't be used for CPU change --- won't affect result but will affect performance.
 	"pods" : {"id": 0, "status" : 0, "loc" : 0, "podTemplateId" : 0, "important" : 0, "workloadType" : 0, "workloadId" : 0, "score" : 0, "cpu" : 0, "memory" : 0, "curCpuIndex" : 1, "startTime" : 0}, \
 	# maxReplicas must be defined by users
-	"d": {"id": 0, "curVersion" : 0, "status" : 0, "specReplicas" : 1, "maxSurge" : 25, "maxUnavailable" : 25, "strategy" : 1, "hpaSpec" : {"isEnabled" : 0, "numMetrics" : 0, "minReplicas" : 1}}, \
+	"d": {"id": 0, "curVersion" : 0, "status" : 0, "specReplicas" : 1, "maxSurge" : 25, "maxUnavailable" : 25, "strategy" : 0, "hpaSpec" : {"isEnabled" : 0, "numMetrics" : 0, "minReplicas" : 1}}, \
 	# https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/#internal-default-constraints
 	# The definiation is in plugin.go, variable systemDefaultConstraints 
 	# The default selector for topoSpreadConstraints should be the same as the pod labels in metadata.
 	"podTemplates" : {"numRules" : 0, "nodeName" : 0, "topoSpreadSystemDefaulted": 1, "numTopoSpreadConstraints" : 2, \
 					  "cpuRequested": 0, "memRequested": 0, "topoSpreadConstraints" : [{"maxSkew" : 3, "topologyKey" : "hostname", "whenUnsatisfiable" : 1, "labels" : None}, \
 					  {"maxSkew" : 5, "topologyKey" : "zone", "whenUnsatisfiable" : 1, "labels" : None}], "maxCpuChange" : 0}, \
-	"deploymentTemplates" : {"maxSurge" : 25, "maxUnavailable" : 25, "specReplicas" : 1, "strategy" : 1}
+	"deploymentTemplates" : {"maxSurge" : 25, "maxUnavailable" : 25, "specReplicas" : 1, "strategy" : 0}
 }
 
 # TODO: add default for nodeAffinityPolicy, and nodeTaintsPolicy

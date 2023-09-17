@@ -12,11 +12,16 @@ proctype nodeController() {
 #ifdef TAINT
 	run taintManger()
 #endif
-		
+
+#ifdef BACK_TO_BACK_OPT
 endNC1:	atomic{
 endNC:	do
 		:: (ncIndex != ncTail) ->
-			
+#else
+endNC:	do
+		:: (ncIndex != ncTail) ->
+			atomic{
+#endif
 				d_step{
 					i = ncQueue[ncIndex];
 					if 
@@ -43,8 +48,14 @@ endNC:	do
 					i = 0;
 					j = 0;
 				}
+#ifdef BACK_TO_BACK_OPT
 		od;
 		}
+#else
+				}
+		od;
+#endif
+		
 }
 
 

@@ -120,9 +120,9 @@ do
 
 			if [ $1 -gt 0 ] && [ $2 -gt 0 ]
 			then
-				echo "python3 kivi_runner.py -c $case -s $i -o -cn -r -to 300 >> ${cur_log_base_file}_cn_o"
+				echo "python3 kivi_runner.py -c $case -s $i -o -cn -to 1000 >> ${cur_log_base_file}_cn_o"
 				start_time="$(gdate -u +%s.%N)"
-				python3 kivi_runner.py -c $case -s $i -o -cn -r -to 300 >> ${cur_log_base_file}_cn_o
+				python3 kivi_runner.py -c $case -s $i -o -cn -to 1000 >> ${cur_log_base_file}_cn_o
 				end_time="$(gdate -u +%s.%N)"
 				elapsed="$(bc <<<"$end_time-$start_time")"
 				elapsed_all_non_vio_o="$(bc <<<"$elapsed+$elapsed_all_non_vio_o")"

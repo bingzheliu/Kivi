@@ -52,7 +52,6 @@ endK:	do
 							fi;
 
 							#ifdef TAINT
-							printf("here!!!! %d", i)
 							updateQueue(tmQueue, tmTail, tmIndex, i, MAX_TAINT_MANAGER_QUEUE);
 							#endif
 

@@ -106,9 +106,17 @@ hpa2:		j++;
 			printf("[****][HPA] Current curMetricType %d, currentUsage %d, metricsTotal %d, totalReplicas %d, curMetricTarget %d\n", curMetricType, currentUsage, metricsTotal, totalReplicas, curMetricTarget)
 			if
 				:: curMetricType == 0 ->
-					replicaCountProposal = metricsTotal / curMetricTarget + 1;
+					// replicaCountProposal = metricsTotal / curMetricTarget + 1;
+					k = curMetricTarget;
+					ceil(replicaCountProposal, metricsTotal, k);
 				:: curMetricType == 1 ->
-					replicaCountProposal = currentUsage * totalReplicas / curMetricTarget + 1;
+					// replicaCountProposal = currentUsage * totalReplicas / curMetricTarget + 1;
+					int temp1, temp2;
+					temp1 = metricsTotal * 100 * totalReplicas;
+					temp2 = requestTotal * curMetricTarget
+					ceil(replicaCountProposal, temp1, temp2);
+					temp1 = 0;
+					temp2 = 0;
 			fi;
 			
 	fi;
@@ -117,6 +125,9 @@ hpa2:		j++;
 	requestTotal = 0;
 	totalReplicas = 0;
 	currentUsage = 0;
+	j = 0;
+	k = 0;
+	p = 0;
 }
 
 inline computeReplicasForMetrics()

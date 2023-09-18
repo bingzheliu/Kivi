@@ -267,6 +267,8 @@ typedef deploymentType {
 	bit added_for_check_balance;
 #endif
 
+	short lastReplicas;
+
 	/*-----omitting-----*/
 	// short progressDeadlineSeconds;
 	// short minReadySeconds;

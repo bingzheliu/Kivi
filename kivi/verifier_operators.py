@@ -221,6 +221,20 @@ def verifier_operator(json_config, case_name, file_base, result_base_path, pml_b
 	if not args.original:
 		# Note: if the sort_favor for finding_smallest_scale is not "Nodes", will need to change the below arg.extreamly_high_confidence line to find the right break point.
 		all_setup, json_config_template = finding_smallest_scale(json_config, pml_base_path)
+		if args.customized_scale is not None:
+			# {'nodes': {0: 0, 1: 1}, 'd': {0: 1}}
+			cs_setup = {'nodes': {}, 'd':{}}
+			cs_str = args.customized_scale.split(",")
+			index = 0
+			for n in all_setup[0]["nodes"]:
+				cs_setup['nodes'][n] = int(cs_str[index])
+				index += 1
+			for n in all_setup[0]["d"]:
+				cs_setup['d'][n] = int(cs_str[index])
+				index += 1
+			all_setup = [cs_setup]
+			print(all_setup)
+
 		for s in all_setup:
 			new_json_config, num_node, num_pod = generate_case_json(json_config_template, s)
 			# if not args.extreamly_high_confidence and num_node > confident_node_size:

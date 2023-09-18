@@ -46,6 +46,7 @@ def setup_argparser(arg_parser):
     verification_arg.add_argument('-to','--timeout', type=int, help='Timeout for each pan execuation.')
     verification_arg.add_argument('-eh', '--extreamly_high_confidence', action='store_true', help='Enable extreamly high confidence mode for verification. Default: disable -- verification will stop at N(Node) = 10 with high confidence.')
     verification_arg.add_argument("-ig", '--intents_group', type=int, default=0, help="Defines how many intents to be verified at a time. Defualt is 0, meaning all intents verified together.")
+    verification_arg.add_argument("-cs", '--customized_scale', help="Define a particular scale to test. Input format example: \"1, 3\" means to verify for 1 node 3 pod. Must be consistent with the type or it will fail.")
 
     spin_arg = arg_parser.add_argument_group("Spin options", description="Options sent to pan or spin. All options need to be quoted and seperated by comma without dash, e.g., 'm10000, n'")
     spin_arg.add_argument('-pc', '--pan_compile', type=str, default="DVECTORSZ=100000, DT_RAND, DP_RAND", help="Options for pan compiler. ")

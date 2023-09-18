@@ -3,7 +3,7 @@
 	
 	1. We model the rollout event in sequence, meaning that when a rollout happen, no new rollout and scale event will take place at the same time.     
 	2. We don't model unheathy pod for now, otherwise, need to modify the rollout (the scale down old replica part)
-	3. Now the queue is not a rolling array. We make it only deal with number of DEPLOYMENT_QUEUE_SIZE events for now. 
+	3. Now the queue is a rolling array.
 	4. We modeled two version of the deployment. So any history feature/rollback to older version are not supported now.
 	5. Although deployment is not atomic in real world, we approximate it as atomic approach. Since the calculation of how many pods shouldn't take too long. 
 */
@@ -64,7 +64,8 @@ inline deleteAPod()
 	:: else -> break;
 	od;
 
-	printf("[**][Deployment] Deleting pod %d\n", podSelected);
+	printf("[*][Deployment] delete; %d; Deleting pod %d on node %d, deployment %d now have %d replicas\n", pods[podSelected].workloadId, podSelected, pods[podSelected].loc, pods[podSelected].workloadId, d[pods[podSelected].workloadId].replicas);
+	// printf("[**][Deployment] Deleting pod %d\n", podSelected);
 	// TODO: deal with the scenairo that the deletion failed. 
 	deleteAPodUpdate(curD, podSelected);
 
@@ -97,7 +98,6 @@ inline enqueuePods(batchSize)
 		j = 1;
 		do
 		:: j < POD_NUM+1 -> 
-			printf("!!%d\n", pods[j].status);
 			if
 			:: pods[j].status == 0 ->
 				copyDeploymentInfoToPod(pods[j], podsStable[j], curD);
@@ -134,7 +134,7 @@ inline scale(curReplicaSet)
 	:: curReplicaSet.specReplicas <  curReplicaSet.replicas - d[curD].replicasInDeletion ->
 		short diff =  curReplicaSet.replicas - curReplicaSet.specReplicas - d[curD].replicasInDeletion;
 
-		printf("[**][Deployment] Starting the deployment controller to delete %d pods\n", diff);
+		printf("[*][Deployment] scale; %d; decrease; %d; Starting the deployment controller to delete %d pods\n", curD, curReplicaSet.specReplicas, diff);
 		deletePods(diff);
 
 		podSelected = 0;
@@ -150,8 +150,13 @@ inline scale(curReplicaSet)
 		// Since we are doing atomic, batch may not actually make difference. But keep it for now. 
 		remaining = curReplicaSet.specReplicas - curReplicaSet.replicas - d[curD].replicasInCreation;
 		batchSize = (remaining < SlowStartInitialBatchSize -> remaining : SlowStartInitialBatchSize)
-		printf("[*][Deployment] scale; %d; increase; %d; Too few replicas in replicaSet %d need to create %d\n", curD, curReplicaSet.specReplicas, curReplicaSet.deploymentId, remaining);
-		
+		if 
+			:: d[curD].specReplicas > d[curD].lastReplicas ->
+				printf("[*][Deployment] scale; %d; increase; %d; Too few replicas in replicaSet %d need to create %d\n", curD, curReplicaSet.specReplicas, curReplicaSet.deploymentId, remaining);
+				d[curD].lastReplicas = d[curD].specReplicas;
+			:: else->;
+		fi;
+
 		do
 		:: batchSize > 0 ->
 			// TODO: confirm if one batch needs to wait until the pods are scheduled or only created, currently I only see it is "posted" on API server, it shouldn't been scheduled.  --> looks like it may not wait
@@ -236,7 +241,6 @@ endDC1:	do
 		#endif
 			atomic{
 #endif
-					d_step {
 						short curD = dcQueue[dcIndex];
 						printf("[**][Deployment] Start to work on deployment %d\n", curD)
 
@@ -262,7 +266,7 @@ endDC1:	do
 						j = 0; 
 						podSelected = 0;
 						curD = 0;
-					}
+					
 #ifdef BACK_TO_BACK_OPT				
 		od;
 		}

@@ -253,6 +253,7 @@ class Model_Fidelity:
 
 	def __init__(self, path):
 		dir_list = os.listdir(path)
+		self.scommand = None
 		for fn in dir_list:
 			if "start_end_time" in fn:
 				with open(path+"/"+fn) as f:
@@ -275,7 +276,6 @@ class Model_Fidelity:
 				with open(path+"/"+fn) as f:
 					self.spod_cpu = f.read()
 
-			self.scommand = None
 			if "command" in fn:
 				with open(path+"/"+fn) as f:
 					self.scommand = f.read()
@@ -484,8 +484,10 @@ class Model_Fidelity:
 				if "scale" in log_main_info:
 					veri_events.append((count, Deployment("scale", [items[1].strip()], items[-1].strip(), items[2].strip(), items[3].strip())))
 				elif "create" in log_main_info:
-					print(items)
+					#print(items)
 					veri_events.append((count, Deployment("create", [items[1].strip()], items[-1].strip())))
+				elif "delete" in log_main_info:
+					veri_events.append((count, Deployment("delete", [items[1].strip()], items[-1].strip())))
 
 			elif "Scheduler" in log_main_info:
 				if "scheduled" in log_main_info:
@@ -631,7 +633,7 @@ class Model_Fidelity:
 				return Taint("taint_eviction", [obj_name], event_str)
 
 		elif "descheduler" in component:
-			if "evict" in event["message"] and (event["reason"] == "RemovePodsViolatingTopologySpreadConstraint" or event["reason"] == "Remove"):
+			if "evict" in event["message"] and (event["reason"] == "RemovePodsViolatingTopologySpreadConstraint" or event["reason"] == "RemoveDuplicates"):
 				obj_name = self.extract_dep_name_from_pods(event["involvedObject"]["name"])
 				return Descheduler("evict", [obj_name], event_str)
 			else:

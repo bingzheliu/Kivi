@@ -571,7 +571,7 @@ def process_taint(json_config, ifdef):
 def check_HPA(json_config, ifdef):
 	for d in json_config["setup"]["d"]:
 		if d["hpaSpec"]["isEnabled"] == 1:
-			ifdef += "#define HPA_ENABLED 1"
+			ifdef += "#define HPA_ENABLED 1\n"
 			break
 	return ifdef
 

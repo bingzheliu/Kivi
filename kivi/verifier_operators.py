@@ -221,9 +221,9 @@ def verifier_operator(json_config, case_name, file_base, result_base_path, pml_b
 		all_setup, json_config_template = finding_smallest_scale(json_config, pml_base_path)
 		for s in all_setup:
 			new_json_config, num_node, num_pod = generate_case_json(json_config_template, s)
-			if not args.extreamly_high_confidence and num_node > confident_node_size:
-				logger.critical("Reach the upper bound of high confidence node. Verification finished!")
-				break
+			# if not args.extreamly_high_confidence and num_node > confident_node_size:
+			# 	logger.critical("Reach the upper bound of high confidence node. Verification finished!")
+			# 	break
 
 			logger.critical("===========================")
 			logger.critical("Working on setup: " + str_setup(s))

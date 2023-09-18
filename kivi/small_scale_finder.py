@@ -119,7 +119,7 @@ def deduct_cpu_nodes(json_config):
 # Anything defined in the maxReplicas and minReplicas in HPA or sepcReplicas will only be used as a proptional factor when scale up propotionally
 # If user choose the propotion, the propotion will be set according the current proption of node and pods
 def template_generator(json_config, user_defined=None):
-	print(json.dumps(json_config, indent=2))
+	#print(json.dumps(json_config, indent=2))
 	if user_defined is None:
 		user_defined = user_defined_default
 

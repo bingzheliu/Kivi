@@ -101,8 +101,8 @@
 #define UNDEFINED_VALUE 0
 
 /*--------- optimization ------*/
-// #define TRANSIT 1
 // By default we don't look into the failures in transit (kubelet hence always run first than deployment).
+// #define TRANSIT 1
 #define BACK_TO_BACK_OPT 1
 
 /*--------- ifdef ----------*/

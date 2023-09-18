@@ -1784,9 +1784,14 @@ def get_case_user_defined(case_id, scale):
                  					  "d_default" : {"upperBound":scale*8, "lowerBound":0, "ScaleType":"free", "HPAfactor":2},
                  					  "max_pod_per_node": 7},\
                  		# because in s6, there is maintanece, only make sense if n > 2
+                 		# because one node can potentially go to maintanace, so the max_pod_per_node is configed smaller in this case.
 						"s6" : {"nodes_default" : {"upperBound":scale, "lowerBound":2, "ScaleType":"free"}, \
 							    "d_default" : {"upperBound":scale*8, "lowerBound":0, "ScaleType":"free"},
-							    "max_pod_per_node": 7}, \
+							    "max_pod_per_node": 4}, \
+						# because in s4, there kernel panic, only make sense if n > 2
+						"s4" : {"nodes_default" : {"upperBound":scale, "lowerBound":2, "ScaleType":"free"}, \
+							    "d_default" : {"upperBound":scale*8, "lowerBound":0, "ScaleType":"free"},
+							    "max_pod_per_node": 4}, \
 						# because in s1, there is node can only hold one pod. So need to bound all type of node to be at least 1
 						"s1" : {"nodes_default" : {"upperBound":scale, "lowerBound":1, "ScaleType":"free"}, \
 							    "d_default" : {"upperBound":scale*8, "lowerBound":0, "ScaleType":"free"},

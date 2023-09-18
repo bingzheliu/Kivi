@@ -379,10 +379,10 @@ def generate_list_setup_dfs(json_config, i, cur_type, cur_setup, all_setup, coun
 	elif json_config["userDefined"][cur_type+"ScaleType"] == "free":
 		j = cur_json_config["lowerBound"]
 		while (j <= cur_json_config["upperBound"]):
-			if (cur_type == "d" and j > (confident_pod_size_factor*count["nodes"])):
+			if (cur_type == "d" and (((not args.extreamly_high_confidence) and j > (confident_pod_size_factor*count["nodes"])) or j > json_config["userDefined"]["max_pod_per_node"]*count["nodes"])):
 				break
 			#print(cur_type, j, confident_node_size)
-			if (cur_type == "nodes" and j  > confident_node_size):
+			if (cur_type == "nodes" and (not args.extreamly_high_confidence) and j  > confident_node_size):
 				break
 			# if (cur_type == "d" and j > (count["nodes"] * cur_json_config["proportionNode"])):
 			# 	break

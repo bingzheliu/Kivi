@@ -33,7 +33,7 @@ def setup_logger(name, level=logging.INFO, handler_type="stream", filename=None)
 logger = setup_logger('verifier_logger', logging.DEBUG)
 #logger = setup_logger('verifier_logger', logging.INFO)
 
-pod_equal = False
+pod_equal = True
 
 # sys_path = os.path.abspath(sys.argv[2])
 
@@ -180,7 +180,7 @@ class Maintenance(Action):
 			return False
 
 		if not self.compare_dep_name(self.objs[0], other.objs[0]):
-			print(self.objs[0], other.objs[0])
+			#print(self.objs[0], other.objs[0])
 			return False
 			
 		return self.name == other.name 
@@ -209,7 +209,7 @@ class Deployment(Action):
 			return False
 
 		if not self.compare_dep_name(self.objs[0], other.objs[0]):
-			print(self.objs[0], other.objs[0])
+			#print(self.objs[0], other.objs[0])
 			return False
 			
 		return self.name == other.name and self.direction == other.direction
@@ -244,6 +244,14 @@ class Apply_Dep(Action):
 	def __init__(self, name, objs, _str):
 		super().__init__(name, objs, _str)
 		self.objs_type = ["dep"]
+
+	# we don't compare the name, as the file name of the yaml can be different than the actual deployment name
+	def __eq__(self, other):
+		if not isinstance(other, self.__class__):
+			#print(isinstance(other, self.__class__), other.__class__, self.__class__)
+			return False
+
+		return self.name == other.name 
 
 class Model_Fidelity:
 	cpu_prop_threshold = 10
@@ -397,16 +405,19 @@ class Model_Fidelity:
 			logger.debug(str(last_index) + " " + str(j) + " " + str(i) + " " + str(unmatched_i) + " " + str(unmatched_j))
 
 			matched[j] = 1
-			k = last_index
-			for k in range(last_index, j+1):
-				# give 3 sec delays...
-				if log_events[k][0][0] + 3 < log_events[j][0][0]:
-					if matched[k] == 0:
-						print(log_events[k][1])
-						unmatched_j += 1
-				else:
-					break
-			last_index = k
+			if isinstance(veri_events[i][1], HPA) and veri_events[i][1].direction == "decrease":
+				logger.critical("Known unaccuacry for HPA. Can continue match the rest of the events!")
+			else:
+				k = last_index
+				for k in range(last_index, j+1):
+					# give 3 sec delays...
+					if log_events[k][0][0] + 3 < log_events[j][0][0]:
+						if matched[k] == 0:
+							print(log_events[k][1])
+							unmatched_j += 1
+					else:
+						break
+				last_index = k
 
 			if last_index == len(log_events):
 				unmatched_i += (len(veri_events) - i)
@@ -467,7 +478,8 @@ class Model_Fidelity:
 					veri_events.append((count, HPA("rescale", [items[1].strip()],\
 					 			items[-1].strip(), direction, exp)))
 
-			elif "DeScheduler" in log_main_info:
+			elif "DeScheduler" in log_main_info or "Descheduler" in log_main_info:
+				#print(items)
 				veri_events.append((count, Descheduler("evict", [items[1].strip()], items[-1].strip())))
 
 			elif "taint" in log_main_info:
@@ -497,7 +509,7 @@ class Model_Fidelity:
 				if "start" in log_main_info:
 					veri_events.append((count, Kubelet("start", [items[1].strip(), items[2].strip()], items[-1].strip())))
 				elif "delete" in log_main_info:
-					veri_events.append((count, Deployment("delete", [items[1].strip()], items[-1].strip())))
+					veri_events.append((count, Kubelet("delete", [items[1].strip(), items[2].strip()], items[-1].strip())))
 
 			elif "CPU Change" in log_main_info:
 				direction = "increase" if int(items[2]) > 0 else "decrease"
@@ -577,6 +589,8 @@ class Model_Fidelity:
 				value = event["message"].split("New size:")[1].split(";")[0].strip()
 				if "above" in event["message"]:
 					direction = "increase" 
+				elif "below Spec.MinReplicas" in event["message"]:
+					direction = "increase"
 				elif "below" in event["message"]:
 					direction = "decrease"
 				else:
@@ -643,9 +657,11 @@ class Model_Fidelity:
 			#print(event_str)
 			if event["reason"] == "Started":
 				if "descheduler" in event["involvedObject"]["name"]:
-					logger.critical("Skipping the deployment events as it's related the deployment of descheduler: "+ event_str)
+					logger.critical("Skipping the deployment events as it's related to the deployment of descheduler: "+ event_str)
 				else:
 					return Kubelet("start", [event["involvedObject"]["name"], event["source"]["host"]], event_str)
+			elif event["reason"] == "Killing":
+					return Kubelet("delete", [event["involvedObject"]["name"], event["source"]["host"]], event_str)
 
 		else:
 			return self.process_unrelated_event(component, event, event_str)

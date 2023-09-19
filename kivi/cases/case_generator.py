@@ -313,6 +313,136 @@ def generate_S1(num_node, non_violation=False):
 
 	return case_config
 
+# For model fidelity, we need to start the deployment from the begnning. 
+# The k8s cluster has 3 nodes (2 are occupied and 1 regular node)
+def generate_S1_model_fidelity(num_node, non_violation=False):
+	case_config = {}
+	cur_id = 1
+	case_config["setup"] = {}
+	num_type1 = math.ceil(num_node*3/5)
+	num_type2 = math.ceil(num_node/5)
+
+	# Generate podTemplate
+	case_config["setup"]["podTemplates"] = []
+	pt = {}
+	pt["labels"] = {"name" : "app"}
+	pt["cpuRequested"] = 8
+	pt["memRequested"] = 8
+	pt["maxCpuChange"] = 1
+	pt["curCpuRequest"] = []
+	pt["curCpuRequest"].append(8)
+	pt["timeCpuRequest"] = []
+	pt["timeCpuRequest"].append(0)
+
+	#pt["numTopoSpreadConstraints"] = 0
+	case_config["setup"]["podTemplates"].append(pt)
+
+	## Generate Nodes and pods
+	## Three types of nodes, 1 pod (*3), 3 pods (*1), and 5 pods (*1)
+	case_config["setup"]["nodes"] = []
+	deployment_to_pod = {}
+	deployment_to_pod[1] = []
+	case_config["setup"]["pods"] = []
+	num_pod = 0
+	for i in range(0, num_type1):
+		cur_node = {}
+		cur_node["id"] = cur_id
+		cur_node["name"] = cur_id
+		cur_id += 1
+		
+		cur_node["cpu"] = 64
+		cur_node["memory"] = 64
+	
+		if non_violation:
+			cur_node["cpuLeft"] = 56
+			cur_node["memLeft"] = 56
+		else:
+			cur_node["cpuLeft"] = 12
+			cur_node["memLeft"] = 12
+		cur_node["numPod"] = 0
+		#case_config, cur_id = generate_a_pod(case_config, cur_id, i+1, 8, 8, 1, deployment_to_pod)
+		#num_pod += 1
+
+		cur_node["status"] = 1
+		case_config["setup"]["nodes"].append(cur_node)
+
+	for i in range(0, num_type2):
+		cur_node = {}
+		cur_node["id"] = cur_id
+		cur_node["name"] = cur_id
+		cur_id += 1
+		
+		cur_node["cpu"] = 64
+		cur_node["memory"] = 64
+	
+		cur_node["cpuLeft"] = 64
+		cur_node["memLeft"] = 64
+		cur_node["numPod"] = 0
+		# for j in range(0,3):
+		# 	case_config, cur_id = generate_a_pod(case_config, cur_id, i+num_type1+1, 8, 8, 1, deployment_to_pod)
+		#num_pod += 3
+
+		cur_node["status"] = 1
+		case_config["setup"]["nodes"].append(cur_node)
+
+	# genreate 3 spare pods
+	for i in range(6):
+		case_config, cur_id = generate_a_pod(case_config, cur_id, 0, 8, 8, 0)
+
+	## Generate Deployment
+	d_id = 0
+	case_config["setup"]["d"] = []
+	d = {}
+	d["id"] = cur_id
+	d["name"] = cur_id
+	d_id = cur_id
+	cur_id += 1
+	d["status"] = 0
+	d["curVersion"] = 0
+	d["replicaSets"] = []
+
+	rp = {}
+	rp["id"] = cur_id
+	cur_id += 1
+	rp["deploymentId"] = 1
+	rp["replicas"] = 0
+	rp["specReplicas"] = num_node+2
+	rp["version"] = 0
+	rp["podIds"] = []
+	d["replicaSets"].append(rp)
+
+	rp = {}
+	rp["id"] = cur_id
+	cur_id += 1
+	rp["deploymentId"] = 1
+	d["replicaSets"].append(rp)
+
+	d["specReplicas"] = num_node+2
+	d["replicas"] = 0
+
+	d["podTemplateId"] = 1
+
+	case_config["setup"]["d"].append(d)
+
+	case_config["controllers"] = {}
+	case_config["controllers"]["scheduler"] = {}
+	case_config["controllers"]["hpa"] = {}
+	case_config["controllers"]["deployment"] = {}
+	# enter descheduler plugin from here.
+	case_config["controllers"]["descheduler"] = {"profiles" : [{"RemoveDuplicates":{}}]}
+
+	case_config["events"] = []
+
+	case_config["userCommand"] = []
+	case_config["userCommand"].append({"name" : "createTargetDeployment", "para" : 1})
+
+	case_config["intents"] = []
+	
+	#case_config["intents"].append("run checkS1()\n")
+	case_config["intents"].append({"name":"checkEvictionCycle", "para":{"did":1}})
+
+	return case_config
+
 # https://github.com/kubernetes-sigs/descheduler/issues/921
 # We implement the two topo spread constraints. Seems that if only keep on constraint, then the required # of pods is large to reproduce the problem
 def generate_S9(num_node, non_violation=False):
@@ -996,7 +1126,7 @@ def generate_S6_model_fidelity(num_node, non_violation=False):
 	d["name"] = cur_id
 	d_id = cur_id
 	cur_id += 1
-	d["status"] = 1
+	d["status"] = 0
 	d["curVersion"] = 0
 	d["replicaSets"] = []
 
@@ -1035,7 +1165,7 @@ def generate_S6_model_fidelity(num_node, non_violation=False):
 	pt["topoSpreadConstraints"] = []
 	ptcon = {}
 	ptcon["maxSkew"] = 1
-	ptcon["minDomains"] = 2
+	ptcon["minDomains"] = 1
 	# based on node name
 	ptcon["topologyKey"] = "hostname"
 	ptcon["whenUnsatisfiable"] = 1
@@ -1074,11 +1204,17 @@ def generate_S6_model_fidelity(num_node, non_violation=False):
 		#case_config["intents"].append("run checkS6()\n")
 		# TODO: check why never not work
 		#case_config["intents"].append("\nnever \n{\n do\n  :: init_status == 1 && d[1].replicas == d[1].specReplicas -> \n if\n :: d[1].replicas < d[1].specReplicas - " + str(p) +  " -> break\n  fi\n   :: else\nod;\n}\n")
-		case_config["intents"].append("\nactive proctype checkS6() \n{\nendCS61: if\n  		:: init_status == 1 && d[1].replicas == d[1].specReplicas -> \nendCS62:   		if\n :: d[1].replicas < d[1].specReplicas - " + str(p) +  ' -> printf("[*] Replicas below expatation!\\n")\n assert(false)\n    		fi\n     fi;\n}\n')
+		#case_config["intents"].append("\nactive proctype checkS6() \n{\nendCS61: if\n  		:: init_status == 1 && d[1].replicas == d[1].specReplicas -> \nendCS62:   		if\n :: d[1].replicas < d[1].specReplicas - " + str(p) +  ' -> printf("[*] Replicas below expatation!\\n")\n assert(false)\n    		fi\n     fi;\n}\n')
+		case_config["intents"].append({"name":"checkExpReplicas", "para":{"did": 1, "expReplicas": "d[did].specReplicas-1"}})
+		#case_config["intents"].append({"name":"checkBalanceNode", "para":{"did": 1, "maxSkew": 1}})
+	else:
+		case_config["intents"].append({"name":"checkExpReplicas", "para":{"did": 1, "expReplicas": "0"}})
 
 	case_config["userCommand"] = []
+	case_config["userCommand"].append({"name" : "createTargetDeployment", "para" : 1, "first":1})
+
 	# this is the id for the index of deploymentTemplates, not the deployment name
-	case_config["userCommand"].append({"name" : "applyDeployment", "para" : 1, "priority" : 20, "after_stable":False})
+	#case_config["intents"].append({"name":"checkExpReplicas", "para":{"did": 1, "expReplicas": "0"}})
 
 	return case_config
 
@@ -1797,7 +1933,7 @@ def generate_S3(num_node, non_violation=False):
 #case_fun = {False: {"s4": generate_S4, "s3" : generate_S3, "h2": generate_H2, "s6" : generate_S6, "h1" : generate_H1, "s1" : generate_S1, "s9" : generate_S9}, \
 # These template does not support verification at scale, and has a fixed upperbound. So we do not it use it for now.
 #True: {"h1": generate_H1_template, "s3":generate_S3_template}}
-case_fun = {"s4": generate_S4, "s3" : generate_S3_woCPU, "h2": generate_H2_model_fidelity, "s6" : generate_S6, "h1" : generate_H1, "s1" : generate_S1, "s9" : generate_S9, "d1": generate_D1}
+case_fun = {"s4": generate_S4, "s3" : generate_S3_woCPU, "h2": generate_H2_model_fidelity, "s6" : generate_S6_model_fidelity, "h1" : generate_H1, "s1" : generate_S1_model_fidelity, "s9" : generate_S9, "d1": generate_D1}
 
 
 def generate_case_json(case_id, scale, from_template=False, filename=None):

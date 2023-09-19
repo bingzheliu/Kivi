@@ -85,7 +85,7 @@ endK:	do
 								// kubelet only print logs when nodeName is not defined.
 								:: podTemplates[pods[i].podTemplateId].nodeName == 0 -> 
 									// TODO: move this message to Deployment
-									printf("[**][Kubelet] delete; %d; Deleted pod %d on node %d, deployment %d now have %d replicas\n", pods[i].workloadId, i, j, pods[i].workloadId, d[pods[i].workloadId].replicas);
+									printf("[*][Kubelet] delete; %d; %d; Deleted pod %d on node %d, deployment %d now have %d replicas\n", pods[i].workloadId, j, i, j, pods[i].workloadId, d[pods[i].workloadId].replicas);
 								:: else->;
 							fi;
 

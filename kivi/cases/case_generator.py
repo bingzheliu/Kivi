@@ -475,11 +475,13 @@ def generate_S9(num_node, non_violation=False):
 	ptcon["numMatchedLabel"] = 1
 	ptcon["labels"] = {"name" : "app"}
 
-	pt["topoSpreadConstraints"].append(deepcopy(ptcon))
+	#pt["topoSpreadConstraints"].append(deepcopy(ptcon))
 	# based on zone name
 	ptcon["topologyKey"] = "lifecycle"
 	pt["topoSpreadConstraints"].append(deepcopy(ptcon))
-	pt["numTopoSpreadConstraints"] = 2
+	
+	#pt["numTopoSpreadConstraints"] = 2
+	pt["numTopoSpreadConstraints"] = 1
 
 	pt["numRules"] = 2
 	pt["affinityRules"] = []

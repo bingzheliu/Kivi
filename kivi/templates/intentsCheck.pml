@@ -81,6 +81,7 @@ endCEC12:			if
 }
 #endif
 
+// TODO: rename it as checkBalanceNode
 #ifdef CHECK_BALANCE_NODE
 proctype checkBalanceNode(byte did)
 {

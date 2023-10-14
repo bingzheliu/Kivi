@@ -149,6 +149,23 @@ def run_script(commands, print_stdout, _timeout=None):
 	
 	return True, stdout, stderr
 
-	
+# temp/case_id stores the pml and json file. For cases with different scale, a seperate dir will be generate for each scale
+# temp/case_id/min_exp stores the json file for each scale that are tested. 
+# result/case_id stores the runtime result. 
+def generate_dir(file_base, case_id, scale):
+    my_mkdir(file_base+"/temp/"+ str(case_id))
+    if scale == 0:
+        pml_base_path = file_base + "/temp/" + str(case_id) 
+    else:
+        pml_base_path = file_base + "/temp/" + str(case_id) + "/" + str(scale)
+    my_mkdir(pml_base_path)
+    my_mkdir(pml_base_path+"/min_exp")
+
+    result_base_path = file_base + "/results/" + str(case_id)
+    my_mkdir(file_base + "/results")
+    my_mkdir(result_base_path)
+    my_mkdir(result_base_path + "/raw_data")
+    
+    return pml_base_path, result_base_path
 
 

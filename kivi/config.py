@@ -18,3 +18,8 @@ loop_times = 3
 
 #how cases are scaled up
 case_free = True
+
+
+#verification internal parameters
+## initial queue size
+queue_size = 10

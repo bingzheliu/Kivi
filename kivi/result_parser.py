@@ -48,7 +48,7 @@ def analyze_assert(file_error_trail):
 def parse_pan_output(output):
 	total_mem = 0
 	elapsed_time = 0
-	failure_type = "None"
+	failure_type = None
 	error_trail_name = None
 	failure_details = ""
 	error_trail_flag = False
@@ -88,8 +88,8 @@ def parse_pan_output(output):
 		if "elapsed time" in s:
 			elapsed_time = s.split("time")[1].split("seconds")[0].strip()
 
-	if error_trail_flag and failure_type == "None":
-		failure_type = "Unknown type ---- " + failure_type
+	if error_trail_flag and failure_type == None:
+		failure_type = "Unknown type ---- "
 
 	return failure_type, failure_details, error_trail_name, total_mem, elapsed_time
 

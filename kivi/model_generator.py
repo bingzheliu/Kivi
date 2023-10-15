@@ -578,6 +578,8 @@ def check_HPA(json_config, ifdef):
 def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, template_path, queue_size_default):
 	ifdef = ""
 
+	print(json.dumps(json_config, indent=2))
+
 	userDefinedConstraints = check_for_completion_add_default(json_config)
 	ifdef = check_HPA(json_config, ifdef)
 	json_config, ifdef = process_taint(json_config, ifdef)

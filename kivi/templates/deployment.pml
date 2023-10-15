@@ -146,7 +146,6 @@ inline scale(curReplicaSet)
 	:: curReplicaSet.specReplicas >  curReplicaSet.replicas + d[curD].replicasInCreation ->
 		// do slowStartBatch, https://github.com/kubernetes/kubernetes/blob/98742f9d77a57aec44cc05b1daf721973fb029be/pkg/controller/replicaset/replica_set.go#L742
 		// may be simplified by not having these batch updates
-
 		// Since we are doing atomic, batch may not actually make difference. But keep it for now. 
 		remaining = curReplicaSet.specReplicas - curReplicaSet.replicas - d[curD].replicasInCreation;
 		batchSize = (remaining < SlowStartInitialBatchSize -> remaining : SlowStartInitialBatchSize)

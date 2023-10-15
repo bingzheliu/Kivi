@@ -29,6 +29,8 @@ elements_required = {"nodes" : ["id", "name", "cpu", "cpuLeft", "memory", "memLe
 									"topoSpreadConstraints", "maxCpuChange"],\
 					"deploymentTemplates" : ["name", "maxSurge", "maxUnavailable", "specReplicas", "strategy"]}
 
+controller_event_required = {"controllers"}
+
 # according to https://github.com/kubernetes/kubernetes/blob/master/pkg/apis/apps/v1/defaults.go#L32, https://github.com/kubernetes/kubernetes/blob/master/pkg/apis/core/v1/defaults.go#L208
 # All the id are now initilized with 0, as it's not quite been used in the model, but keeping this field for future usage. 
 default_values = { 
@@ -127,6 +129,10 @@ def check_for_completion_add_default(json_config):
 			# It's OK to not define some resource, e.g. deployment Template. 
 			logger.warning(resource + " is not defined! But may not affect the execution.")
 			json_config["setup"][resource] = []
+
+	for config in controller_event_required:
+		if config not in json_config:
+			json_config[config] = []
 
 	labels_default(json_config)
 

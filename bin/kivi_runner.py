@@ -9,4 +9,5 @@ import kivi
 from kivi import verifier
 
 if __name__ == '__main__':
-	verifier.verifier()
+	kivi_app = verifier.Kivi()
+	kivi_app.verifier()

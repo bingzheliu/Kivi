@@ -3,6 +3,7 @@ import os
 import json
 
 from util import *
+from math import ceil
 
 # Parser can parse three types of files: 
 # 1. yaml files that describe deployments, in yaml/. File must have the suffix of yaml. Will be saved as pod and deployment templates.
@@ -131,7 +132,7 @@ def add_spare_resource(json_config):
 		if "hpaSpec" in d:
 			max_replicas = d["hpaSpec"]["maxReplicas"]
 			if max_replicas > d["replicas"]:
-				for i in range(0, max_replicas - d["replicas"]):
+				for i in range(0, max_replicas - d["replicas"] + 3):
 					json_config["setup"]["pods"].append({"status" : 0})
 
 	# Will need to add user-defined numebr of pods here.
@@ -283,12 +284,14 @@ def parse_getdeployment(json_config, json_input):
 		deployment["name"] = d["metadata"]["name"]
 
 		deployment["specReplicas"] = d["spec"]["replicas"]
-		if d["spec"]["strategy"]["type"] == "RollingUpdate":
-			deployment["maxSurge"] = int(d["spec"]["strategy"]["rollingUpdate"]["maxSurge"][:-1])
-			deployment["maxUnavailable"] = int(d["spec"]["strategy"]["rollingUpdate"]["maxUnavailable"][:-1])
-			deployment["strategy"] = 1
-		else:
-			deployment["strategy"] = 0
+		# Rolling update TBD
+		# if d["spec"]["strategy"]["type"] == "RollingUpdate":
+		# 	deployment["maxSurge"] = int(d["spec"]["strategy"]["rollingUpdate"]["maxSurge"][:-1])
+		# 	deployment["maxUnavailable"] = int(d["spec"]["strategy"]["rollingUpdate"]["maxUnavailable"][:-1])
+		# 	deployment["strategy"] = 1
+		# else:
+		# 	deployment["strategy"] = 0
+		deployment["strategy"] = 0
 
 		deployment["replicas"] = d["status"]["availableReplicas"]
 
@@ -368,6 +371,8 @@ def parse_describe_nodes(json_config, f_str):
 		# process name
 		raw_name = n.split("\n")[0]
 		node["name"] = raw_name.split("Name:")[1].strip() if "Name:" in raw_name else raw_name.strip()
+		if "control-plane" in node["name"]:
+			continue
 
 		# process labels
 		# TODO: the default labels may not need the prefix like kubernetes.io
@@ -434,11 +439,12 @@ def parse_describe_nodes(json_config, f_str):
 
 # by default converting into Mi
 # https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes
+# Now we approximate the memory using Gi as 1 unit. If it's less than 1 unit, we count as 1.
 def memory_converter(s):
 	if "Ki" in s:
-		return int(int(s.strip()[:-2])/1024.0)
+		return ceil(int(s.strip()[:-2])/(1024.0*1024.0))
 	elif "Mi" in s:
-		return int(s.strip()[:-2])
+		return ceil(int(s.strip()[:-2])/1024.0)
 	else:
 		logger.critical("Unknown types of resources " + s + "!")
 		exit()

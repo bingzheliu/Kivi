@@ -68,9 +68,9 @@ You can see the following minimal example demonstrating the traces that lead to 
 1 failure(s) are found!
 -----Failure #1-----
 Minimal example:
-[*][CPU Change] CPU change 1 on pod 1, now 9, and node 1, now 15
+[*][CPU Change] CPU change 2 on pod 4, now 10, and node 3, now 46
 [*][HPA] Need to rescale, scale metric is 0, orgional is 5, now is 6.
-[*][Deployment] Too few replicas in replicaSet 11 need to create 1
+[*][Deployment] Too few replicas in replicaSet 1 need to create 1
 [*][Deployment] Adding a new pod 6 to deployment 1
 [*][Scheduler] No feasiable node!
 ```
@@ -87,6 +87,9 @@ You will see a similar output that demonstrate the same minimal example.
 Please find more documents in `documents/`, including an [overview of the system architecture](documents/sys_arch.md). 
 
 It is a work-in-progress. 
+
+## Contributors
+This repo is part of the research project **Kivi: Verification for Cluster Management**, authored by [Bingzhe Liu](https://bingzhe.web.engr.illinois.edu/), [Gangmuk Lim](https://gangmuk.github.io/), [Ryan Beckett](https://www.microsoft.com/en-us/research/people/rybecket/) and [P. Brighten Godfrey](https://pbg.cs.illinois.edu/).
 
 ## Contact
 Bingzhe Liu (bzheliu at gmail.com)

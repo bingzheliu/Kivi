@@ -220,11 +220,13 @@ stopo2:				j++;
 					fi;
 
 					short count = 0;
+					count = 0;
 					findMatchedPod(i, j, podSpec);
 					printf("[****][SchedulerPlugins] Matched pod for {node %d, topologyKey %d} is %d\n", i, podSpec.topoSpreadConstraints[j].topologyKey, count)
 
 					// We don't need the tpCountsByNodes as we can't do the calculation of nodes in parallel
-					short key = podSpec.topoSpreadConstraints[j].topologyKey;
+					short key;
+					key = podSpec.topoSpreadConstraints[j].topologyKey;
 
 					if 
 						:: count >= 0 && tpPairToMatchNum[key].a[nodesStable[i].labelKeyValue[key]] == UNDEFINED_VALUE -> 
@@ -252,7 +254,7 @@ stopo1: 	i++;
 				j = 0;
 				for (j : 1 .. MAX_VALUE) {
 					if 
-						:: tpPairToMatchNum[i].a[j] != -1 ->
+						:: tpPairToMatchNum[i].a[j] != UNDEFINED_VALUE ->
 							tpKeyToDomainsNum[i] ++; 
 						:: else->;
 					fi;
@@ -270,7 +272,7 @@ stopo1: 	i++;
 			if 
 				// simplify the "update" function. The update function can be called by updateWithPod, which we don't model. So the tpVal should always not exists. 
 				// It essentially finding the min number (and second min number). 
-				:: tpPairToMatchNum[i].a[j] != -1 ->
+				:: tpPairToMatchNum[i].a[j] != UNDEFINED_VALUE ->
 					if 
 						:: tpPairToMatchNum[i].a[j] < curMin ->
 							curMin = tpPairToMatchNum[i].a[j];
@@ -387,7 +389,7 @@ inline podTopologySpreadFiltering(curPod, podSpec)
 		j = 0;
 		tpKeyToDomainsNum[i] = 0;
 		for (j : 1 .. MAX_VALUE) {
-			tpPairToMatchNum[i].a[j] = -1;
+			tpPairToMatchNum[i].a[j] = UNDEFINED_VALUE;
 		}
 	}
 

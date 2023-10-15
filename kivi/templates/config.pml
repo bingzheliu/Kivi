@@ -92,13 +92,13 @@
 
 /*--------- Event Config -----------*/
 // TODO: this can be passed as a parameter by the users
-#define EVENT_CPU_COUNT 3
+#define EVENT_CPU_COUNT 1
 
 /*--------- Intent Config -----------*/
 #define LOOP_TIMES [$LOOP_TIMES]
 
 /*--------- Internal Config -----------*/
-#define UNDEFINED_VALUE 0
+#define UNDEFINED_VALUE -1
 
 /*--------- optimization ------*/
 // By default we don't look into the failures in transit (kubelet hence always run first than deployment).

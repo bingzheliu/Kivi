@@ -247,12 +247,16 @@ class VeriferOperator():
 	def add_default_intents(self, json_config):
 		for i in default_intents:
 			exist = False
-			for j_intent in json_config["intents"]:
-				if self.compare_intents(i, j_intent):
-					exist = True
-			if exist:
-				break
-			json_config["intents"].append(deepcopy(i))
+			if "intents" in json_config:
+				for j_intent in json_config["intents"]:
+					if self.compare_intents(i, j_intent):
+						exist = True
+				if exist:
+					break
+				json_config["intents"].append(deepcopy(i))
+			else:
+				json_config["intents"] = []
+				json_config["intents"].append(deepcopy(i))
 
 	def str_failures(self):
 		msg = str(len(self.failures)) + " failure(s) are found!\n"

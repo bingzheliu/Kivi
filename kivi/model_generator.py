@@ -9,7 +9,7 @@ from config import *
 from processing_default import *
 import json
 
-index_starts_at_one = {"pods", "nodes", "d", "podTemplates", "deploymentTemplates", "nodesStable"}
+index_starts_at_one = {"pods", "nodes", "d", "podTemplates", "deploymentTemplates", "nodesStable", "podsStable"}
 
 
 # A pre-processor to process all the labels, converting each keys (including built-ins) into unique number, and all values for each key 

@@ -62,7 +62,7 @@ class Kivi():
 
 			logger.critical(verifier_operator.str_failures())
 
-	def simulation(json_config, file_base, pml_base_path):
+	def simulation(self, json_config, file_base, pml_base_path):
 		main_filename = model_generator(json_config, pml_base_path, file_base + "/kivi/templates")
 
 		success, stdout, stderr = run_script([file_base + '/libs/Spin/Src/spin', pml_base_path + "/" + main_filename], True)

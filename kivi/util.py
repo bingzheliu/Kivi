@@ -34,28 +34,28 @@ def setup_logger(name, level=logging.INFO, handler_type="stream", filename=None)
 def setup_argparser(arg_parser):
     # can use subparser to parse for verification v.s. simulation. 
     mode = arg_parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument('-c', '--case', type=str, help='Verify an exiting cases, entering a case name.')
+    mode.add_argument('-c', '--case', type=str, help='Verify an existing case, entering a case name.')
     # TODO: this may need to be convert into absolute path
     mode.add_argument('-p', '--path', type=str, help='Verify from runtime configs, entering config path.')
 
     verification_arg = arg_parser.add_argument_group("Verification parameters")
     verification_arg.add_argument('-o', '--original', action='store_true', help='Disable scaling algorithm and verify for the original configs (single topology without scaling algorithm).')
-    verification_arg.add_argument('-f', '--fast_find', type=int, default=0, help='When using scaling algorithm, increasing the scale faster instead of trying all the scales. Speed can be chosen from 0 to 3. With default 0 the origional speed.')
+    verification_arg.add_argument('-f', '--fast_find', type=int, default=0, help='When using scaling algorithm, increasing the scale faster instead of trying all the scales. Speed can be chosen from 0 to 3. With default 0 the original speed.')
     # TODO: add option to send to pan and see if we want to find all the violations
     verification_arg.add_argument('-a', '--all_violation', action='store_true', help='Find all violations (default: stop after finding one).')
     verification_arg.add_argument('-v', '--verbose_level', type=int, default=1, help="Log level for generated examples. Smaller value means less hints in the examples." )
-    verification_arg.add_argument('-r', '--random', action='store_true', help='Enable the verifier to automatically try random seed for verification. If -to is not defined, the default timeout for each random number is' + str(default_timeout)+ 'sec.')
+    verification_arg.add_argument('-r', '--random', action='store_true', help='Enable the verifier to automatically try random seed for verification. If -to is not defined, the default timeout for each random number is ' + str(default_timeout)+ 'sec.')
     verification_arg.add_argument('-to','--timeout', type=int, help='Timeout for each pan execuation.')
     #verification_arg.add_argument('-eh', '--extreamly_high_confidence', action='store_true', help='Enable extreamly high confidence mode for verification. Default: disable -- verification will stop at N(Node) = 10 with high confidence.')
-    verification_arg.add_argument("-ig", '--intents_group', type=int, default=0, help="Defines how many intents to be verified at a time. Defualt is 0, meaning all intents verified together.")
+    verification_arg.add_argument("-ig", '--intents_group', type=int, default=0, help="Defines how many intents to be verified at a time. Default is 0, meaning all intents are verified together.")
 
-    spin_arg = arg_parser.add_argument_group("Spin options", description="Options sent to pan or spin. All options need to be quoted and seperated by comma without dash, e.g., 'm10000, n'")
+    spin_arg = arg_parser.add_argument_group("Spin options", description="Options sent to pan or spin. All options need to be quoted and separated by comma without dash, e.g., 'm10000, n'")
     spin_arg.add_argument('-pc', '--pan_compile', type=str, default="DVECTORSZ=100000, DT_RAND, DP_RAND", help="Options for pan compiler. ")
     spin_arg.add_argument('-pr', '--pan_runtime',  type=str, default='m100000', help="Options for pan runtime.")
     spin_arg.add_argument('-l', '--loop', action='store_true', help="Check if exists loop/oscillation using SPIN default implementation.")
 
     arg_parser.add_argument('-s', '--scale', type=int, default=3, help='Choose a scale if use -c and -o. Default: 3 nodes.')
-    arg_parser.add_argument('-cn', "--case_non_violation", action='store_true', help='Deside if generate cases without violations if use -c. Default: False.')
+    arg_parser.add_argument('-cn', "--case_non_violation", action='store_true', help='Decide if generate cases without violations if use -c. Default: False.')
 
     other_parser = arg_parser.add_argument_group("Other runtime parameters")
     other_parser.add_argument('-jf', '--json_file_path', type=str, help="the file path to dump the intermediate JSON file of cluster setup.")
@@ -66,7 +66,7 @@ def setup_argparser(arg_parser):
     simulation_arg.add_argument("-si", "--simulation", action='store_true', help="Simulation mode.")
 
 
-arg_parser = argparse.ArgumentParser(prog=system_name,description='Verifier parameters.')
+arg_parser = argparse.ArgumentParser(prog=system_name,description='Kivi parameters.')
 setup_argparser(arg_parser)
 args = arg_parser.parse_args()
 

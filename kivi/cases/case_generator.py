@@ -1493,7 +1493,7 @@ def generate_S3_woCPU(num_node, non_violation=False):
 	case_config["userCommand"].append(cur_json_uc)
 
 	case_config["intents"] = []
-	case_config["intents"].append({"name":"no_feasiable_node"})
+	case_config["intents"].append({"name":"no_feasible_node"})
 
 	return case_config
 

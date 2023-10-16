@@ -26,7 +26,7 @@ class VeriferOperator():
 
 		self.log_level = args.verbose_level
 
-		self.intent_groups = {"never":[], "loop":["loop"], "assert":["no_feasiable_node", "kernel_panic", "checkOscillationReplicaNum", \
+		self.intent_groups = {"never":[], "loop":["loop"], "assert":["no_feasible_node", "kernel_panic", "checkOscillationReplicaNum", \
 				"checkMinReplicas", "checkExpReplicas", "checkEvictionCycle", "checkBalanceNode"]}
 
 		# set up the compile and runtime parameters for Spin and pan

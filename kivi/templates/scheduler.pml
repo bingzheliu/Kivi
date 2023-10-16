@@ -81,8 +81,8 @@ inline selectHost()
 
 	if
 	:: max == -1 -> 
-		printf("[*][Scheduler] No feasiable node!\n");
-#ifdef NO_FEASIABLE_NODE
+		printf("[*][Scheduler] No feasible node!\n");
+#ifdef NO_FEASIBLE_NODE
 		assert(false);
 #endif
 	:: else->;
@@ -110,7 +110,7 @@ inline checkIfUnschedulable()
 {
 	if
 	:: selectedNode == 0 && podsStable[curPod].important == 1 ->
-#ifdef NO_FEASIABLE_NODE
+#ifdef NO_FEASIBLE_NODE
 		assert(false);
 #endif
 		skip

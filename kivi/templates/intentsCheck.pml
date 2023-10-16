@@ -1,5 +1,5 @@
 // kernel panic: {"name": "kernel_panic", "flag":True, "run":False, "para":{}}
-// no feasiable node:{"name":"no_feasiable_node", "flag":True, "run": False, "para":{}}
+// no feasible node:{"name":"no_feasible_node", "flag":True, "run": False, "para":{}}
 
 
 // Check for H1

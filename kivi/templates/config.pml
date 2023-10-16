@@ -106,6 +106,6 @@
 #define BACK_TO_BACK_OPT 1
 
 /*--------- ifdef ----------*/
-// Intents: NO_FEASIABLE_NODE, 
+// Intents: NO_FEASIBLE_NODE, 
 // Data structure: MORE_PODS
 [$IFDEF]

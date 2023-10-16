@@ -401,10 +401,10 @@ def generate_list_setup_dfs(json_config, i, cur_type, cur_setup, all_setup, coun
 	elif json_config["userDefined"][cur_type+"ScaleType"] == "free":
 		j = cur_json_config["lowerBound"]
 		while (j <= cur_json_config["upperBound"]):
-			if (cur_type == "d" and (((not args.extreamly_high_confidence) and j > (confident_pod_size_factor*count["nodes"])) or j > json_config["userDefined"]["max_pod_per_node"]*count["nodes"])):
+			if (cur_type == "d" and (j > (confident_pod_size_factor*count["nodes"]) or j > json_config["userDefined"]["max_pod_per_node"]*count["nodes"])):
 				break
 			#print(cur_type, j, confident_node_size)
-			if (cur_type == "nodes" and (not args.extreamly_high_confidence) and j  > confident_node_size):
+			if (cur_type == "nodes" and j  > confident_node_size):
 				break
 			# if (cur_type == "d" and j > (count["nodes"] * cur_json_config["proportionNode"])):
 			# 	break
@@ -471,7 +471,7 @@ def generate_list_setup(json_config):
 				#print(j, max_dep, max_node, i)
 				count = {"nodes":0, "d":0}
 				generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, count, cur_base={"nodes": i, "d" : j})
-				if not args.extreamly_high_confidence and count["nodes"] > confident_node_size:
+				if count["nodes"] > confident_node_size:
 					break_flag = True
 
 			else:
@@ -479,7 +479,7 @@ def generate_list_setup(json_config):
 				while j <= max_dep:
 					count = {"nodes":0, "d":0}
 					generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, count, cur_base={"nodes": i, "d" : j})
-					if not args.extreamly_high_confidence and count["nodes"] > confident_node_size:
+					if count["nodes"] > confident_node_size:
 						break_flag = True
 					j = get_next_num(j)
 					if exceed_node_proportion(count, j, json_config):

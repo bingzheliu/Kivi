@@ -3,6 +3,7 @@
 ## Install and Requirement
 
 [Spin](https://github.com/nimble-code/Spin) (>=6.5.2)
+Python (>=3.8)
 
 ### Manual
 1. Create `libs`, `results` and `temp` directories under the root dir. 
@@ -27,33 +28,31 @@ python3 kivi_runner.py [options]
 
 ### Option
 ```
-usage: Kivi [-h] (-c CASE | -p PATH) [-o] [-f FAST_FIND] [-a] [-v VERBOSE_LEVEL] [-r] [-to TIMEOUT] [-eh] [-ig INTENTS_GROUP] [-pc PAN_COMPILE] [-pr PAN_RUNTIME] [-l]
+usage: Kivi [-h] (-c CASE | -p PATH) [-o] [-f FAST_FIND] [-a] [-v VERBOSE_LEVEL] [-r] [-to TIMEOUT] [-ig INTENTS_GROUP] [-pc PAN_COMPILE] [-pr PAN_RUNTIME] [-l]
             [-s SCALE] [-cn] [-jf JSON_FILE_PATH] [-lf LOG_OUTPUT_FILE] [-fd FILE_DEBUG] [-si]
 
 Verifier parameters.
 
 optional arguments:
   -h, --help            show this help message and exit
-  -c CASE, --case CASE  Verify an exiting cases, entering a case name
-  -p PATH, --path PATH  Verify from runtime configs, entering config path
+  -c CASE, --case CASE  Verify an exiting cases, entering a case name.
+  -p PATH, --path PATH  Verify from runtime configs, entering config path.
   -s SCALE, --scale SCALE
                         Choose a scale if use -c and -o. Default: 3 nodes.
   -cn, --case_non_violation
                         Deside if generate cases without violations if use -c. Default: False.
 
 Verification parameters:
-  -o, --original        Disable finding minimal examples and verify for the original configs
+  -o, --original        Disable scaling algorithm and verify for the original configs (single topology without scaling algorithm).
   -f FAST_FIND, --fast_find FAST_FIND
-                        When finding minimal examples, find the minimal scale faster instead of trying all the scales. Speed can be chosen from 0 to 3. With default 0 the
+                        When using scaling algorithm, increasing the scale faster instead of trying all the scales. Speed can be chosen from 0 to 3. With default 0 the
                         origional speed.
-  -a, --all_violation   Find all violations (default: stop after finding one)
+  -a, --all_violation   Find all violations (default: stop after finding one).
   -v VERBOSE_LEVEL, --verbose_level VERBOSE_LEVEL
                         Log level for generated examples. Smaller value means less hints in the examples.
-  -r, --random          Enable the verifier to automatically try random seed for verification. If -to is not defined, the default timeout for each random number is 10sec.
+  -r, --random          Enable the verifier to automatically try random seed for verification. If -to is not defined, the default timeout for each random number is300sec.
   -to TIMEOUT, --timeout TIMEOUT
                         Timeout for each pan execuation.
-  -eh, --extreamly_high_confidence
-                        Enable extreamly high confidence mode for verification. Default: disable -- verification will stop at N(Node) = 10 with high confidence.
   -ig INTENTS_GROUP, --intents_group INTENTS_GROUP
                         Defines how many intents to be verified at a time. Defualt is 0, meaning all intents verified together.
 
@@ -63,8 +62,8 @@ Spin options:
   -pc PAN_COMPILE, --pan_compile PAN_COMPILE
                         Options for pan compiler.
   -pr PAN_RUNTIME, --pan_runtime PAN_RUNTIME
-                        Options for pan runtime
-  -l, --loop            Check if exists loop/oscillation.
+                        Options for pan runtime.
+  -l, --loop            Check if exists loop/oscillation using SPIN default implementation.
 
 Other runtime parameters:
   -jf JSON_FILE_PATH, --json_file_path JSON_FILE_PATH
@@ -75,8 +74,7 @@ Other runtime parameters:
                         store the intermediate files for debug purposes. Default is 0, meaning no file is written.
 
 Simulation parameters:
-  -si, --simulation     Simulation mode
-
+  -si, --simulation     Simulation mode.
 ```
 
 ## Example

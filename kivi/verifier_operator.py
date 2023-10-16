@@ -53,7 +53,6 @@ class VeriferOperator():
 
 	def operator(self):
 		if not args.original:
-			# Note: if the sort_favor for finding_smallest_scale is not "Nodes", will need to change the below arg.extreamly_high_confidence line to find the right break point.
 			all_setup, json_config_template = finding_smallest_scale(self.json_config, self.pml_base_path)
 
 			# TODO: the following can be improved as using multi-core

@@ -1,3 +1,5 @@
+# This module includes all the default interal configurations for verification. 
+
 import logging
 
 confident_node_size = 6
@@ -18,7 +20,6 @@ loop_times = 3
 
 #how cases are scaled up
 case_free = True
-
 
 #verification internal parameters
 ## initial queue size

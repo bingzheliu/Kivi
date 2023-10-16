@@ -1,3 +1,5 @@
+# This module includes the shared functions and variables in kivi.
+
 import logging
 import argparse
 import os

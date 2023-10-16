@@ -1,8 +1,6 @@
-#
-#	1. The field in the json file passed into generate_model must be all numbers except labels field (labels, topologyKey), which will be translated into numbers in process_labels. 
-# 	   TODO: later if we pass yaml file, will add a gloabl translator, to translate all the string into unique number.
-#
-#
+#	This module generates PROMELA model. 
+# 	It is used by calling model_generator and providing 1) a json style config, 2) the path for the output the model, 3) the model template path and 4) (optional) queue size for the model.
+#	The field in the json file passed into model_generator must be all numbers except labels field (labels, topologyKey), which will be translated into numbers in process_labels. 
 
 from util import *
 from config import *
@@ -10,6 +8,36 @@ from processing_default import *
 import json
 
 index_starts_at_one = {"pods", "nodes", "d", "podTemplates", "deploymentTemplates", "nodesStable", "podsStable"}
+
+def model_generator(json_config, pml_base_path, template_path, queue_size_default=None):
+	with open(template_path + "/config.pml") as f:
+		pml_config = f.read()
+
+	with open(template_path + "/main.pml") as f:
+		pml_main = f.read()
+
+	with open(template_path + "/intentsCheck.pml") as f:
+		pml_intent = f.read()
+
+	with open(template_path + "/eventGenerate.pml") as f:
+		pml_event = f.read()
+
+	pml_config, pml_main, pml_intent, pml_event = generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, template_path, queue_size_default)
+	
+	with open(pml_base_path + "/config.pml", "w") as f:
+		f.write(pml_config)
+
+	main_filename = "main.pml"
+	with open(pml_base_path + "/" + main_filename, "w") as f:
+		f.write(pml_main)
+
+	with open(pml_base_path + "/intentsCheck.pml", "w") as f:
+		f.write(pml_intent)
+
+	with open(pml_base_path + "/event.pml", "w") as f:
+		f.write(pml_event)
+
+	return main_filename
 
 
 # A pre-processor to process all the labels, converting each keys (including built-ins) into unique number, and all values for each key 
@@ -578,7 +606,7 @@ def check_HPA(json_config, ifdef):
 def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, template_path, queue_size_default):
 	ifdef = ""
 
-	print(json.dumps(json_config, indent=2))
+	#print(json.dumps(json_config, indent=2))
 
 	userDefinedConstraints = check_for_completion_add_default(json_config)
 	ifdef = check_HPA(json_config, ifdef)
@@ -668,37 +696,4 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 						   #.replace("[$MAX_DEPLOYMENT]", str(deployment_num+3)) \						   
 
 	return pml_config, pml_main, pml_intent, pml_event
-
-
-def model_generator(json_config, pml_base_path, template_path, queue_size_default=None):
-	with open(template_path + "/config.pml") as f:
-		pml_config = f.read()
-
-	with open(template_path + "/main.pml") as f:
-		pml_main = f.read()
-
-	with open(template_path + "/intentsCheck.pml") as f:
-		pml_intent = f.read()
-
-	with open(template_path + "/eventGenerate.pml") as f:
-		pml_event = f.read()
-
-	pml_config, pml_main, pml_intent, pml_event = generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, template_path, queue_size_default)
-	
-	with open(pml_base_path + "/config.pml", "w") as f:
-		f.write(pml_config)
-
-	main_filename = "main.pml"
-	with open(pml_base_path + "/" + main_filename, "w") as f:
-		f.write(pml_main)
-
-	with open(pml_base_path + "/intentsCheck.pml", "w") as f:
-		f.write(pml_intent)
-
-	with open(pml_base_path + "/event.pml", "w") as f:
-		f.write(pml_event)
-
-	return main_filename
-
-
 

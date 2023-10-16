@@ -1,6 +1,8 @@
-#	1. Node type: can be mapped to the node groups in k8s cluster autoscaling. It is suggested by AWS 
-#	   that "Configure a smaller number of node groups with a larger number of nodes because the opposite configuration can negatively affect scalability."
-#	   https://docs.aws.amazon.com/eks/latest/userguide/autoscaling.html
+#	This module implements part of the scaling algorithm. It finds all the scaled setup that need to verify for the given cluster setup.
+# 	finding_smallest_scale is called by the verifier operator to generate all the setup. 
+#	generate_case_json is called by the verifier operator to generate the json file from a setup, which will be sent to model generator to generate the model.
+#	template_generator is used to generate template from an existing k8s logs
+
 import math
 import json
 from copy import deepcopy
@@ -40,78 +42,26 @@ equal_templates = {"nodes":["cpu", "memory", "cpuLeft", "memLeft", "status", "la
 #   "dScaleType": "proportion" or "free"	?
 # }
 
-# TODO
-# 1. may need to process deploymentTemplates deploymentTemplates.
-# 2. merge the applyDeployment related events
-def compare_field(t1, t2, field):
-	if field in ["cpu", "memory", "memLeft", "cpuLeft"]:
-		return math.abs(t1-t2) <= resource_difference_tolerance
+def finding_smallest_scale(json_config, pml_base_path, sort_favor="nodes"):
+	all_setup = generate_list_setup(json_config)
+#	print(all_setup)
+	if sort_favor == "nodes":
+		all_setup.sort(key = sort_setup_node)
+	if sort_favor == "all":
+		all_setup.sort(key = sort_setup_all)
+	print(all_setup)
 
-	return t1 == t2
+	if args.file_debug > 2:
+		count = 0
+		for s in all_setup:
+			new_json_config, num_node, num_pod = generate_case_json(json_config, s)
+			config_template_filename = pml_base_path + "/min_exp/" + str(count) + "_" + str(num_node) + "_" + str(num_pod) + ".json"
+			count += 1
 
-def compare_template(t1, t2, field):
-	for f in field:
-		if f in t1:
-			if isinstance(t1[f], dict):
-				for e in t1[f]:
-					if not compare_field(t1[f][e], t2[f][e], field):
-						return False
+			with open(config_template_filename,'w') as f:
+				json.dump(new_json_config, f, indent=4)
 
-			else:
-				if f not in t2 or (not compare_field(t1[f], t2[f], field)):
-					return False
-		else:
-			if f in t2:
-				return False
-		
-	return True
-
-#t2 = t1
-def assign_template(t1, t2, field):
-	for f in field:
-		if f in t1:
-			if isinstance(t1[f], dict):
-				t2[f] = {}
-				for e in t1[f]:
-					t2[f][e] = t1[f][e]
-			else:
-				t2[f] = t1[f]
-
-def get_propotion(count):
-	min_count = count[0]
-	propotion = [0]*len(count)
-
-	for i in range(0, len(count)):
-		if count[i] < min_count:
-			min_count = count[i]
-
-	for i in range(0, len(count)):
-		propotion[i] = count[i]*1.0/min_count
-
-	return propotion
-
-def find_max_replicas_d(d):
-	max_replicas = 0
-	if d["specReplicas"] > max_replicas:
-		max_replicas = d["specReplicas"]
-	if d["replicas"] > max_replicas:
-		max_replicas = d["replicas"]
-	if "hpaSpec" in d and d["hpaSpec"]["maxReplicas"] > max_replicas:
-		max_replicas = d["hpaSpec"]["maxReplicas"]
-
-	return max_replicas
-
-# remove all the pod cpu and memory usage from the nodes, so that nodes show its origional resources without the deployments
-def deduct_cpu_nodes(json_config):
-	for p in json_config["setup"]["pods"]:
-		if "loc" in p and p["status"] != 0 and p["loc"] > 0:
-			n = json_config["setup"]["nodes"][p["loc"]-1]
-			n["cpuLeft"] = n["cpuLeft"]+p["cpu"]
-			n["memLeft"] = n["memLeft"]+p["memory"]
-			n["numPod"] -= 1
-
-	return json_config
-
+	return all_setup, json_config
 
 # Generating templates from a running cluster log, which does not have types defined:
 # In this mode, user can't define the upper bound and lower bound of their types, as they don't know this in advance. 
@@ -217,14 +167,6 @@ def template_generator(json_config, user_defined=None):
 
 	return json_config
 
-def adjust_replicas(replicas, json_config_cur):
-	if replicas > json_config_cur["upperBound"]:
-		replicas = json_config_cur["upperBound"]
-	elif replicas < json_config_cur["lowerBound"]:
-		replicas = json_config_cur["lowerBound"]
-
-	return replicas
-
 def generate_case_json(json_config, cur_setup):
 	new_json_config = deepcopy(json_config)
 	new_json_config.pop("userDefined")
@@ -322,6 +264,86 @@ def generate_case_json(json_config, cur_setup):
 	#print(json.dumps(new_json_config, indent=2))
 
 	return new_json_config, len(new_json_config["setup"]["nodes"]), len(new_json_config["setup"]["pods"]) 
+
+# TODO
+# 1. may need to process deploymentTemplates deploymentTemplates.
+# 2. merge the applyDeployment related events
+def compare_field(t1, t2, field):
+	if field in ["cpu", "memory", "memLeft", "cpuLeft"]:
+		return math.abs(t1-t2) <= resource_difference_tolerance
+
+	return t1 == t2
+
+def compare_template(t1, t2, field):
+	for f in field:
+		if f in t1:
+			if isinstance(t1[f], dict):
+				for e in t1[f]:
+					if not compare_field(t1[f][e], t2[f][e], field):
+						return False
+
+			else:
+				if f not in t2 or (not compare_field(t1[f], t2[f], field)):
+					return False
+		else:
+			if f in t2:
+				return False
+		
+	return True
+
+#t2 = t1
+def assign_template(t1, t2, field):
+	for f in field:
+		if f in t1:
+			if isinstance(t1[f], dict):
+				t2[f] = {}
+				for e in t1[f]:
+					t2[f][e] = t1[f][e]
+			else:
+				t2[f] = t1[f]
+
+def get_propotion(count):
+	min_count = count[0]
+	propotion = [0]*len(count)
+
+	for i in range(0, len(count)):
+		if count[i] < min_count:
+			min_count = count[i]
+
+	for i in range(0, len(count)):
+		propotion[i] = count[i]*1.0/min_count
+
+	return propotion
+
+def find_max_replicas_d(d):
+	max_replicas = 0
+	if d["specReplicas"] > max_replicas:
+		max_replicas = d["specReplicas"]
+	if d["replicas"] > max_replicas:
+		max_replicas = d["replicas"]
+	if "hpaSpec" in d and d["hpaSpec"]["maxReplicas"] > max_replicas:
+		max_replicas = d["hpaSpec"]["maxReplicas"]
+
+	return max_replicas
+
+# remove all the pod cpu and memory usage from the nodes, so that nodes show its origional resources without the deployments
+def deduct_cpu_nodes(json_config):
+	for p in json_config["setup"]["pods"]:
+		if "loc" in p and p["status"] != 0 and p["loc"] > 0:
+			n = json_config["setup"]["nodes"][p["loc"]-1]
+			n["cpuLeft"] = n["cpuLeft"]+p["cpu"]
+			n["memLeft"] = n["memLeft"]+p["memory"]
+			n["numPod"] -= 1
+
+	return json_config
+
+def adjust_replicas(replicas, json_config_cur):
+	if replicas > json_config_cur["upperBound"]:
+		replicas = json_config_cur["upperBound"]
+	elif replicas < json_config_cur["lowerBound"]:
+		replicas = json_config_cur["lowerBound"]
+
+	return replicas
 
 # Need to smartly set the boundary, otherwise it can take longer time. Now 7 is extracted the maxium number of pods that cause the problem
 def get_next_num(j):
@@ -522,39 +544,4 @@ def str_setup(setup):
 
 # 	return json_config
 		
-def finding_smallest_scale(json_config, pml_base_path, sort_favor="nodes"):
-	all_setup = generate_list_setup(json_config)
-#	print(all_setup)
-	if sort_favor == "nodes":
-		all_setup.sort(key = sort_setup_node)
-	if sort_favor == "all":
-		all_setup.sort(key = sort_setup_all)
-	print(all_setup)
-
-	if args.file_debug > 2:
-		count = 0
-		for s in all_setup:
-			new_json_config, num_node, num_pod = generate_case_json(json_config, s)
-			config_template_filename = pml_base_path + "/min_exp/" + str(count) + "_" + str(num_node) + "_" + str(num_pod) + ".json"
-			count += 1
-
-			with open(config_template_filename,'w') as f:
-				json.dump(new_json_config, f, indent=4)
-
-	return all_setup, json_config
-
-if __name__ == '__main__':
-	case_id = sys.argv[1]
-
-	file_base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-	if len(sys.argv) > 3:
-		file_base = os.path.abspath(sys.argv[3])
-
-	result_base_path = file_base + "/results/" + str(case_id)  
-
-	json_config = get_case_temeplate(file_base, case_id)
-	print(json_config)
-	all_setup = finding_smallest_scale(json_config, file_base, case_id)
-
-	
 

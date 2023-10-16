@@ -1,3 +1,5 @@
+# This module parses the config yamls and runtime logs and generates a uniformed format JSON.
+
 import yaml
 import os
 import json

@@ -1,12 +1,15 @@
-##### Pod Topo Spreading Plugins
-# implement filterTopologySpreadConstraints and buildDefaultConstraints in common.go
-# deal with enableMatchLabelKeysInPodTopologySpread
-# deal with defaultValue for podSpreadPolicy
+# This module includes all the default values in K8s configuration. It is used to complete missing values by model generator. 
 
 
 # required to define for the verification, not for the config from the user. 
 # TODO: check if we need to init the score -- if this benefit verification perf or not
 # TODO: putting all the default value definition into the same file (move the definiations in config.pml into this)
+
+##### Pod Topo Spreading Plugins
+# implement filterTopologySpreadConstraints and buildDefaultConstraints in common.go
+# deal with enableMatchLabelKeysInPodTopologySpread
+# deal with defaultValue for podSpreadPolicy
+
 
 from util import *
 import sys, json

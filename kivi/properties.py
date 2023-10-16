@@ -1,4 +1,4 @@
-
+#TODO: improve the properties module -- translate properteis into these classes.
 
 class Property():
 	def __init__(self, name):

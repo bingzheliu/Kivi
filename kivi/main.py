@@ -1,9 +1,11 @@
+# This module implements the basic workflow of Kivi. 
+
 import json
 import math
 
 from util import *
 
-from verifier_operators import VeriferOperator
+from verifier_operator import VeriferOperator
 from parser import parser
 from cases.case_generator import case_generator
 from model_generator import model_generator
@@ -13,7 +15,7 @@ class Kivi():
 	def __init__(self):
 		pass
 	
-	def verifier(self):
+	def run(self):
 		scale = args.scale
 		# verify according to config files.
 		if args.path:
@@ -70,5 +72,3 @@ class Kivi():
 
 		result_log, failure_details = parse_spin_error_trail(stdout.decode(), args.verbose_level)
 		myprint(result_log, logger.info)
-
-

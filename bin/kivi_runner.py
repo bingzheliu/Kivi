@@ -6,8 +6,8 @@ sys.path.insert(0, sys_path)
 sys.path.insert(0, sys_path+"/kivi")
 
 import kivi
-from kivi import verifier
+from kivi.main import Kivi
 
 if __name__ == '__main__':
-	kivi_app = verifier.Kivi()
-	kivi_app.verifier()
+	kivi_app = Kivi()
+	kivi_app.run()

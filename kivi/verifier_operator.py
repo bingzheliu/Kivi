@@ -1,3 +1,5 @@
+# This module implements the verifier operator
+
 import subprocess
 import random
 import datetime

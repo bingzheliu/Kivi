@@ -1,7 +1,5 @@
 [
 	{
-		"object" : "all",
-		"objectType" : "pods",
-		"target" : "scheduable"
+		"no_feasible_node"
 	}
 ]

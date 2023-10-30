@@ -81,7 +81,7 @@ inline selectHost()
 
 	if
 	:: max == -1 -> 
-		printf("[*][Scheduler] No feasible node!\n");
+		printf("[*][Scheduler - no_feasible_node] No feasible node!\n");
 #ifdef NO_FEASIBLE_NODE
 		assert(false);
 #endif

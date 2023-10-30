@@ -29,6 +29,9 @@ class VeriferOperator():
 		self.intent_groups = {"never":[], "loop":["loop"], "assert":["no_feasible_node", "kernel_panic", "checkOscillationReplicaNum", \
 				"checkMinReplicas", "checkExpReplicas", "checkEvictionCycle", "checkBalanceNode"]}
 
+		self.intents = ["no_feasible_node", "kernel_panic", "checkOscillationReplicaNum", \
+				"checkMinReplicas", "checkExpReplicas", "checkEvictionCycle", "checkBalanceNode"]
+
 		# set up the compile and runtime parameters for Spin and pan
 		self.pan_runtime = ["-" + o.strip() for o in args.pan_runtime.split(",")]
 		self.pan_compile = ['-o', 'pan', 'pan.c']
@@ -74,7 +77,13 @@ class VeriferOperator():
 			new_failures = self.verify_one_setup(self.json_config)
 
 			if len(new_failures) > 0:
-				logger.critical("Failure found!")
+				logger.info(str(len(new_failures)) + " failure found!")
+				for failure in new_failures:
+					failure_type = failure[0]
+					if failure_type is not None:
+						logger.info("\nError message: "+str(failure_type) + "\ntotal memory usage: " + str(failure[-2]) + "MB\nelapsed time: " + str(failure[-1])+"s\n")
+						
+
 				self.failures.extend(new_failures)
 
 	def verify_one_setup(self,json_config):
@@ -86,12 +95,15 @@ class VeriferOperator():
 			# TODO: may need to process loop seperately. 
 			cur_json_config = deepcopy(json_config)
 			cur_json_config["intents"] = intents
-			logger.critical("Currently working on the following intents:")
-			logger.critical(intents)
+
+			intents_str = ""
+			for intent in intents:
+				intents_str += intent["name"]+" "
+			logger.critical("Working on the intents: "+intents_str)
 
 			new_failures = self.verify_one_topology(cur_json_config, queue_size)
 			if len(new_failures) > 0:
-				logger.critical("Failure found at intent " + str(intents))
+				logger.info("Failure found at intent " + str(intents))
 
 			if not args.all_violation and len(new_failures) > 0:
 				break
@@ -127,11 +139,7 @@ class VeriferOperator():
 			# if args.file_debug > 0:
 			# 	with open(self.result_base_path + "/" + self.case_name + "_" + str(queue_size), "w") as fw:
 			# 		fw.write(str(failure_type) + " " + str(total_mem) + " " + str(elapsed_time) + '\n')
-			if failure_type is not None:
-				logger.critical(str(failure_type) + " " + str(total_mem) + " " + str(elapsed_time))
-				myprint(failure_details)
-			else:
-				logger.critical("No failure found or unknown failure!")
+			myprint(failure_details)
 
 			result_log = ""
 			if error_trail_name != None:
@@ -260,7 +268,8 @@ class VeriferOperator():
 				json_config["intents"].append(deepcopy(i))
 
 	def str_failures(self):
-		msg = str(len(self.failures)) + " failure(s) are found!\n"
+		msg = "========================\n"
+		msg += str(len(self.failures)) + " failure(s) are found!\n"
 		for i in range(0, len(self.failures)):
 			msg += ("-----Failure #" + str(i+1) + "-----" + "\n")
 			#msg += ("Issue: " + failures[i][0] + "\n")
@@ -268,3 +277,12 @@ class VeriferOperator():
 			msg += (self.failures[i][1] + "\n")
 
 		return msg
+
+	def failure_types(self):
+		msg = ""
+		for failure in self.failures:
+			for intent in self.intents:
+				if intent in failure[1]:
+					msg += intent + " "
+		return msg
+

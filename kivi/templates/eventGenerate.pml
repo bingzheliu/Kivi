@@ -120,6 +120,7 @@ endKP:	do
 					if 
 						:: times >= LOOP_TIMES ->
 #ifdef KERNEL_PANIC
+							printf("[*][kernel_panic] Kernel panic happened multiple times at node %d.\n", i)
 							assert(false)
 #endif
 						:: else->;

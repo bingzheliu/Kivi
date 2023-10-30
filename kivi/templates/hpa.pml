@@ -266,7 +266,7 @@ endHPA:	do
 
 							if 
 								:: desiredReplicas != currentReplicas ->
-									printf("[*][HPA]rescale; %d; %d; %d; Need to rescale, scale metric is %d, original is %d, now is %d.\n", curD, currentReplicas, desiredReplicas, rescaleMetric, currentReplicas, desiredReplicas);
+									printf("[*][HPA]rescale; %d; %d; %d; Need to rescale, pod number change from %d to %d.\n", curD, currentReplicas, desiredReplicas, currentReplicas, desiredReplicas);
 									// in k8s, it will trigger client-go.scale. Here we do it directly by writing into the deployment.
 									d[curD].specReplicas = desiredReplicas;
 									updateQueue(dcQueue, dcTail, dcIndex, curD, MAX_DEP_QUEUE)						

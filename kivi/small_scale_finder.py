@@ -49,7 +49,7 @@ def finding_smallest_scale(json_config, pml_base_path, sort_favor="nodes"):
 		all_setup.sort(key = sort_setup_node)
 	if sort_favor == "all":
 		all_setup.sort(key = sort_setup_all)
-	print(all_setup)
+	#print(all_setup)
 
 	if args.file_debug > 2:
 		count = 0
@@ -158,12 +158,11 @@ def template_generator(json_config, user_defined=None):
 	if "max_pod_per_node" in user_defined:
 		json_config["userDefined"]["max_pod_per_node"] = user_defined["max_pod_per_node"]
 
-	logger.debug(json.dumps(json_config, indent=2))
 	json_config["setup"].pop("d")
 	json_config["setup"].pop("pods")
 	json_config["setup"].pop("nodes")
 
-	print(json.dumps(json_config, indent=2))
+	logger.debug(json.dumps(json_config, indent=2))
 
 	return json_config
 
@@ -498,7 +497,7 @@ def generate_list_setup(json_config):
 			generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, count, cur_base={"nodes": 0, "d" : j})
 	else:
 		count = {"nodes":0, "d":0}
-		print("Enetering free mode!")
+		logger.info("Enetering free mode!")
 		generate_list_setup_dfs(json_config, 0, "nodes", cur_setup, all_setup, count)
 
 	logger.info("Total setup is "+str(len(all_setup)))
@@ -524,11 +523,17 @@ def sort_setup_all(element):
 	return count
 
 def str_setup(setup):
-	s = ""
-	for t in setup:
-		s += (t + ": ")
-		for n in setup[t]:
-			s += "{Type " + str(n) + ": " + str(setup[t][n]) + "}, "
+	s = "{"
+	for n in setup["nodes"]:
+		s += "node type " + str(n) + ": " + str(setup["nodes"][n]) + ", "
+	for d in setup["d"]:
+		s += "deployment type " + str(d) + ": " + str(setup["d"][d]) +', '
+	s = s[:-2]
+	s += "}"
+
+		# s += (t + ": ")
+		# for n in setup[t]:
+		# 	s += "{Type " + str(n) + ": " + str(setup[t][n]) + "}, "
 	# total_nodes*json_config["userDefined"]["deploymentTypes"][i]["proportionHPA"] + cur_setup["deployment"][i]
 
 	return s

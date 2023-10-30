@@ -12,7 +12,7 @@ endCH11:	if
 endCH12:	if 
 		 		:: d[did].replicas == d[did].hpaSpec.minReplicas || d[did].replicas <= d[did].hpaSpec.maxReplicas - 3 && !loadChange ->
 		 			atomic{
-			 			printf("[*] The number of replicas was oscillating, now %d\n", d[did].replicas);
+			 			printf("[*][checkOscillationReplicaNum] The number of replicas was oscillating, now %d\n", d[did].replicas);
 			 			assert(false)
 		 			}
 		 		fi;
@@ -29,7 +29,7 @@ proctype checkMinReplicas(byte did)
 endCMR1:	if 
 				:: ((d[did].hpaSpec.isEnabled && d[did].replicas < d[did].hpaSpec.minReplicas) || (!d[did].hpaSpec.isEnabled && d[did].replicas < d[did].specReplicas)) ->
 					atomic{
-						printf("[*] The number of replicas in deployment %d is less than the minium/spec replicas! Now %d.\n", did, d[did].replicas);
+						printf("[*][checkMinReplicas] The number of replicas in deployment %d is less than the minium/spec replicas! Now %d.\n", did, d[did].replicas);
 						assert(false)
 					}
 			fi;
@@ -46,7 +46,7 @@ proctype checkExpReplicas(byte did)
 endCER1:	if 
 				::d[did].replicas < [$expReplicas] ->
 					atomic{
-						printf("[*] The number of replicas in deployment %d is less than the expected replicas! Now %d, expected %d.\n", did, d[did].replicas, [$expReplicas]);
+						printf("[*][checkExpReplicas] The number of replicas in deployment %d is less than the expected replicas! Now %d, expected %d.\n", did, d[did].replicas, [$expReplicas]);
 						assert(false)
 					}
 			fi;
@@ -70,7 +70,7 @@ endCEC12:			if
 								count ++;
 								if 
 									:: count >= LOOP_TIMES ->
-										printf("[*] Pods are being scheduled and descheduled in deployment %d!\n", did)
+										printf("[*][checkEvictionCycle] Pods are being scheduled and descheduled in deployment %d!\n", did)
 										assert(false)
 									:: else->;
 								fi;
@@ -112,7 +112,7 @@ endCBN1:		if
 							for (i : 1 .. NODE_NUM) {
 								if 
 									:: podNode[i] - minNum > [$maxSkew] && nodes[i].status == 1 ->
-										printf("[*] The pods are unbalanced on Node! With a skew %d\n",  podNode[i] - minNum)
+										printf("[*][checkBalanceNode] The pods are unbalanced on Node! With a skew %d\n",  podNode[i] - minNum)
 										assert(false);
 									:: else->
 								fi

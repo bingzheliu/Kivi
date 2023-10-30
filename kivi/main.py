@@ -2,6 +2,7 @@
 
 import json
 import math
+import time
 
 from util import *
 
@@ -10,6 +11,7 @@ from parser import parser
 from cases.case_generator import case_generator
 from model_generator import model_generator
 from result_parser import parse_spin_error_trail
+from small_scale_finder import template_generator
 
 class Kivi():
 	def __init__(self):
@@ -34,7 +36,7 @@ class Kivi():
 			case_id = args.case
 			case_name = case_id
 
-			if args.original:	
+			if args.original or args.simulation:	
 				case_name = case_name + "_" + str(scale)
 				json_config = case_generator(case_id, scale, filename=args.json_file_path)
 			else:
@@ -42,7 +44,7 @@ class Kivi():
 				json_config = case_generator(case_id, scale, from_template=True)
 
 		else:
-			logger.critical("Unknown type of verifier!")
+			logger.error("Unknown type of verifier!")
 
 		file_base = sys_path
 		pml_base_path, result_base_path = generate_dir(file_base, case_id, scale)
@@ -59,10 +61,21 @@ class Kivi():
 			traces = self.simulation(json_config, file_base, pml_base_path)
 
 		else:
+			start = time.time()
 			verifier_operator = VeriferOperator(json_config, file_base, result_base_path, pml_base_path, case_name)
 			verifier_operator.operator()
+			end = time.time()
 
-			logger.critical(verifier_operator.str_failures())
+			result_str = "Summary:\n"
+			if len(verifier_operator.failures) == 0:
+				result_str += "    No failure is found!\n"
+			else:
+				logger.critical(verifier_operator.str_failures())
+				result_str += "    " + str(len(verifier_operator.failures)) + " failure(s) found!\n    Violating intent(s): " + verifier_operator.failure_types() + "\n"
+			
+			result_str += "    Elapsed time: " + str(round(end-start,2)) + " seconds\n"
+
+			logger.critical(result_str)
 
 	def simulation(self, json_config, file_base, pml_base_path):
 		main_filename = model_generator(json_config, pml_base_path, file_base + "/kivi/templates")
@@ -71,4 +84,5 @@ class Kivi():
 		#myprint(stdout, logger.debug)
 
 		result_log, failure_details = parse_spin_error_trail(stdout.decode(), args.verbose_level)
-		myprint(result_log, logger.info)
+		logger.critical("Simulation result:")
+		myprint(result_log, logger.critical)

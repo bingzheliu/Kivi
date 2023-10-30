@@ -13,7 +13,8 @@ sys_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 system_name = "Kivi"
 # print("Initilizing " + system_name)
 
-formatter = logging.Formatter("[%(asctime)s;%(filename)s;%(levelname)s;%(funcName)s() ] %(message)s", "%Y-%m-%d %H:%M:%S")
+#formatter = logging.Formatter("[%(asctime)s;%(filename)s;%(levelname)s;%(funcName)s() ] %(message)s", "%Y-%m-%d %H:%M:%S")
+formatter = logging.Formatter("%(message)s")
 
 def setup_logger(name, level=logging.INFO, handler_type="stream", filename=None):
     """To setup as many loggers as you want"""
@@ -33,10 +34,14 @@ def setup_logger(name, level=logging.INFO, handler_type="stream", filename=None)
 
 def setup_argparser(arg_parser):
     # can use subparser to parse for verification v.s. simulation. 
-    mode = arg_parser.add_mutually_exclusive_group(required=True)
+    main_arg = arg_parser.add_argument_group("Main parameters")
+    mode = main_arg.add_mutually_exclusive_group(required=True)
     mode.add_argument('-c', '--case', type=str, help='Verify an existing case, entering a case name.')
     # TODO: this may need to be convert into absolute path
     mode.add_argument('-p', '--path', type=str, help='Verify from runtime configs, entering config path.')
+
+    main_arg.add_argument('-s', '--scale', type=int, default=3, help='Choose a scale if use -c and -o. Default: 3 nodes.')
+    main_arg.add_argument('-cn', "--case_non_violation", action='store_true', help='Decide if generate cases without violations if use -c. Default: False.')
 
     verification_arg = arg_parser.add_argument_group("Verification parameters")
     verification_arg.add_argument('-o', '--original', action='store_true', help='Disable scaling algorithm and verify for the original configs (single topology without scaling algorithm).')
@@ -53,9 +58,6 @@ def setup_argparser(arg_parser):
     spin_arg.add_argument('-pc', '--pan_compile', type=str, default="DVECTORSZ=100000, DT_RAND, DP_RAND", help="Options for pan compiler. ")
     spin_arg.add_argument('-pr', '--pan_runtime',  type=str, default='m100000', help="Options for pan runtime.")
     spin_arg.add_argument('-l', '--loop', action='store_true', help="Check if exists loop/oscillation using SPIN default implementation.")
-
-    arg_parser.add_argument('-s', '--scale', type=int, default=3, help='Choose a scale if use -c and -o. Default: 3 nodes.')
-    arg_parser.add_argument('-cn', "--case_non_violation", action='store_true', help='Decide if generate cases without violations if use -c. Default: False.')
 
     other_parser = arg_parser.add_argument_group("Other runtime parameters")
     other_parser.add_argument('-jf', '--json_file_path', type=str, help="the file path to dump the intermediate JSON file of cluster setup.")

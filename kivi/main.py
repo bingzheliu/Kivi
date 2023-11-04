@@ -8,7 +8,7 @@ from util import *
 
 from verifier_operator import VeriferOperator
 from parser import parser
-from cases.case_generator import case_generator
+from cases.case_generator import case_generator, case_id_external_to_internal
 from model_generator import model_generator
 from result_parser import parse_spin_error_trail
 from small_scale_finder import template_generator
@@ -33,7 +33,10 @@ class Kivi():
 
 		# verify against pre-defined use cases. 
 		elif args.case:
-			case_id = args.case
+			if args.case not in case_id_external_to_internal:
+				logger.critical("Unknown case id! Only support c1-8. Try with lowercase again.")
+				exit()
+			case_id = case_id_external_to_internal[args.case]
 			case_name = case_id
 
 			if args.original or args.simulation:	

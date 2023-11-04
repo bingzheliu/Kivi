@@ -39,19 +39,16 @@ def parser(f_dir):
 
 	if "yaml" not in dir_list:
 		logger.critical("Yaml files not found!")
-		exit()
 	else:
 		json_config = parse_yamls(json_config, f_dir+"/yaml", os.listdir(f_dir + "/yaml"))
 
 	if "setup" not in dir_list:
 		logger.critical("Setup files not found!")
-		exit()
 	else:
 		json_config = parse_setup(json_config, f_dir+"/setup", os.listdir(f_dir + "/setup"))
 
 	if "user_input" not in dir_list:
 		logger.critical("User input not found!")
-		exit()
 	else:
 		json_config, user_defined_fss = parse_user_input(json_config, f_dir+"/user_input", os.listdir(f_dir + "/user_input"))
 
@@ -59,6 +56,8 @@ def parser(f_dir):
 	json_config = add_spare_resource(json_config)
 
 	json_config = convert_all_to_number(json_config)
+
+	#print(json_readable_str(json_config))
 
 	return json_config, user_defined_fss
 
@@ -85,6 +84,21 @@ def parse_yamls(json_config, f_dir, files):
 			exit()
 
 		json_config = parse_yaml(f_yaml, json_config)
+
+	# parse hpa after we have got all the deployment
+	for f in files:
+		if f[-5:] != ".yaml":
+			continue
+		try:
+			with open(f_dir + "/" + f, 'r') as file:
+				f_yaml = yaml.safe_load(file)
+
+		except:
+			logger.critical("Error in load yaml files!")
+			exit()
+
+		if f_yaml["kind"] == "HorizontalPodAutoscaler":
+			json_config = parse_hpayaml(json_config, f_yaml)
 
 	return json_config
 
@@ -489,9 +503,70 @@ def parse_yaml(f_yaml, json_config):
 		json_podTemplate = parse_pod_yaml(f_yaml)
 		json_config['setup']["podTemplates"].append(deepcopy(json_podTemplate))
 
+	elif f_yaml["kind"] == "HorizontalPodAutoscaler":
+		pass
+		# parse if after parse all the deployment
+
 	else:
 		logger.critical("Yaml kind has not been defined! Now only support Deployment and Pod.")
-		exit()
+
+	return json_config
+
+hpa_mapping = {"metricNames":{"cpu":0, "memory":1}, "metricTypes":{"Utilization":1, "Value":0}}
+
+def parse_hpayaml_hpaspec(f_yaml):
+	hpa_spec = {}
+	hpa_spec["isEnabled"] = 1
+
+	hpa_spec["metricTypes"] = []
+	hpa_spec["metricNames"] = []
+	hpa_spec["metricTargets"] = []
+	for metric in f_yaml["spec"]["metrics"]:
+		metric = metric["resource"]
+		try:
+			hpa_spec["metricNames"].append(hpa_mapping["metricNames"][metric["name"]])
+			hpa_spec["metricTypes"].append(hpa_mapping["metricTypes"][metric["target"]["type"]])
+			if hpa_spec["metricTypes"][-1] == 1:
+				hpa_spec["metricTargets"].append(int(metric["target"]["averageUtilization"]))
+			else:
+				if hpa_spec["metricNames"][-1] == 0:
+					hpa_spec["metricTargets"].append(cpu_converter(metric["target"]["averageValue"]))
+				else:
+					hpa_spec["metricTargets"].append(memory_converter(metric["target"]["averageValue"]))
+		except:
+			logger.critical("Unsupported kind of HPA metrics!")
+			logger.critical(metric)
+			exit()
+
+	hpa_spec["numMetrics"] = len(hpa_spec["metricTypes"])
+	hpa_spec["maxReplicas"] = int(f_yaml["spec"]["maxReplicas"])
+	hpa_spec["minReplicas"] = int(f_yaml["spec"]["minReplicas"])
+
+	return hpa_spec
+
+def parse_hpayaml(json_config, f_yaml):
+	if f_yaml["spec"]["scaleTargetRef"]["kind"] != "Deployment":
+		logger.critical("We currently don't support "+ f["spec"]["scaleTargetRef"]["kind"])
+
+	target_dep = f_yaml["spec"]["scaleTargetRef"]["name"]
+
+	if "d" in json_config["setup"]:
+		for d in json_config["setup"]["d"]:
+			if d["name"] == target_dep:
+				hpa_spec = parse_hpayaml_hpaspec(f_yaml)
+				d["hpaSpec"] = deepcopy(hpa_spec)
+
+		else:
+			logger.critical("Unknown target for HPA resource:" + hpa + ". Skipping...")
+
+	if "deploymentTemplates" in json_config["setup"]:
+		for d in json_config["setup"]["deploymentTemplates"]:
+			if d["name"] == target_dep:
+				hpa_spec = parse_hpayaml_hpaspec(f_yaml)
+				d["hpaSpec"] = deepcopy(hpa_spec)
+
+			else:
+				logger.critical("Unknown target for HPA resource:" + hpa + ". Skipping...")
 
 	return json_config
 

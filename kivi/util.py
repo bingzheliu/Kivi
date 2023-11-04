@@ -2,6 +2,7 @@
 
 import logging
 import argparse
+import json
 import os
 from copy import deepcopy
 import subprocess
@@ -36,7 +37,7 @@ def setup_argparser(arg_parser):
     # can use subparser to parse for verification v.s. simulation. 
     main_arg = arg_parser.add_argument_group("Main parameters")
     mode = main_arg.add_mutually_exclusive_group(required=True)
-    mode.add_argument('-c', '--case', type=str, help='Verify an existing case, entering a case name.')
+    mode.add_argument('-c', '--case', type=str, help='Verify an existing case, entering a case name. We support c1-8.')
     # TODO: this may need to be convert into absolute path
     mode.add_argument('-p', '--path', type=str, help='Verify from runtime configs, entering config path.')
 
@@ -172,4 +173,6 @@ def generate_dir(file_base, case_id, scale):
     
     return pml_base_path, result_base_path
 
+def json_readable_str(json_config):
+    return json.dumps(json_config, indent=2)
 

@@ -10,6 +10,8 @@ from config import case_free
 from small_scale_finder import template_generator, compare_template, equal_templates
 import random
 
+case_id_external_to_internal = {"c1":"h1", "c2":"h2", "c3":"s3", "c4":"s4", "c5":"s1", "c6":"s6", "c7":"d1", "c8":"s9"}
+
 def generate_a_pod(case_config, cur_id, loc, cpu, memory, status, deployment_to_pod=None):
 	cur_pod = {}
 	cur_pod["id"] = cur_id

@@ -7,6 +7,8 @@ import json
 from util import *
 from math import ceil
 
+from small_scale_finder import template_generator
+
 # Parser can parse three types of files: 
 # 1. yaml files that describe deployments, in yaml/. File must have the suffix of yaml. Will be saved as pod and deployment templates.
 # 2. current setup of the cluster from kubelet describe all, in setup/. File must contain keyword "describe_all"
@@ -32,28 +34,40 @@ from math import ceil
 # 4. Process usercommand
 # 5. Connect parser with model_generator
 
-def parser(f_dir):
+def parser(f_dir, original):
 	dir_list = os.listdir(f_dir)
 
 	json_config = {}
 
-	if "yaml" not in dir_list:
-		logger.critical("Yaml files not found!")
-	else:
-		json_config = parse_yamls(json_config, f_dir+"/yaml", os.listdir(f_dir + "/yaml"))
+	# original parse the log files
+	if original:
+		if "setup" not in dir_list:
+			logger.critical("Setup files not found!")
+		else:
+			json_config = parse_setup(json_config, f_dir+"/setup", os.listdir(f_dir + "/setup"))
 
-	if "setup" not in dir_list:
-		logger.critical("Setup files not found!")
-	else:
-		json_config = parse_setup(json_config, f_dir+"/setup", os.listdir(f_dir + "/setup"))
+		if "user_input" not in dir_list:
+			logger.critical("User input not found!")
+		else:
+			json_config, user_defined_fss = parse_user_input(json_config, original, f_dir+"/user_input", os.listdir(f_dir + "/user_input"))
 
-	if "user_input" not in dir_list:
-		logger.critical("User input not found!")
-	else:
-		json_config, user_defined_fss = parse_user_input(json_config, f_dir+"/user_input", os.listdir(f_dir + "/user_input"))
+		# We need to add spare objects to the setup in order for the model to add new pods and nodes.
+		json_config = add_spare_resource(json_config)
 
-	# We need to add spare objects to the setup in order for the model to add new pods and nodes.
-	json_config = add_spare_resource(json_config)
+	# using scaling algorithm, user provide us the definition of the nodes/deployment
+
+	# Note: we also provide a template_generator in the finding_small_scale module that can automatically generate templates from running log. 
+	# However, user still need to provide us the upper/lower bound of nodes and a few more, which does not seem to be more convienent, hence we haven't implemented this mode.
+	else:
+		if "user_input" not in dir_list:
+			logger.critical("User input not found!")
+		else:
+			json_config, user_defined_fss = parse_user_input(json_config, original, f_dir+"/user_input", os.listdir(f_dir + "/user_input"))
+
+		if "yaml" not in dir_list:
+			logger.critical("Yaml files not found!")
+		else:
+			json_config = parse_yamls(json_config, f_dir+"/yaml", os.listdir(f_dir + "/yaml"))
 
 	json_config = convert_all_to_number(json_config)
 
@@ -473,19 +487,20 @@ def cpu_converter(s):
 		return int(s)*1000
 
 # TODO: parse various intents, and also the command for defining the bundary for smallest scale algorithm
-def parse_user_input(json_config, f_dir, files):
+def parse_user_input(json_config, original, f_dir, files):
 	for f in files:
 		if "intent" in f:
 			with open(f_dir + "/" + f, "r") as file:
-				json_config = parse_user_intents(json_config, file.read())
+				json_config = parse_user_intents(json_config, json.load(file))
 
 		if "user_command" in f:
 			with open(f_dir + "/" + f, "r") as file:
-				json_config = parse_user_command(json_config, file.read())
+				json_config = parse_user_command(json_config,  json.load(file))
 
 	return json_config, None 
 
-def parse_user_intents(json_config, f_dir):
+def parse_user_intents(json_config, f_json):
+	json_config["intents"] = deepcopy(f_json)
 	return json_config
 
 def parse_user_command(json_config, f_dir):

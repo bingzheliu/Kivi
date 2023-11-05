@@ -1,0 +1,34 @@
+{
+  "nodesTypes": [
+    {
+      "template": {
+        "cpu": 24,
+        "memory": 63,
+        "labels": {
+          "zone": "A"
+        },
+      },
+      "minSize": 1,
+      "maxSize": 10
+    },
+    {
+      "template": {
+        "cpu": 24,
+        "memory": 63,
+        "labels": {
+          "zone": "B"
+        },
+      },
+      "minSize": 1,
+      "maxSize": 10
+    }
+  ],
+  "dTypes": [
+    {
+      "name": "php-apache",
+      "yaml": 1,
+      "minSize": 2,
+      "maxSize": 10
+    }
+  ]
+}

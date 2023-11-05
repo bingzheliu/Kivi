@@ -26,10 +26,10 @@ class Kivi():
 
 			# user_defined collects user's config for finding smallest example algorithm. 
 			# If user does not define it, will return None and a default config will be given. 
-			json_config, user_defined = parser(args.path)
+			json_config, user_defined = parser(args.path, args.original)
 
-			if not args.original:
-				json_config = template_generator(json_config, user_defined)
+			# if not args.original:
+			# 	json_config = template_generator(json_config, user_defined)
 
 		# verify against pre-defined use cases. 
 		elif args.case:

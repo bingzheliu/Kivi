@@ -32,6 +32,11 @@ class VeriferOperator():
 		self.intents = ["no_feasible_node", "kernel_panic", "checkOscillationReplicaNum", \
 				"checkMinReplicas", "checkExpReplicas", "checkEvictionCycle", "checkBalanceNode"]
 
+		# map the intent name to be human-friendly. 
+		self.intent_name_mapping = {"pod_always_schedulable":"no_feasible_node", "no_kernel_panic":"kernel_panic", "no_oscillation_replica_num":"checkOscillationReplicaNum",\
+									"replica_num_always_morethan_min":"checkMinReplicas", "replica_num_always_morethan_exp":"checkExpReplicas",\
+									"no_oscillation_eviction":"checkEvictionCycle", "pod_balance_across_node":"checkBalanceNode"}
+
 		# set up the compile and runtime parameters for Spin and pan
 		self.pan_runtime = ["-" + o.strip() for o in args.pan_runtime.split(",")]
 		self.pan_compile = ['-o', 'pan', 'pan.c']
@@ -55,6 +60,7 @@ class VeriferOperator():
 		self.failures = []
 
 	def operator(self):
+		#print(json_readable_str(self.json_config))
 		if not args.original:
 			all_setup, json_config_template = finding_smallest_scale(self.json_config, self.pml_base_path)
 
@@ -98,7 +104,7 @@ class VeriferOperator():
 
 			intents_str = ""
 			for intent in intents:
-				intents_str += intent["name"]+" "
+				intents_str += {v: k for k, v in self.intent_name_mapping.items()}[intent["name"]]+" "
 			logger.critical("Working on the intents: "+intents_str)
 
 			new_failures = self.verify_one_topology(cur_json_config, queue_size)
@@ -283,6 +289,6 @@ class VeriferOperator():
 		for failure in self.failures:
 			for intent in self.intents:
 				if intent in failure[1]:
-					msg += intent + " "
+					msg += {v: k for k, v in self.intent_name_mapping.items()}[intent] + " "
 		return msg
 

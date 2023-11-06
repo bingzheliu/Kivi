@@ -22,7 +22,7 @@ spec:
           matchLabels:
             foo: bar
       - maxSkew: 1
-        topologyKey: node
+        topologyKey: hostname
         whenUnsatisfiable: DoNotSchedule
         labelSelector:
           matchLabels:
@@ -38,6 +38,11 @@ spec:
         ports:
         - containerPort: 80
           protocol: TCP
+        resources:
+          limits:
+            cpu: 100m
+          requests:
+            cpu: 100m
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler

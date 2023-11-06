@@ -34,7 +34,7 @@ class VeriferOperator():
 
 		# map the intent name to be human-friendly. 
 		self.intent_name_mapping = {"pod_always_schedulable":"no_feasible_node", "no_kernel_panic":"kernel_panic", "no_oscillation_replica_num":"checkOscillationReplicaNum",\
-									"replica_num_always_morethan_min":"checkMinReplicas", "replica_num_always_morethan_exp":"checkExpReplicas",\
+									"replica_num_always_meet_min":"checkMinReplicas", "replica_num_always_meet_exp":"checkExpReplicas",\
 									"no_oscillation_eviction":"checkEvictionCycle", "pod_balance_across_node":"checkBalanceNode"}
 
 		# set up the compile and runtime parameters for Spin and pan
@@ -54,6 +54,7 @@ class VeriferOperator():
 		logger.debug(args)
 
 		# initialize intent group if there are multiple intents that needs to verify seperately. 
+		self.convert_intent_to_internal_name(self.json_config)
 		self.add_default_intents(self.json_config)
 		self.intent_group_list = self.analyze_divide_intents(json_config)
 
@@ -210,6 +211,12 @@ class VeriferOperator():
 			#new_failures.append((failure_type, result_log, failure_details, total_mem, elapsed_time))
 
 		return new_failures
+
+	def convert_intent_to_internal_name(self, json_config):
+		if "intents" in json_config:
+			for intent in json_config["intents"]:
+				if intent["name"] in self.intent_name_mapping:
+					intent["name"] = self.intent_name_mapping[intent["name"]]
 
 	# intents can be seperated into subsets in this function.
 	def analyze_divide_intents(self,json_config):

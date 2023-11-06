@@ -12,8 +12,8 @@ from config import resource_difference_tolerance
 
 # This is not currently used for our cases, only for extracting from cluster logs.
 # minHPAReplicas is used to adjust the HPA maxReplicas in the propotion mode
-user_defined_default = {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
-						"d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion", "minHPAReplicas":6}}
+user_defined_default = {"nodes_default" : {"maxSize":10, "minSize":1, "ScaleType":"proportion"}, \
+						"d_default" : {"maxSize":10, "minSize":2, "ScaleType":"proportion", "minHPAReplicas":6}}
 
 equal_templates = {"nodes":["cpu", "memory", "cpuLeft", "memLeft", "status", "labels", "taint"], "d":["podTemplateId", "hpaSpec"]}
 
@@ -22,8 +22,8 @@ equal_templates = {"nodes":["cpu", "memory", "cpuLeft", "memLeft", "status", "la
 #   // a list of different types of nodes;
 #   // different types: total resources, left resources after deduct related pods, labels, status  	
 # 	"nodeTypes": [{"templates":..,
-#				   "lowerbound":..,         // the min number of nodes for this type
-#				   "upperBound":..,			// the max number of nodes for this type
+#				   "minSize":..,         // the min number of nodes for this type
+#				   "maxSize":..,			// the max number of nodes for this type
 #				   "propotion":..,		    // the relative proprotion against other type of nodes		
 #				 },..
 #			     ]  
@@ -32,8 +32,8 @@ equal_templates = {"nodes":["cpu", "memory", "cpuLeft", "memLeft", "status", "la
 #	// a list of different types of deployments;
 #	// different types: podTemplateId, hpaSpec
 # 	"dTypes": 	 [{"templates":..,			// podTemplateId, hpaSpec, status, name
-#				   "lowerbound":..,         // the min number of pods for this type
-#				   "upperBound":..,			// the max number of pods for this type
+#				   "minSize":..,         // the min number of pods for this type
+#				   "maxSize":..,			// the max number of pods for this type
 #				   "propotion":..,		    // the relative proprotion against other type of deployments, may not be very useful if deployments are very different	
 #				   "proportionHPA":.., 		// total_nodes*proportionHPA + setup_basic_d_number is the max_replicas for HPAspec, maxReplicas may not be the same as the specReplicas, typicially larger.
 #				   "propotionNodes":..,     // the relative proprotion against total nodes, so the upper bound of deployments per setup can be bounded by the number of nodes.
@@ -121,8 +121,8 @@ def template_generator(json_config, user_defined=None):
 					spec_replicas.append(n["specReplicas"])
 				new_type["template"]["name"] = n["name"]
 				# Now all types have the same number of upper and lower if extract from cluster log; but it can actually be anything if user directly define the templates 
-				new_type["lowerBound"] = user_defined[t+"_default"]["lowerBound"]
-				new_type["upperBound"] = user_defined[t+"_default"]["upperBound"]
+				new_type["minSize"] = user_defined[t+"_default"]["minSize"]
+				new_type["maxSize"] = user_defined[t+"_default"]["maxSize"]
 				if "minHPAReplicas" in user_defined[t+"_default"]:
 					new_type["minHPAReplicas"] = user_defined[t+"_default"]["minHPAReplicas"]
 					max_count_replicas[-1] = max(new_type["minHPAReplicas"], max_count_replicas[-1])
@@ -143,14 +143,14 @@ def template_generator(json_config, user_defined=None):
 						type_setup[i]["proportionNodeMin"] = min_count_replicas[i]*1.0/len(json_config["setup"]["nodes"])
 						type_setup[i]["proportionNodeMax"] = max_count_replicas[i]*1.0/len(json_config["setup"]["nodes"])
 					type_setup[i]["proportionNodeSpec"] = spec_replicas[i]*1.0/len(json_config["setup"]["nodes"])
-					#type_setup[i]["upperBound"] = max_count_replicas[i]
+					#type_setup[i]["maxSize"] = max_count_replicas[i]
 
 			if user_defined[t+"_default"]["ScaleType"] == "free":
 				# User can define their own alpha
-				if t == "d" and "upperBoundNode" in user_defined[t+"_default"] :
-					type_setup[i]["upperBoundNode"] = user_defined[t+"_default"]["upperBoundNode"]
+				if t == "d" and "maxSizeNode" in user_defined[t+"_default"] :
+					type_setup[i]["maxSizeNode"] = user_defined[t+"_default"]["maxSizeNode"]
 			# if t == "nodes":
-			# 	type_setup[i]["upperBound"] = count[i]
+			# 	type_setup[i]["maxSize"] = count[i]
 
 		json_config["userDefined"][t+"Types"] = deepcopy(type_setup)
 		json_config["userDefined"][t+"ScaleType"] = user_defined[t+"_default"]["ScaleType"]
@@ -337,10 +337,10 @@ def deduct_cpu_nodes(json_config):
 	return json_config
 
 def adjust_replicas(replicas, json_config_cur):
-	if replicas > json_config_cur["upperBound"]:
-		replicas = json_config_cur["upperBound"]
-	elif replicas < json_config_cur["lowerBound"]:
-		replicas = json_config_cur["lowerBound"]
+	if replicas > json_config_cur["maxSize"]:
+		replicas = json_config_cur["maxSize"]
+	elif replicas < json_config_cur["minSize"]:
+		replicas = json_config_cur["minSize"]
 
 	return replicas
 
@@ -388,18 +388,18 @@ def generate_list_setup_dfs(json_config, i, cur_type, cur_setup, all_setup, coun
 	cur_json_config = json_config["userDefined"][cur_type+"Types"][i]
 	if json_config["userDefined"][cur_type+"ScaleType"] == "proportion":
 		j = math.ceil(cur_base[cur_type] * cur_json_config["proportion"])
-		if j < cur_json_config["lowerBound"]:
-			j = cur_json_config["lowerBound"]
-		if j > cur_json_config["upperBound"]:
-			j = cur_json_config["upperBound"]
+		if j < cur_json_config["minSize"]:
+			j = cur_json_config["minSize"]
+		if j > cur_json_config["maxSize"]:
+			j = cur_json_config["maxSize"]
 
 		cur_setup[cur_type][i] = j
 		count[cur_type] += j
 		generate_list_setup_dfs(json_config, i+1, cur_type, cur_setup, all_setup, count, cur_base)
 
 	elif json_config["userDefined"][cur_type+"ScaleType"] == "free":
-		j = cur_json_config["lowerBound"]
-		while (j <= cur_json_config["upperBound"]):
+		j = cur_json_config["minSize"]
+		while (j <= cur_json_config["maxSize"]):
 			if (cur_type == "d" and (j > (confident_pod_size_factor*count["nodes"]) or j > json_config["userDefined"]["max_pod_per_node"]*count["nodes"])):
 				break
 			#print(cur_type, j, confident_node_size)
@@ -420,7 +420,7 @@ def generate_list_setup_dfs(json_config, i, cur_type, cur_setup, all_setup, coun
 def get_max_base_propotions(json_config, cur_type):
 	cur_max = 0
 	for n in json_config["userDefined"][cur_type+"Types"]:
-		cur_max = max(cur_max, math.ceil(n["upperBound"]*1.0 / n["proportion"]))
+		cur_max = max(cur_max, math.ceil(n["maxSize"]*1.0 / n["proportion"]))
 
 	return cur_max
 

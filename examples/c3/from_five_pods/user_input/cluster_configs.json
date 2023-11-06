@@ -6,8 +6,9 @@
         "memory": 63,
         "labels": {
           "zone": "A"
-        },
+        }
       },
+      "num":2,
       "minSize": 1,
       "maxSize": 10
     },
@@ -17,8 +18,9 @@
         "memory": 63,
         "labels": {
           "zone": "B"
-        },
+        }
       },
+      "num":1,
       "minSize": 1,
       "maxSize": 10
     }
@@ -26,9 +28,17 @@
   "dTypes": [
     {
       "name": "php-apache",
-      "yaml": 1,
-      "minSize": 2,
+      "num":5,
+      "minSize": 1,
       "maxSize": 10
+    }
+  ],
+  "events_assumption":[
+    {
+      "name": "eventCpuChange",
+      "para": {
+        "targetDeployment": "php-apache"
+      }
     }
   ]
 }

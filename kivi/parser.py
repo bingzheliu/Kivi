@@ -20,7 +20,7 @@ from small_scale_finder import template_generator
 # 4. Now we don't process replicaset. Instead, each deployment will generate one replicaset. 
 # 5. Now we only support one container pod.
 # 6. Improve the transformation between natural language and number. Now it happens during parsing each element, and we could process them all in one place to improve resilience to future changes.
-
+# 7. Improve how we process the default values. Maybe merge it with the model generator. 
 
 # Note:
 # 1. The metric server may have delays -- the CPU/memory usage of the pods/nodes may not be consistent with the actual usage. 
@@ -34,13 +34,16 @@ from small_scale_finder import template_generator
 # 4. Process usercommand
 # 5. Connect parser with model_generator
 
-def parser(f_dir, original):
+default_user_defined = {"max_pod_per_node":7, "nodesScaleType":"free", "dScaleType":"free"}
+default_user_defined_d = {"HPAfactor":2}
+
+def parser(f_dir):
 	dir_list = os.listdir(f_dir)
 
 	json_config = {}
 
-	# original parse the log files
-	if original:
+	# parse the log files and 
+	if args.input_logs:
 		if "setup" not in dir_list:
 			logger.critical("Setup files not found!")
 		else:
@@ -49,7 +52,7 @@ def parser(f_dir, original):
 		if "user_input" not in dir_list:
 			logger.critical("User input not found!")
 		else:
-			json_config, user_defined_fss = parse_user_input(json_config, original, f_dir+"/user_input", os.listdir(f_dir + "/user_input"))
+			json_config = parse_user_input(json_config, f_dir+"/user_input", os.listdir(f_dir + "/user_input"))
 
 		# We need to add spare objects to the setup in order for the model to add new pods and nodes.
 		json_config = add_spare_resource(json_config)
@@ -59,21 +62,21 @@ def parser(f_dir, original):
 	# Note: we also provide a template_generator in the finding_small_scale module that can automatically generate templates from running log. 
 	# However, user still need to provide us the upper/lower bound of nodes and a few more, which does not seem to be more convienent, hence we haven't implemented this mode.
 	else:
-		if "user_input" not in dir_list:
-			logger.critical("User input not found!")
-		else:
-			json_config, user_defined_fss = parse_user_input(json_config, original, f_dir+"/user_input", os.listdir(f_dir + "/user_input"))
-
 		if "yaml" not in dir_list:
 			logger.critical("Yaml files not found!")
 		else:
 			json_config = parse_yamls(json_config, f_dir+"/yaml", os.listdir(f_dir + "/yaml"))
 
+		if "user_input" not in dir_list:
+			logger.critical("User input not found!")
+		else:
+			json_config = parse_user_input(json_config, f_dir+"/user_input", os.listdir(f_dir + "/user_input"))
+
 	json_config = convert_all_to_number(json_config)
 
 	#print(json_readable_str(json_config))
 
-	return json_config, user_defined_fss
+	return json_config
 
 
 def parse_yamls(json_config, f_dir, files):
@@ -83,8 +86,15 @@ def parse_yamls(json_config, f_dir, files):
 	if "podTemplates" not in json_config["setup"]:
 		json_config["setup"]["podTemplates"] = []
 
-	if "deploymentTemplates" not in json_config["setup"]:
-		json_config["setup"]["deploymentTemplates"] = []
+	if "d" not in json_config["setup"]:
+		json_config["setup"]["d"] = []
+
+
+	if "userDefined" not in json_config:
+		json_config["userDefined"] = {}
+
+	if "dTypes" not in json_config["userDefined"]:
+		json_config["userDefined"]["dTypes"] = []
 
 	for f in files:
 		if f[-5:] != ".yaml":
@@ -117,7 +127,7 @@ def parse_yamls(json_config, f_dir, files):
 	return json_config
 
 
-included_objects = ["nodes", "d", "pods", "podTemplates", "deploymentTemplates"]
+included_objects = ["nodes", "d", "pods", "podTemplates", "deploymentTemplates", "nodesTypes", "dTypes"]
 status_map = {"node": {"Ready":1, "Unhealthy":2}, "pod" : {"Running" : 1, "Pending" : 2, "Terminating" : 3}}
 kind_map = {"ReplicaSet" : 1}
 whenunsatisfiable_map = {"DoNotSchedule" : 0, "ScheduleAnyway" : 1}
@@ -125,6 +135,9 @@ whenunsatisfiable_map = {"DoNotSchedule" : 0, "ScheduleAnyway" : 1}
 def parse_setup(json_config, f_dir, files):
 	if "setup" not in json_config:
 		json_config["setup"] = {}
+
+	if "userDefined" not in json_config:
+		json_config["userDefined"] = {}
 
 	for o in included_objects:
 		if o not in json_config["setup"]:
@@ -158,6 +171,8 @@ def parse_setup(json_config, f_dir, files):
 
 # TODO: this may need to be done by verifier incrementally. 
 def add_spare_resource(json_config):
+	if "pods" not in json_config["setup"]:
+		json_config["setup"]["pods"] = []
 	for d in json_config["setup"]["d"]:
 		if "hpaSpec" in d:
 			max_replicas = d["hpaSpec"]["maxReplicas"]
@@ -174,25 +189,47 @@ def convert_all_to_number(json_config):
 	# So if some phrase is the same for both labels and names, they won't be treated the same, which does not affect verification correctness
 
 	# process location
-	for p in json_config["setup"]["pods"]:
-		for i in range(0, len(json_config["setup"]["nodes"])):
-			n_name = json_config["setup"]["nodes"][i]["name"]
-			if "loc" in p and n_name == p["loc"]:
-				p["loc"] = i+1
-				break
+	if "pods" in json_config["setup"]:
+		for p in json_config["setup"]["pods"]:
+			for i in range(0, len(json_config["setup"]["nodes"])):
+				n_name = json_config["setup"]["nodes"][i]["name"]
+				if "loc" in p and n_name == p["loc"]:
+					p["loc"] = i+1
+					break
 
 	# process names
 	all_names = set()
 	for o in included_objects:
-		for e in json_config["setup"][o]:
-			if "name" in e:
-				all_names.add(e["name"])
+		if o in json_config["setup"]:
+			for e in json_config["setup"][o]:
+				if "name" in e:
+					all_names.add(e["name"])
+		if o in json_config["userDefined"]:
+			for e in json_config["userDefined"][o]:
+				if "name" in e:
+					all_names.add(e["name"])
+				if "template" in e and "name" in e["template"]:
+					all_names.add(e["template"]["name"])
+
 	all_names = list(all_names)
 	all_names = {all_names[index] : index for index in range(0, len(all_names)) }
 	for o in included_objects:
-		for e in json_config["setup"][o]:
-			if "name" in e:
-				e["name"] = all_names[e["name"]]
+		if o in json_config["setup"]:
+			for e in json_config["setup"][o]:
+				if "name" in e:
+					e["name"] = all_names[e["name"]]
+		if o in json_config["userDefined"]:
+			for e in json_config["userDefined"][o]:
+				if "name" in e:
+					e["name"] = all_names[e["name"]]
+				if "template" in e and "name" in e["template"]:
+					e["template"]["name"] = all_names[e["template"]["name"]]
+
+	# TBD: need to double check if this include all the events.
+	if "events" in json_config:
+		for event in json_config["events"]:
+			if "targetDeployment" in event["para"]:
+				event["para"]["targetDeployment"] = all_names[event["para"]["targetDeployment"]]
 
 	logger.debug("Mapping between names and number:")
 	logger.debug(all_names) 
@@ -471,39 +508,128 @@ def parse_describe_nodes(json_config, f_str):
 # https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes
 # Now we approximate the memory using Gi as 1 unit. If it's less than 1 unit, we count as 1.
 def memory_converter(s):
-	if "Ki" in s:
+	if "Ki" in str(s):
 		return ceil(int(s.strip()[:-2])/(1024.0*1024.0))
-	elif "Mi" in s:
+	elif "Mi" in str(s):
 		return ceil(int(s.strip()[:-2])/1024.0)
+	elif isinstance(s, int):
+		return s
 	else:
 		logger.critical("Unknown types of resources " + s + "!")
 		exit()
 
 # by default converting into m
 def cpu_converter(s):
-	if "m" in s:
+	if "m" in str(s):
 		return int(s[:-1])
 	else:
 		return int(s)*1000
 
 # TODO: parse various intents, and also the command for defining the bundary for smallest scale algorithm
-def parse_user_input(json_config, original, f_dir, files):
+def parse_user_input(json_config, f_dir, files):
 	for f in files:
 		if "intent" in f:
 			with open(f_dir + "/" + f, "r") as file:
 				json_config = parse_user_intents(json_config, json.load(file))
 
-		if "user_command" in f:
+		if "cluster_configs" in f and (not args.input_logs):
 			with open(f_dir + "/" + f, "r") as file:
-				json_config = parse_user_command(json_config,  json.load(file))
+				json_config = parse_cluster_configs(json_config, json.load(file))
 
-	return json_config, None 
+	return json_config
 
 def parse_user_intents(json_config, f_json):
 	json_config["intents"] = deepcopy(f_json)
 	return json_config
 
-def parse_user_command(json_config, f_dir):
+def parse_cluster_configs(json_config, f_json):
+	if "setup" not in json_config:
+		json_config["setup"] = {}
+	if "userDefined" not in json_config:
+		json_config["userDefined"] = {}
+
+	if "nodesTypes" in f_json:
+		for n in f_json["nodesTypes"]:
+			if args.original:
+				if "nodes" not in json_config["setup"]:
+					json_config["setup"]["nodes"] = []
+				for i in range(int(n["num"])):
+					node = {}
+					node["cpu"] = cpu_converter(n["template"]["cpu"])
+					node["memory"] = memory_converter(n["template"]["memory"])
+					node["labels"] = n["template"]["labels"]
+					# We just use the index to make sure each node has a unique name.
+					node["name"] = len(json_config["setup"]["nodes"])
+					node["cpuLeft"] = node["cpu"]
+					node["memLeft"] = node["memory"]
+					node["status"] = 1
+					json_config["setup"]["nodes"].append(deepcopy(node))
+			else:	
+				if "nodesTypes" not in json_config["userDefined"]:
+					json_config["userDefined"]["nodesTypes"] = []
+				node = deepcopy(n)
+				node["template"]["cpu"] = cpu_converter(node["template"]["cpu"])
+				node["template"]["memory"] = memory_converter(node["template"]["memory"])
+				node["template"]["cpuLeft"] = node["template"]["cpu"]
+				node["template"]["memLeft"] = node["template"]["memory"]
+				if "status" not in node["template"]:
+					node["template"]["status"] = 1
+				json_config["userDefined"]["nodesTypes"].append(deepcopy(node))
+
+	if "dTypes" in f_json:
+		for d in f_json["dTypes"]:
+			if args.original:
+				flag = False
+				# if already added before, we don't need to add it
+				for exist_d in json_config["setup"]["d"]:
+					if exist_d["name"] == d["name"]:
+						exist_d["specReplicas"] = d["num"]
+						exist_d["status"] = 0
+
+						exist_d["replicaSets"] = []
+						rp = {}
+						rp["specReplicas"] = d["num"]
+						rp["version"] = 0
+						rp["podIds"] = []
+						exist_d["replicaSets"].append(rp)
+						rp = {}
+						exist_d["replicaSets"].append(rp)
+
+						exist_d["replicas"] = 0
+						flag = True
+				if not flag:
+					json_config["setup"]["d"].append(d)
+
+				json_config["userCommand"] = []
+				json_config["userCommand"].append({"name" : "createTargetDeployment", "para" : 1})
+
+				add_spare_resource(json_config)
+			else:
+				for exist_d in json_config["userDefined"]["dTypes"]:
+					if exist_d["template"]["name"] == d["name"]:
+						exist_d["minSize"] = d["minSize"]
+						exist_d["maxSize"] = d["maxSize"]
+						flag = True
+
+						for default_para in default_user_defined_d:
+							if default_para not in exist_d:
+								exist_d[default_para] = default_user_defined_d[default_para]
+
+				if not flag:
+					json_config["setup"]["d"].append(d)
+
+	for default_para in default_user_defined:
+		if default_para not in f_json:
+			json_config["userDefined"][default_para] = default_user_defined[default_para]
+		else:
+			json_config["userDefined"][default_para] = f_json[default_para]
+
+	if "events_assumption" in f_json:
+		if "events" not in json_config:
+			json_config["events"] = []
+
+		json_config["events"].extend(f_json["events_assumption"])
+
 	return json_config
 
 
@@ -512,7 +638,13 @@ def parse_yaml(f_yaml, json_config):
 		json_deploymentTemplate, json_podTemplate = parse_deployment_yaml(f_yaml)
 		json_config['setup']["podTemplates"].append(deepcopy(json_podTemplate))
 		json_deploymentTemplate['podTemplateId'] = len(json_config['setup']["podTemplates"])
-		json_config['setup']['deploymentTemplates'].append(deepcopy(json_deploymentTemplate))
+
+		if args.original:
+			json_config['setup']['d'].append(deepcopy(json_deploymentTemplate))
+		else:
+			d = {}
+			d["template"] = deepcopy(json_deploymentTemplate)
+			json_config['userDefined']['dTypes'].append(d)
 
 	elif f_yaml["kind"] == "Pod":
 		json_podTemplate = parse_pod_yaml(f_yaml)
@@ -520,7 +652,7 @@ def parse_yaml(f_yaml, json_config):
 
 	elif f_yaml["kind"] == "HorizontalPodAutoscaler":
 		pass
-		# parse if after parse all the deployment
+		# parse this after parse all the deployment
 
 	else:
 		logger.critical("Yaml kind has not been defined! Now only support Deployment and Pod.")
@@ -564,24 +696,23 @@ def parse_hpayaml(json_config, f_yaml):
 		logger.critical("We currently don't support "+ f["spec"]["scaleTargetRef"]["kind"])
 
 	target_dep = f_yaml["spec"]["scaleTargetRef"]["name"]
+	hpa_spec = parse_hpayaml_hpaspec(f_yaml)
 
+	flag = False
 	if "d" in json_config["setup"]:
 		for d in json_config["setup"]["d"]:
 			if d["name"] == target_dep:
-				hpa_spec = parse_hpayaml_hpaspec(f_yaml)
 				d["hpaSpec"] = deepcopy(hpa_spec)
+				flag = True
 
-		else:
-			logger.critical("Unknown target for HPA resource:" + hpa + ". Skipping...")
+	if "dTypes" in json_config["userDefined"]:
+		for d in json_config["userDefined"]["dTypes"]:
+			if d["template"]["name"] == target_dep:
+				d["template"]["hpaSpec"] = deepcopy(hpa_spec)
+				flag = True
 
-	if "deploymentTemplates" in json_config["setup"]:
-		for d in json_config["setup"]["deploymentTemplates"]:
-			if d["name"] == target_dep:
-				hpa_spec = parse_hpayaml_hpaspec(f_yaml)
-				d["hpaSpec"] = deepcopy(hpa_spec)
-
-			else:
-				logger.critical("Unknown target for HPA resource:" + hpa + ". Skipping...")
+	if not flag:
+		logger.critical("Unknown target for HPA resource:" + hpa["metadata"]["name"] + ". Skipping...")
 
 	return json_config
 
@@ -606,8 +737,10 @@ def parse_pod_yaml(f_yaml):
 	for container in f_yaml['spec']['containers']:
 		if 'resources' in container and 'requests' in container['resources']:
 			# we only support define in "m" for CPU. TODO: support more types of definiation. 
-			json_podTemplate['cpuRequested'] = container['resources']['requests']['cpu']
-			json_podTemplate['memRequested'] = memory_converter(container['resources']['requests']['memory'])
+			if "cpu" in container['resources']['requests']:
+				json_podTemplate['cpuRequested'] = cpu_converter(container['resources']['requests']['cpu'])
+			if "memory" in container['resources']['requests']:
+				json_podTemplate['memRequested'] = memory_converter(container['resources']['requests']['memory'])
 
 	# TODO: process pod affinity/name
 	topologySpreadConstraints_keys = ['maxSkew', 'minDomains', 'topologyKey', 'whenUnsatisfiable']

@@ -239,7 +239,13 @@ def generate_controllers(json_config, s_proc, pml_config):
 	
 	return s_proc, pml_config
 
-def generate_event_user_command_one(all_stat, cur_json, s_proc_after_stable, s_first_proc):
+def convert_event_para_name_to_index(json_config, para, value):
+	if para == "targetDeployment":
+		for i in range(0, len(json_config["setup"]["d"])):
+			if str(json_config["setup"]["d"][i]["name"]) == str(value):
+				return str(i+1)
+
+def generate_event_user_command_one(json_config, all_stat, cur_json, s_proc_after_stable, s_first_proc):
 	cur_p = 1
 	cur_stmt = ""
 	c = cur_json["name"]
@@ -249,7 +255,7 @@ def generate_event_user_command_one(all_stat, cur_json, s_proc_after_stable, s_f
 		if isinstance(cur_json["para"], dict):
 			c_para = ""
 			for para in default_parameter_order[c]:
-				c_para += (str(cur_json["para"][para]) + ",")
+				c_para += (convert_event_para_name_to_index(json_config, para, cur_json["para"][para]) + ",")
 			c_para = c_para[0:-1]
 			cur_stmt = ("run " + c + "(" + c_para + ") ")
 		else:
@@ -313,7 +319,7 @@ def generate_event_user_command(json_config, s_event_uc, s_proc_after_stable, s_
 	for e in ["events", "userCommand"]:
 		if e in json_config:
 			for cur_json in json_config[e]:
-				all_stat, s_proc_after_stable, s_first_proc = generate_event_user_command_one(all_stat, cur_json, s_proc_after_stable, s_first_proc)
+				all_stat, s_proc_after_stable, s_first_proc = generate_event_user_command_one(json_config, all_stat, cur_json, s_proc_after_stable, s_first_proc)
 
 	all_stat = list(all_stat.items())
 	all_stat.sort(key = sort_priority, reverse=True)
@@ -613,6 +619,9 @@ def generate_model(json_config, pml_config, pml_main, pml_intent, pml_event, tem
 	json_config, ifdef = process_taint(json_config, ifdef)
 	process_node_affinity(json_config)
 	max_label, max_value = process_labels(json_config)
+
+	#print(json.dumps(json_config, indent=2))
+
 
 	# The following helps to improve prerformance; can remove then if id will be used in the future. 
 	json_config = process_stable_variables(json_config)

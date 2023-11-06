@@ -88,7 +88,7 @@ hpa2:		j++;
 		:: curMetricType == 1 && requestTotal != 0 ->
 			currentUsage = metricsTotal * 100 / requestTotal;
 		:: else->
-			printf("[*Internal error] Unknown metric types %d or 0 occur in variables (%d totalReplicas, %d requestTotal)", curMetricType, totalReplicas, requestTotal)
+			printf("[*Internal error] Unknown metric types %d or 0 occur in variables (%d totalReplicas, %d requestTotal)\n", curMetricType, totalReplicas, requestTotal)
 			assert(false)
 	fi;
 	printf("[****][HPA] Computing metric, currentUsage is %d\n", currentUsage)

@@ -45,6 +45,7 @@ def setup_argparser(arg_parser):
     main_arg.add_argument('-cn', "--case_non_violation", action='store_true', help='Decide if generate cases without violations if use -c. Default: False.')
 
     verification_arg = arg_parser.add_argument_group("Verification parameters")
+    verification_arg.add_argument('-log', '--input_logs', action='store_true', help='Get the input from run time logs')
     verification_arg.add_argument('-o', '--original', action='store_true', help='Disable scaling algorithm and verify for the original configs (single topology without scaling algorithm).')
     verification_arg.add_argument('-f', '--fast_find', type=int, default=0, help='When using scaling algorithm, increasing the scale faster instead of trying all the scales. Speed can be chosen from 0 to 3. With default 0 the original speed.')
     # TODO: add option to send to pan and see if we want to find all the violations

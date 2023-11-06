@@ -463,8 +463,8 @@ def generate_S3_template(num_node, non_violation=False):
 	cur_node["template"]["numPod"] = 0
 	cur_node["template"]["status"] = 1
 	cur_node["template"]["labels"] = {"zone" : 2}
-	cur_node["upperBound"] = 5
-	cur_node["lowerBound"] = 1
+	cur_node["maxSize"] = 5
+	cur_node["minSize"] = 1
 	# The propotion to other nodes 
 	cur_node["proportion"] = 1
 	case_config["userDefined"]["nodesTypes"].append(cur_node)
@@ -478,8 +478,8 @@ def generate_S3_template(num_node, non_violation=False):
 	cur_node["template"]["numPod"] = 0
 	cur_node["template"]["status"] = 1
 	cur_node["template"]["labels"] = {"zone" : 1}
-	cur_node["upperBound"] = 5
-	cur_node["lowerBound"] = 1
+	cur_node["maxSize"] = 5
+	cur_node["minSize"] = 1
 	cur_node["proportion"] = 2
 	case_config["userDefined"]["nodesTypes"].append(cur_node)
 
@@ -493,8 +493,8 @@ def generate_S3_template(num_node, non_violation=False):
 	d = {}
 	d["template"] = {}
 	d["template"]["status"] = 0
-	d["lowerBound"] = 1
-	d["upperBound"] = 8
+	d["minSize"] = 1
+	d["maxSize"] = 8
 	# propotion to other deployments
 	d["proportion"] = 1
 	# propotioin to # of all nodes (scale)
@@ -575,8 +575,8 @@ def generate_S3_template(num_node, non_violation=False):
 # 	cur_node["template"]["memLeft"] = 64
 # 	cur_node["template"]["numPod"] = 0
 # 	cur_node["template"]["status"] = 1
-# 	cur_node["upperBound"] = 3
-# 	cur_node["lowerBound"] = 1
+# 	cur_node["maxSize"] = 3
+# 	cur_node["minSize"] = 1
 # 	# The propotion to other nodes 
 # 	cur_node["proportion"] = 1
 # 	case_config["userDefined"]["nodesTypes"].append(cur_node)
@@ -589,8 +589,8 @@ def generate_S3_template(num_node, non_violation=False):
 # 	# cur_node["template"]["memLeft"] = 64
 # 	# cur_node["template"]["numPod"] = 0
 # 	# cur_node["template"]["status"] = 1
-# 	# cur_node["upperBound"] = 4
-# 	# cur_node["lowerBound"] = 1
+# 	# cur_node["maxSize"] = 4
+# 	# cur_node["minSize"] = 1
 # 	# cur_node["proportion"] = 1
 # 	# case_config["userDefined"]["nodeTypes"].append(cur_node)
 
@@ -604,8 +604,8 @@ def generate_S3_template(num_node, non_violation=False):
 # 	d = {}
 # 	d["template"] = {}
 # 	d["template"]["status"] = 0
-# 	d["lowerBound"] = 1
-# 	d["upperBound"] = 5
+# 	d["minSize"] = 1
+# 	d["maxSize"] = 5
 # 	# propotion to other deployments
 # 	d["proportion"] = 1
 # 	# propotioin to # of all nodes (scale)
@@ -627,8 +627,8 @@ def generate_S3_template(num_node, non_violation=False):
 # 	# d = {}
 # 	# d["template"] = {}
 # 	# d["template"]["status"] = 0
-# 	# d["lowerBound"] = 1
-# 	# d["upperBound"] = 5
+# 	# d["minSize"] = 1
+# 	# d["maxSize"] = 5
 # 	# d["proportion"] = 3
 
 # 	# d["template"]["podTemplateId"] = 1
@@ -1656,12 +1656,12 @@ def generate_S3(num_node, non_violation=False):
 	case_config["controllers"]["deployment"] = {}
 
 	case_config["events"] = []
-	case_config["events"].append({"name":"eventCpuChange", "after_stable": True, "para" : {"targetDeployment" : 1}})
+	case_config["events"].append({"name":"eventCpuChange", "after_stable": True, "para" : {"targetDeployment" : d["name"]}})
 
 	return case_config
 
 #case_fun = {False: {"s4": generate_S4, "s3" : generate_S3, "h2": generate_H2, "s6" : generate_S6, "h1" : generate_H1, "s1" : generate_S1, "s9" : generate_S9}, \
-# These template does not support verification at scale, and has a fixed upperbound. So we do not it use it for now.
+# These template does not support verification at scale, and has a fixed maxSize. So we do not it use it for now.
 #True: {"h1": generate_H1_template, "s3":generate_S3_template}}
 case_fun = {"s4": generate_S4, "s3" : generate_S3, "h2": generate_H2, "s6" : generate_S6, "h1" : generate_H1, "s1" : generate_S1, "s9" : generate_S9, "d1": generate_D1}
 
@@ -1713,8 +1713,8 @@ def append_json_template(json_config, cur_json_config):
 			for exist_n in json_config["userDefined"][t+"Types"]:
 				if compare_template(n["template"], exist_n["template"], equal_templates[t]):
 					new_flag = False
-					exist_n["lowerBound"] = min(exist_n["lowerBound"], n["lowerBound"])
-					exist_n["upperBound"] = max(exist_n["upperBound"], n["upperBound"])
+					exist_n["minSize"] = min(exist_n["minSize"], n["minSize"])
+					exist_n["maxSize"] = max(exist_n["maxSize"], n["maxSize"])
 					break
 
 			if new_flag:
@@ -1764,47 +1764,47 @@ def case_generator(case_id, scale, from_template=False, filename=None):
 
 	return json_config
 
-user_defined_all = {"s4" : {"nodes_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}, \
-						"d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion", "proportionHPA" : 2}}}
+user_defined_all = {"s4" : {"nodes_default" : {"maxSize":10, "minSize":2, "ScaleType":"proportion"}, \
+						"d_default" : {"maxSize":10, "minSize":2, "ScaleType":"proportion", "proportionHPA" : 2}}}
 
 def get_case_user_defined(case_id, scale):
-	user_defined_prop = {"default" : {"nodes_default" : {"upperBound":scale, "lowerBound":1, "ScaleType":"proportion"}, \
-									"d_default" : {"upperBound":scale*3, "lowerBound":2, "ScaleType":"proportion", "minHPAReplicas":6}},\
-						"s6" : {"nodes_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}, \
-							    "d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}}, \
-						"s4" : {"nodes_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}, \
-							    "d_default" : {"upperBound":10, "lowerBound":2, "ScaleType":"proportion"}},\
-						"h1" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
-							    "d_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion", "minHPAReplicas":6}},\
-						"h2" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
-							    "d_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion", "minHPAReplicas":6}}
-					# "h2" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
-						# 			"d_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion", "proportionHPA" : 2}} \
+	user_defined_prop = {"default" : {"nodes_default" : {"maxSize":scale, "minSize":1, "ScaleType":"proportion"}, \
+									"d_default" : {"maxSize":scale*3, "minSize":2, "ScaleType":"proportion", "minHPAReplicas":6}},\
+						"s6" : {"nodes_default" : {"maxSize":10, "minSize":2, "ScaleType":"proportion"}, \
+							    "d_default" : {"maxSize":10, "minSize":2, "ScaleType":"proportion"}}, \
+						"s4" : {"nodes_default" : {"maxSize":10, "minSize":2, "ScaleType":"proportion"}, \
+							    "d_default" : {"maxSize":10, "minSize":2, "ScaleType":"proportion"}},\
+						"h1" : {"nodes_default" : {"maxSize":10, "minSize":1, "ScaleType":"proportion"}, \
+							    "d_default" : {"maxSize":10, "minSize":1, "ScaleType":"proportion", "minHPAReplicas":6}},\
+						"h2" : {"nodes_default" : {"maxSize":10, "minSize":1, "ScaleType":"proportion"}, \
+							    "d_default" : {"maxSize":10, "minSize":1, "ScaleType":"proportion", "minHPAReplicas":6}}
+					# "h2" : {"nodes_default" : {"maxSize":10, "minSize":1, "ScaleType":"proportion"}, \
+						# 			"d_default" : {"maxSize":10, "minSize":1, "ScaleType":"proportion", "proportionHPA" : 2}} \
 					 	}
 
-	user_defined_free = {"default" : {"nodes_default" : {"upperBound":scale, "lowerBound":0, "ScaleType":"free"}, \
-                 					  "d_default" : {"upperBound":scale*8, "lowerBound":0, "ScaleType":"free", "HPAfactor":2},
+	user_defined_free = {"default" : {"nodes_default" : {"maxSize":scale, "minSize":0, "ScaleType":"free"}, \
+                 					  "d_default" : {"maxSize":scale*8, "minSize":0, "ScaleType":"free", "HPAfactor":2},
                  					  "max_pod_per_node": 7},\
                  		# because in s6, there is maintanece, only make sense if n > 2
                  		# because one node can potentially go to maintanace, so the max_pod_per_node is configed smaller in this case.
-						"s6" : {"nodes_default" : {"upperBound":scale, "lowerBound":2, "ScaleType":"free"}, \
-							    "d_default" : {"upperBound":scale*8, "lowerBound":0, "ScaleType":"free"},
+						"s6" : {"nodes_default" : {"maxSize":scale, "minSize":2, "ScaleType":"free"}, \
+							    "d_default" : {"maxSize":scale*8, "minSize":0, "ScaleType":"free"},
 							    "max_pod_per_node": 4}, \
 						# because in s4, there kernel panic, only make sense if n > 2
-						"s4" : {"nodes_default" : {"upperBound":scale, "lowerBound":2, "ScaleType":"free"}, \
-							    "d_default" : {"upperBound":scale*8, "lowerBound":0, "ScaleType":"free"},
+						"s4" : {"nodes_default" : {"maxSize":scale, "minSize":2, "ScaleType":"free"}, \
+							    "d_default" : {"maxSize":scale*8, "minSize":0, "ScaleType":"free"},
 							    "max_pod_per_node": 4}, \
 						# because in s1, there is node can only hold one pod. So need to bound all type of node to be at least 1
-						"s1" : {"nodes_default" : {"upperBound":scale, "lowerBound":1, "ScaleType":"free"}, \
-							    "d_default" : {"upperBound":scale*8, "lowerBound":0, "ScaleType":"free"},
+						"s1" : {"nodes_default" : {"maxSize":scale, "minSize":1, "ScaleType":"free"}, \
+							    "d_default" : {"maxSize":scale*8, "minSize":0, "ScaleType":"free"},
 							    "max_pod_per_node": 7}, \
 						# because in s3, need to have at least 1 node per domain to be an interesting case. 
-						# "s3" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"free"}, \
-						# 	    "d_default" : {"upperBound":10, "lowerBound":0, "ScaleType":"free", "HPAfactor":2}}
-						# "h1" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
-						# 	    "d_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion", "minHPAReplicas":6}},\
-						# "h2" : {"nodes_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion"}, \
-						# 	    "d_default" : {"upperBound":10, "lowerBound":1, "ScaleType":"proportion", "minHPAReplicas":6}}
+						# "s3" : {"nodes_default" : {"maxSize":10, "minSize":1, "ScaleType":"free"}, \
+						# 	    "d_default" : {"maxSize":10, "minSize":0, "ScaleType":"free", "HPAfactor":2}}
+						# "h1" : {"nodes_default" : {"maxSize":10, "minSize":1, "ScaleType":"proportion"}, \
+						# 	    "d_default" : {"maxSize":10, "minSize":1, "ScaleType":"proportion", "minHPAReplicas":6}},\
+						# "h2" : {"nodes_default" : {"maxSize":10, "minSize":1, "ScaleType":"proportion"}, \
+						# 	    "d_default" : {"maxSize":10, "minSize":1, "ScaleType":"proportion", "minHPAReplicas":6}}
 					   }
 	if case_free:
 		if case_id in user_defined_free:

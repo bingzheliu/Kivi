@@ -15,18 +15,17 @@ from small_scale_finder import template_generator
 
 class Kivi():
 	def __init__(self):
-		pass
+		# if input from logs, Kivi could only run for the original topo as user do not provide us the definition of all types.
+		if args.input_logs:
+			args.original = True
 	
 	def run(self):
 		scale = args.scale
 		# verify according to config files.
 		if args.path:
-			case_id = args.path.split("/")[-1]
+			case_id = args.path.split("/")[-1] if len(args.path.split("/")[-1]) > 0 else args.path.split("/")[-2]
 			case_name = case_id
-
-			# user_defined collects user's config for finding smallest example algorithm. 
-			# If user does not define it, will return None and a default config will be given. 
-			json_config, user_defined = parser(args.path, args.original)
+			json_config = parser(args.path)
 
 			# if not args.original:
 			# 	json_config = template_generator(json_config, user_defined)

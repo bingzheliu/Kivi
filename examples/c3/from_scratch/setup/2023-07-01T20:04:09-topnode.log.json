@@ -1,5 +1,0 @@
-NAME,CPU(cores),CPU%,MEMORY(bytes),MEMORY%,
-kind-control-plane,366m,1%,863Mi,1%,
-kind-worker,57m,0%,315Mi,0%,
-kind-worker2,140m,0%,378Mi,0%,
-kind-worker3,54m,0%,390Mi,0%,

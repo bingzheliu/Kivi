@@ -1,4 +1,7 @@
-# S3
+
+For more explaination of other failure cases, please refer to the Section 3 in our paper [Kivi: Verification for Cluster Management](https://bingzhe.web.engr.illinois.edu/files/kivi.pdf). We describe C3 in more details in this doc. 
+
+# C3
 ## Overview
 This example is inspired by a [conflicting topology spread constraints example](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/#example-conflicting-topologyspreadconstraints) in the official Kubernetes document. In this example, there are two pod constraints, yet these two can be conflicting to each other and causing pods to fail to be scheduled.
 
@@ -31,12 +34,3 @@ kubectl autoscale deployment php-apache --cpu-percent=50 --min=1 --max=6
 When the CPU utilization of pods go up to more than 50% requested, which may be due to request increases, the HPA can start to scale up the pods to the maximum of 6 replicas. When such 6th pod is created by the deployment controller, the scheduler need to place such pod onto the cluster; however, the pod cannot be placed on Node 1 or Node 2 as it will violate the Zone constraint, and the pod cannot be placed on Node 3 as it will violate the Node constraint. 
 
 This will result in the situation that the pod cannot be scheduled and stays in the pending phase. The service capacity can be affected if new pods cannot be added to the application.
-
-# H1
-TBD
-# H2
-TBD
-# S4
-TBD
-# S6
-TBD

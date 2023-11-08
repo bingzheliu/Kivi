@@ -280,14 +280,22 @@ class VeriferOperator():
 				json_config["intents"] = []
 				json_config["intents"].append(deepcopy(i))
 
+	def str_failure(self, failure):
+		s = ""
+		step = 0
+		for l in failure.split("\n"):
+			s += (l.replace("*", str(step))+"\n")
+			step += 1
+		return s
+
 	def str_failures(self):
 		msg = "========================\n"
 		msg += str(len(self.failures)) + " failure(s) are found!\n"
 		for i in range(0, len(self.failures)):
 			msg += ("-----Failure #" + str(i+1) + "-----" + "\n")
 			#msg += ("Issue: " + failures[i][0] + "\n")
-			msg += ("Minimal example:" + "\n")
-			msg += (self.failures[i][1] + "\n")
+			msg += ("Counterexample:" + "\n")
+			msg += (self.str_failure(self.failures[i][1]) + "\n")
 
 		return msg
 

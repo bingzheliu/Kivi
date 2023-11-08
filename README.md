@@ -1,6 +1,6 @@
 # Kivi: verifying your Kubernetes clusters
 
-## Install and Requirement
+## Installation and Requirement
 
 [Spin](https://github.com/nimble-code/Spin) (>=6.5.2)
 
@@ -86,7 +86,7 @@ Simulation parameters:
 ### Verifying pre-defined failure cases
 We have prepared a few [failure cases](documents/failure_cases.md) for users to understand our system. 
 
-To test on case [C3](documents/failure_cases.md#C3), you could run it with `-c` to select such case to verify. Other available pre-defined cases are `c[1-8]`. These cases have been introduced in Section 3 of [our paper](https://bingzhe.web.engr.illinois.edu/files/kivi.pdf). 
+To test on case [C3](documents/failure_cases.md#C3), you could run it with `-c` to select such case to verify. Other available pre-defined cases are `c[1-8]`. These cases have been introduced in Section 3 of [our paper](https://arxiv.org/abs/2311.02800). 
 ```
 python3 kivi_runner.py -o -c c3
 ```
@@ -96,18 +96,19 @@ Working on the intents: pod_always_schedulable
 ========================
 1 failure(s) are found!
 -----Failure #1-----
-Minimal example:
-[*][CPU Change] CPU change 2 on pod 4, now 10, and node 3, now 46
-[*][HPA] Need to rescale, pod number change from 5 to 6.
-[*][Deployment] Too few replicas, need to create 1
-[*][Deployment] Adding a new pod 6 to deployment 1
-[*][Scheduler - no_feasible_node] No feasible node!
+Counterexample:
+[0][CPU Change] CPU change 2 on pod 4, now 10, and node 3, now 46
+[1][HPA] Need to rescale, pod number change from 5 to 6
+[2][Deployment] Too few replicas, need to create 1
+[3][Deployment] Adding a new pod 6 to deployment 1
+[4][Scheduler - no_feasible_node] No feasible node!
+
 
 
 Summary:
     1 failure(s) found!
     Violating intent(s): pod_always_schedulable 
-    Elapsed time: 0.79 seconds
+    Elapsed time: 1.04 seconds
 ```
 This shows a five-step example that leads to the issue: 1) CPU changes in a unit of 2 on pod 4; 2) HPA decides to scale up the number of pods to 6; 3/4) deployment controller compares the specReplica and running replica, and creates 1 replica; 5) Scheduler does not found any feasible node for this new pod. 
 
@@ -121,7 +122,7 @@ python3 kivi_runner.py -p ../examples/c3/configs -o
 ```
 You will see a similar output that demonstrates the same minimal example. The major difference is that the example will show how the problem happen from scratch, starting with 0 replicas.
 
-Note: user can remove the `-o` to enable the incremental scaling algorithm, which will explore all the possible topologies. Please refer to Section 4 in [our paper](https://bingzhe.web.engr.illinois.edu/files/kivi.pdf) to learn more about the incremental scaling algorithm.
+Note: user can remove the `-o` to enable the incremental scaling algorithm, which will explore all the possible topologies. Please refer to Section 4 in [our paper](https://arxiv.org/abs/2311.02800) to learn more about the incremental scaling algorithm.
 
 #### Verifyng runtime logs
 We have collected the logs (e.g., `kubectl get deployments`) from Kubernetes clusters that reproduced the C3 failure cases, which are stored in `examples/c3/logs/setup` folder. Additionally, user need to provide their intent in `user_input/intents.json`.  To verify the logs, run it with `-p` to enter the path of logs, and use `-log` to tell Kivi the inputs are logs. 
@@ -130,11 +131,17 @@ python3 kivi_runner.py -p ../examples/c3/logs -log
 ```
 You will see a similar output that demonstrates the same minimal example.  
 
+### Simulation mode
+KIVI also provide a simulation mode to help debug cluster or help you understand configuration change before deployment. Intead of verifying for all possible execution path, simulation mode will randomly pick one path and generate a sequence of events for that path. Such path may not be a violation at all. To use simulation mode, use `-si` option. 
+```
+python3 kivi_runner.py -p ../examples/c3/logs -log -si
+```
+You will see a similar output as before. Because this example does not have much non-deterministic and hence execuation path is the same as the counterexample. 
 
 ## Paper and Documentation
 Please find more documents in `documents/`, including an [overview of the system architecture](documents/sys_arch.md). We are still working on adding more docs onto this repo.
 
-If you want to understand more details, please refer to our paper [Kivi: Verification for Cluster Management](https://bingzhe.web.engr.illinois.edu/files/kivi.pdf) and our [KubeCon presentation](https://static.sched.com/hosted_files/kccncna2023/9b/Kivi-KubeCon.pdf). 
+If you want to understand more details, please refer to our paper [Kivi: Verification for Cluster Management](https://arxiv.org/abs/2311.02800) and our [KubeCon presentation](https://static.sched.com/hosted_files/kccncna2023/9b/Kivi-KubeCon.pdf). 
 
 ## Contributors
 This repo is part of the research project **Kivi: Verification for Cluster Management**, authored by [Bingzhe Liu](https://bingzhe.web.engr.illinois.edu/), [Gangmuk Lim](https://gangmuk.github.io/), [Ryan Beckett](https://www.microsoft.com/en-us/research/people/rybecket/) and [P. Brighten Godfrey](https://pbg.cs.illinois.edu/).

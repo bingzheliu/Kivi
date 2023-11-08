@@ -86,7 +86,7 @@ inline selectHost()
 		assert(false);
 #endif
 	:: else->;
-		printf("[*][Scheduler] scheduled; %d; %d; Pod %d is scheduled on node %d, with score %d\n", curPod, selectedNode, curPod, selectedNode, max);
+		printf("[*][Scheduler] scheduled; %d; %d; Pod %d is scheduled on node %d\n", curPod, selectedNode, curPod, selectedNode);
 	fi;	
 }
 
